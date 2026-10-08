@@ -118,6 +118,14 @@ OTHER_VERSIONS = [("VerPcre", "10.49", "pcre2-10.49"), ("VerNanobench", "v4.6.0"
 # axum's release and the matchit it pins (design/round2/competitor-survey.md, read again at
 # axum-v0.8.9/axum/Cargo.toml; refs.bib, axum2026axum).
 AXUM = {"VerAxum": "0.8.9", "VerAxumMatchit": "0.8.4"}
+# The runs were built at commits of this repository's earlier, archived history, which the public
+# history does not contain. PROVENANCE.md shows that the first-party files the measured builds
+# compiled are byte-identical at the root commit of the public history. The paper names the public
+# commit beside the measured one. A measured commit not listed here stops the script.
+PUBLIC_COMMIT = {
+    "90beca488d68d29bf98aa16bce415c3b02892785": "f626955ebd94398a1376af4d48d61ee7a9ca9f6c",  # rbench
+    "4cc42bf11ace589f29de6194142c1d8cb7dfd062": "f626955ebd94398a1376af4d48d61ee7a9ca9f6c",  # the server
+}
 
 PROBE_CASES = ["static-then-param", "param-then-static", "pchar", "raw-bytes", "catch-all", "empty-segment",
                "trailing-slash", "method"]
@@ -185,17 +193,28 @@ def versions(mc: Macros) -> None:
         mc.add(name, v, "competitor-survey.md, axum-v0.8.9/axum/Cargo.toml")
 
 
+def public_commit(measured: str) -> str:
+    """The public-history commit with the same compiled files as the measured commit."""
+    if measured not in PUBLIC_COMMIT:
+        raise SystemExit(f"paper_macros: code commit {measured} is not in PUBLIC_COMMIT (see PROVENANCE.md)")
+    return PUBLIC_COMMIT[measured]
+
+
 def provenance(mc: Macros, s: dict, run: Path) -> None:
     prov = s["provenance"]
     mc.add("PreSpecCommit", tt(prov["repo_head"][:7]), "the commit that froze hypotheses-round2.md")
     mc.add("RegexMatcherCommitFull", prov["regexmatcher_commit"])
     mc.add("RbenchCommitFull", prov["code_commit"])
+    mc.add("RbenchPublicCommitFull", public_commit(prov["code_commit"]),
+           "the root of the published history, the same compiled files (PROVENANCE.md)")
     pins = (PAPER / "bench/cmake/pins.cmake").read_text(encoding="utf-8")
     v1 = re.search(r"set\(RB_REGEXMATCHER_COMMIT_V1 ([0-9a-f]+)\)", pins).group(1)
     mc.add("RegexMatcherVOneCommit", tt(v1[:8]))
     mc.add("RegexMatcherVOneCommitFull", v1)
     server = json.loads((RECORDS / "mserver-4cc42bf11-L-asan.json").read_text(encoding="utf-8"))
     mc.add("ServerCommit", tt(server["commit"][:9]))
+    mc.add("ServerPublicCommit", tt(public_commit(server["commit"])[:9]),
+           "the root of the published history, the same compiled files (PROVENANCE.md)")
     tool = dict(l.split(": ", 1) for l in (run / "toolchain.txt").read_text(encoding="utf-8").splitlines()
                 if ": " in l)
     clang = re.search(r"clang version (\S+)", tool["cxx"]).group(1)

@@ -5,7 +5,9 @@
 The hypotheses, the design of the runs, the statistics and the rules of decision were pre-specified
 in the paper's repository at commit \PreSpecCommit, before the run. From then on the file was frozen,
 and every change went into its revision log with its reason. Section~\ref{sec:deviation} describes the
-log's entries. The analysis that decides every hypothesis was written and
+log's entries. Commit \PreSpecCommit{} is in the repository's earlier history, which is archived privately. The
+published history holds the file as frozen, with the later entries of its revision log appended
+(\texttt{PROVENANCE.md}). The analysis that decides every hypothesis was written and
 tested on synthetic runs before the freeze. The two files of macros that carry its numbers into this
 paper were extended after the run, from its outputs and raw data, without changing a decision.
 
@@ -272,7 +274,9 @@ If H4, H6 or H7 fails, the paper reports the loss and does not make that hypothe
 
 \subsection{The Minimal Server and the End-to-End Run}\label{sec:server}
 
-H5(c) and H6 use a minimal HTTP/1.1 server written for this paper, at commit \ServerCommit. It runs
+H5(c) and H6 use a minimal HTTP/1.1 server written for this paper, at repository commit
+\ServerPublicCommit. The run compiled the same first-party files, those of commit \ServerCommit, which
+the published history does not contain (\texttt{PROVENANCE.md}). It runs
 one worker thread over epoll with keep-alive, and answers pipelined requests in order. Each route
 answers with a fixed body of \HSixBodyBytes{} bytes. HEAD and the Allow field live above the router,
 so every router arm runs the same code for them. One binary holds three router arms behind one

@@ -34,8 +34,8 @@ same tables, with every answer checked, and runs eight probes of the path rules 
 \item RegexMatcher~v2, a route matcher in C++23. A method whose routes are all literal gets an
 exact-match table, and every other method a trie of path segments. The tables live in flat arrays
 and a lookup never allocates. Patterns, handler signatures and duplicate routes are checked when the program compiles.
-\item A comparison under seven hypotheses that were pre-specified in the paper's repository at
-commit \PreSpecCommit, before the run. It covers lookup time, work per lookup, allocation, build
+\item A comparison under seven hypotheses that were pre-specified in the paper's repository before
+the run, at commit \PreSpecCommit{} of its earlier history (Section~\ref{sec:prespec}). It covers lookup time, work per lookup, allocation, build
 time and memory, the compile-time checks, an end-to-end server, and a table built at compile time.
 \item The results as the pre-specified rules decide them, losses included.
 \end{itemize}
