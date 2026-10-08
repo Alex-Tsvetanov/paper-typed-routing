@@ -45,7 +45,7 @@ APA variants are not used.
 - The logos carry no licence text.
 
 No file grants or restricts redistribution explicitly. MDPI distributes the template for authors
-to use in submissions. Alex decides whether the template files stay in a public repository.
+to use in submissions. `NOTICE`, section 2, states the terms under which the files are kept here.
 
 ## Page ranges without a range dash
 
