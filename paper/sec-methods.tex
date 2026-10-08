@@ -1,0 +1,358 @@
+\section{Methods}\label{sec:methods}
+
+\subsection{Pre-Specification and the Development Round}\label{sec:prespec}
+
+The hypotheses, the design of the runs, the statistics and the rules of decision were pre-specified
+in the paper's repository at commit \PreSpecCommit, before the run. From then on the file was frozen,
+and every change went into its revision log with its reason. Section~\ref{sec:deviation} describes the
+log's entries. The analysis that decides every hypothesis was written and
+tested on synthetic runs before the freeze. The two files of macros that carry its numbers into this
+paper were extended after the run, from its outputs and raw data, without changing a decision.
+
+A development round measured a pre-release of the same lookup code, with the same harness and
+design, on other seeds. It guided the changes that Section~\ref{sec:rework} describes. Its numbers
+are not reported, and none of its seeds was reused. The seeds of the run had timed nothing before
+it. They had served only to check answers, in the agreement tests and the sanitizer records.
+
+\subsection{Host and Builds}\label{sec:host}
+
+Every measurement ran on one lab host, L: an \HostLCpu{} (\HostLArch) with Linux \KernelVersion. The
+pre-specification froze the host, with no package update and no restart from the first sanitizer
+record to the end of the last run. Every process ran on CPU~\TimedCpu, whose sibling hardware thread, CPU~\TimedCpuSibling,
+ran nothing of ours. The run recorded the performance governor, boost off, a mean clock of
+\MeanMhz~MHz, transparent huge pages always on, and the NMI watchdog on.
+
+C and C++ were compiled by clang \ClangVersion, Rust by rustc \RustcVersion, and Go by Go \GoVersion.
+Every arm was compiled for L's own instruction set. The C and C++ arms used \FlagsCxx, the Rust arms
+\FlagRust{} and the Go arms \FlagGo. On L these resolve to the target \TargetCpu. Two competitors
+point to a native build. glaze's performance guide, written for its serialization, recommends a
+native build when a program runs where it was built, and uWebSockets' own example build uses one.
+Fairness needs the same level for every arm, v2 included. It also keeps H2's subtraction matched,
+because the harness's loop is compiled into each arm's translation unit. Each build writes the
+resolved target into a header that every target compiles. A build for another instruction set
+therefore has other inputs, and the gate of Section~\ref{sec:gate} refuses it.
+
+Link-time optimization is off for every C and C++ arm, v2 included. The Rust arms use the harness's
+release profile, \RustProfile. It optimizes across all crates, so it is at least cargo's default
+profile and favours the Rust arms. The Go arms are built as a C archive without
+profile-guided optimization, which would need a profile of a workload that this design does not
+have. Appendix~\ref{app:config} gives each competitor's configuration and the documentation it
+follows.
+
+\subsection{Arms}\label{sec:arms}
+
+An arm is one router behind the harness's common interface. All arms are linked into one binary.
+
+\runin{v2.} \arm{regexmatcher-v2} adds the routes at run time, builds the table, and looks up
+through one out-of-line function, \FindVtwo. \arm{regexmatcher-v2-ct} declares the same
+routes as a constant table in a generated translation unit, one per shape and size, aligned to a
+page. It shares its adapter with \arm{regexmatcher-v2}, takes part in H7 only, and by design refuses
+tables above \SizeThousand{} routes.
+
+\runin{Competitors.} The sixteen routers of Table~\ref{tab:survey}, each pinned by commit and by
+the hash of its source archive. Each arm's timed lookup starts from the method and the path, in the
+form that its library's request carries them. It ends with the route and the captured values, as the
+router's interface returns them. Steps of a framework outside route lookup, such as pooling a request and writing a
+response, are left out for every arm. Appendix~\ref{app:lookup} gives each arm's timed call and the
+differences that remain, because removing them would leave the router's interface.
+
+\runin{Reference arms.} v1 behind its wrapper (\arm{regexmatcher-v1}), a radix tree of the
+harness, an exact-match hash table of the harness, and a sequence of \texttt{std::regex}. The hash
+table and the radix tree run in every cell, with as many processes as v2. The other two run up to
+$m=\RefMaxSize$, in \RefReps{} processes per cell. On the \shape{static} shape, whose one method has
+only literal routes, v2 answers from its exact-match table, the mechanism of the hash arm.
+
+\runin{Null arms.} A null arm measures the harness's loop around a lookup that matches nothing:
+one out-of-line call that reads the path's length. H2 subtracts from each arm the null of its own
+loop. \arm{null} answers 405 itself, so the harness adds nothing to its answer. It is the null of
+v2, of the compile-time table and of the ablation arm. A second null arm, \NullNoFive, has no 405 of
+its own, so the harness applies its 405 rule to it, as to every arm without one. It is the null of
+the C++ competitors, of the Rust competitors behind their C functions and of the reference arms.
+Each Go arm runs a null pass of its own, in its own process, over the same data.
+
+\runin{The ablation arm.} \AblationArm{} is the pre-release's header with its namespace and macro
+prefix renamed and nothing else changed. It runs in every cell of the main grid, decides nothing, and
+shows what the rework of Section~\ref{sec:rework} changed.
+
+\subsection{Tables and Rings}\label{sec:tables}
+
+A cell is one arm, one table shape and one table size $m$. Table~\ref{tab:shapes} lists the shapes.
+The sizes are $m=\SizeTen$, \SizeHundred, \SizeThousand, \SizeTenThousand{} and \SizeHundredThousand.
+Literals are short pseudo-words. A route's first literal comes from a small vocabulary and every later
+one from a large one. A table therefore shares a few top-level words and branches widely below them,
+as many REST interfaces do. Each process draws its table from its table seed.
+
+\begin{table}[H]
+\caption{The seven table shapes. \texttt{l} is a literal and \texttt{p} a parameter; \texttt{*p} is a
+catch-all.\label{tab:shapes}}
+\centering\small
+\begin{tabularx}{\textwidth}{@{}l l X@{}}
+\toprule
+\textbf{Shape} & \textbf{Segments} & \textbf{What it tests} \\
+\midrule
+\shape{static} & \texttt{/l/l/l} & literal routes only, one method \\
+\shape{param-last} & \texttt{/l/l/\{p\}} & a parameter as the last segment \\
+\shape{param-first} & \texttt{/\{p\}/l/l} & a parameter as the first segment \\
+\shape{rest} & \texttt{/l/\{p\}/l/\{q\}} & two parameters between literals \\
+\shape{wild} & \texttt{/l/l/\{*p\}} & a catch-all \\
+\shape{mixed-disjoint} & groups of four & a fully literal route and three routes of one resource, \texttt{/b/r/\{p\}}, \texttt{/b/r/\{p\}/s} and \texttt{/b/r/\{p\}/s/\{q\}}, under different first words \\
+\shape{mixed-overlap} & groups of four & \texttt{/t/r/s}, \texttt{/t/r/\{p\}}, \texttt{/t/r/s/\{p\}} and \texttt{/t/\{p\}/u/\{q\}}: precedence and backtracking \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+A ring holds \RingSize{} lookups drawn uniformly over the table's routes, from the process's ring
+seed. Every lookup in the main grid hits a route. In \shape{mixed-overlap}, half of the queries for
+the last route of a group carry the literal \texttt{r} as the parameter's value. Such a query first
+descends the literal, fails below it, and must return to the parameter. We call these queries decoys.
+
+\subsection{Measurements}\label{sec:measurements}
+
+Each process builds one table, then measures one arm (\texttt{bench/core/runner.hpp}). It reports the
+median time per lookup over nanobench's epochs. Per lookup it also reports instructions, branch
+misses, cycles, L1d misses, L2 misses of data requests and L1 DTLB misses, all in user space. The
+dispatch-stall cycles of every unit-mask bit of AMD's events \EventsAmd{} are counted, each bit on its
+own. We found no AMD document that defines these events for L's processor, so they rest on a
+validation run on L, kept as \StallEvidence. Latency percentiles come from one lookup at a time. Heap allocations per lookup are counted in a
+separate pass, never in a timed loop. The process also reports the build time, the bytes allocated by
+the build and the heap bytes that the built table holds.
+
+The timed loops read a compact copy of the ring, made before the table is built. A Go arm loads its
+own copy into Go's heap at its first timed pass. Go's collector and system monitor share the
+measuring core with the timed loop, and the thread's counters do not count their time. The Go arms'
+clock, their spread over epochs and their collections during the epochs are therefore in Table~S1.
+
+\subsection{Checking Every Answer}\label{sec:checks}
+
+A time counts only if every answer behind it is right. In each process, an agreement pass checks the
+route and every captured value of each query against the ring's expectation. The pass stops after
+\VerifyBudgetSeconds~s, once it has checked at least \VerifyMinQueries{} queries. After the last
+measured cell, the run checks every process that the pass cut on every query of the same table and
+ring. That check is untimed, and its tool is linked from the run's own build. It counts only if its
+table and ring digests equal the process's. A process that neither check verified on every query
+fails its cell.
+
+Every process's answers are also judged against declared path semantics. A router whose answers on a
+shape differ by its own semantics is measured all the same and shown as incomparable, with the range
+of differing answers. It then takes no part in that shape's cells. Each declaration names the one
+kind of wrong answer it allows, and any other wrong answer fails the cell. There are four:
+\begin{itemize}
+\item Boost.URL's example router on \shape{mixed-overlap} finds the right route but keeps a value
+captured in a branch it left.
+\item gin on \shape{mixed-overlap} answers 404 for each query that needs a return to an earlier
+parameter. Wherever its route is right, its values are right.
+\item r3 on \shape{mixed-overlap} answers 404 for such queries, and for more queries as the table
+grows.
+\item uWebSockets on \shape{wild} finds the route, but its catch-all returns no value. So uWebSockets
+takes part in none of the \shape{wild} cells.
+\end{itemize}
+An arm that rejects a table while it is built is shown as refused, with the router's reason.
+
+Eight probes test the rules of Section~\ref{sec:semantics} on every arm. The most specific route
+must win in either registration order (two probes). Every pchar must be accepted in a parameter and
+returned as sent. Bytes must be compared as sent, without decoding. A catch-all must take a non-empty
+remainder, and an empty segment must not match a parameter. A trailing slash must be strict, and a
+path that matches only under another method must give 405.
+
+\runin{The cut for slow arms.} A timed pass that would take longer than \PassBudgetSeconds~s is
+cut to the prefix of the ring that fits, never to fewer than \PassMinQueries{} queries. The cut is
+decided from the agreement pass's time. The ring is in random order, but a cut arm repeats a short
+prefix, which warms its predictors and caches. A cut arm's time and counters are therefore optimistic
+for it. The analysis flags every cell where v2 or the fastest competitor was cut. H2 reports the
+median competitor's branch misses with and without the cut competitors.
+
+\runin{Stopping.} A process has a budget of \ProcessBudgetSeconds~s. When a cell's first process
+exceeds it, the cell's other processes do not run, and the cell is reported as over the budget.
+
+\subsection{The Sanitizer Gate}\label{sec:gate}
+
+A number is citable only if every measured build compiled first-party inputs that green sanitizer
+records cover. On L the records are AddressSanitizer with UndefinedBehaviorSanitizer,
+ThreadSanitizer and MemorySanitizer, all with clang \ClangVersion. A record covers a build when the
+hashes of their inputs match, with the same compiler, configuration, pins and fetched archives.
+RegexMatcher's own suite, with its negative-compilation cases, passed under all three on L. That
+suite's records cover v2's headers. The harness's records cover every arm, and the server's records
+cover the server with its end-to-end exercise. Every measured build passed the gate, and a build of
+every arm for another instruction set failed it.
+
+MemorySanitizer needs every library in the process instrumented, and the Go and Rust standard
+libraries are prebuilt and uninstrumented. Its record therefore leaves out the \MsanGapArms{} arms
+behind a foreign-function boundary: matchit, actix-router, path-tree, httprouter, gin, net/http and
+chi. The gap is declared in the repository. Under AddressSanitizer their Go and Rust code is
+instrumented too, though not the Rust standard library. Under ThreadSanitizer only their C++
+adapters are instrumented. No binary of the records links or calls io\_uring, so MemorySanitizer's blind
+spot for the kernel's writes through it does not apply.
+
+\subsection{Seeds and Order}\label{sec:seeds}
+
+Each cell runs in $R=\RoundTwoReps$ processes. Process $k$ uses the $k$th table seed and the $k$th ring seed.
+The table seeds run from \TableSeedFirst{} to \TableSeedLast{}, and the ring seeds from
+\RingSeedFirst{} to \RingSeedLast. No two pairs share a table or a ring, so the pairs are
+independent, and the analysis treats them so. It refuses a cell whose v2 processes do not use exactly
+these pairs. All arms ran in one binary in the same run, and the order of the processes was shuffled
+with the seed \RoundTwoOrderSeed.
+
+Why $R=\RoundTwoReps$: the project's rule on replicates asks for enough of them that an exact paired
+test can pass the family's Holm threshold. With sixteen independent pairs, the smallest one-sided p of the
+exact sign test is one half to the power $R$, that is \SignMinP. Holm's first threshold for the family of \HOneCells{}
+cells is \Alpha{} divided by \HOneCells, that is \HolmFirst. One pair at or above the margin gives
+\SignOneAbove. The smallest p of the bootstrap, about \BootMinP, is also below Holm's first threshold.
+Each table seed is in one pair, so the bootstrap clustered by table seed is the bootstrap over pairs.
+
+\subsection{Statistics}\label{sec:stats}
+
+A comparison of two arms in a cell is paired by seed pair. Its statistic is the median over the
+\RoundTwoReps{} pairs of the ratio of the two arms' times. For H1, the fastest competitor of a cell is
+the included competitor with the lowest median time. It may differ from cell to cell, and the
+bootstrap chooses it again in every resample. Two computations, both pre-specified, test each cell.
+
+\runin{The BCa interval.} \RoundTwoResamples{} resamples of the pairs, drawn with replacement,
+keep each pair's values together. The bias correction counts ties as half, and the acceleration comes
+from the jackknife over pairs. With sixteen pairs, the leave-one-out medians take two values, eight
+times each. The acceleration is then zero whenever the fastest competitor is the same in every
+leave-one-out set. In this run it was zero up to rounding, at most \HOneMaxAccel, so every interval is the
+bias-corrected percentile interval. The one-sided p of the null hypothesis is the level $\alpha$ at
+which the interval's upper bound equals the margin. That interval is two-sided, with coverage one
+minus twice $\alpha$.
+
+\runin{The exact sign test.} $X$ counts the pairs whose ratio is below the margin. A tie counts as
+not below. Under the null hypothesis that the median ratio is at least the margin, $X$ is binomial
+with $n=\RoundTwoReps$ and probability one half at the boundary, and $p=P(X\geq x)$ exactly.
+
+The implementation uses Python's standard normal distribution. On L it reproduced SciPy's BCa interval
+to the last digit on the same draws, and SciPy's exact binomial test. One generator per hypothesis,
+seeded with \RoundTwoResamplingSeed, serves the tested cells in the family's order. An untested cell
+draws nothing.
+
+\subsection{The Hypotheses}\label{sec:hypotheses}
+
+\runin{H1, lookup time.} In every cell in which a competitor holds the table, v2 is not slower
+than the fastest of them. The null hypothesis of a cell is that the ratio is at least \Margin. Holm's
+step-down runs over the \HOneCells{} cells at a family-wise \Alpha, one-sided, for each computation. A
+cell passes if it passes under both. A cell that cannot be tested enters Holm with a p of one and does
+not pass. H1 holds if at least \HOneNeed{} cells pass and the upper bound of the unadjusted \Level\% BCa
+interval is at most \HOneCapTwo{} in every tested cell. Superiority, with the margin \SupMargin, is
+tested the same way in a Holm family of its own. It decides nothing about H1. The paper calls v2
+faster only in the cells that pass superiority.
+
+\runin{H2, work per lookup.} In every cell, v2 executes no more instructions per lookup than the
+fastest competitor, and takes no more branch misses than the median competitor. Instructions are
+compared net of the null of each arm's own loop, and branch misses raw. Values are medians over the
+processes, and the comparison is strict. A cell that cannot be judged does not hold.
+
+\runin{H3, no allocation.} v2 makes no heap allocation per lookup in any process of the
+\HOneCells{} cells, captured values included.
+
+\runin{H4, build and memory.} In every cell, v2's build time is at most the median competitor's,
+and at $m=\SizeHundredThousand$ it is below \BuildLimitSeconds~s. The heap bytes that its table holds
+are at most \HeapFactor{} times the smallest competitor's. All three must hold in every cell.
+
+\runin{H5, checked when compiled, correct when run.} (a) Each of the \NegCases{}
+negative-compilation cases fails to compile, with a diagnostic that names its reason. (b) v2 passes
+every probe. (c) Over HTTP/1.1, in the paper's minimal server, a HEAD request on a path that only GET
+routes match is served by the GET route without content. A 405's Allow field lists HEAD whenever it
+lists GET~\cite{fielding2022rfc9110}. HTTP/2 is out of scope, because the server has none.
+
+\runin{H6, the client sees the difference.} In each of nine cells, the server answers more
+requests per second with v2 than with v1. That is, the lower bound of the ratio's \Level\% BCa
+interval is above \SupMargin. In each, the measured difference in time per request is at least \CarryBound{} of
+the difference that the lookup times predict (Section~\ref{sec:server}).
+
+\runin{H7, a table built at compile time is not slower.} On the same routes and ring, the
+compile-time table is not slower than v2's table built at run time. In every cell, both computations
+must pass at the margin \Margin, each at a one-sided \Alpha{} per cell. The sign test then needs
+\HSevenSignNeed{} of \RoundTwoReps{} pairs below the margin. H7 covers the seven shapes at $m\leq
+\SizeThousand$, \HSevenCells{} cells.
+
+\runin{What would count against the claim.} The claim is that v2 is the fastest route matcher
+measured here, in the setting of Section~\ref{sec:host}. ``Faster'' rests on H1's superiority family
+alone, cell by cell, and only against the competitors included in a cell. H1 or H2 failing in a whole
+shape narrows the claim to the other shapes, and a loss in a single cell is reported in that cell.
+If H4, H6 or H7 fails, the paper reports the loss and does not make that hypothesis's claim.
+
+\subsection{The Minimal Server and the End-to-End Run}\label{sec:server}
+
+H5(c) and H6 use a minimal HTTP/1.1 server written for this paper, at commit \ServerCommit. It runs
+one worker thread over epoll with keep-alive, and answers pipelined requests in order. Each route
+answers with a fixed body of \HSixBodyBytes{} bytes. HEAD and the Allow field live above the router,
+so every router arm runs the same code for them. One binary holds three router arms behind one
+function pointer: v1 behind its wrapper, v2, and a null router that answers without reading the path.
+The server is not a full framework. It parses requests, routes them and writes fixed responses,
+and nothing else.
+
+H6 has nine cells: the seven shapes at $m=\SizeTen$, and \shape{rest} and \shape{param-last} at
+$m=\SizeTenThousand$. Each serves the routes of table seed \HSixTableSeed. Its targets are one per
+route, with each parameter filled as ring seed \HSixRingSeed{} fills it, in shuffled order. The server
+runs on CPU~\HSixServerCpu, whose sibling CPU~\HSixServerSibling{} idles. The load generator runs on
+CPUs \HSixGenCpuFirst{} to \HSixGenCpuLast, over \HSixConnections{} connections over loopback, with
+one request in flight on each. Each window starts a fresh server, probes it, warms it up for
+\HSixWarmupSeconds~s and measures for \HSixWindowSeconds~s. Requests per second are the completed
+successful responses over the measured wall time.
+
+The arms run in mirrored rounds of v1, v2, null, null, v2 and v1, and one round is one pair. A window
+is invalid if its server did not start or answer its probe, or if it completed no request. It is also
+invalid if its error share exceeded \HSixErrorSharePct\%, if the generator's CPUs were more than
+\HSixGenBusyPct\% busy, or if the clock drifted more than \HSixMhzDriftPct\%. A round with an invalid
+window is not a valid pair. A cell runs at least \HSixMinPairs{} and at most \HSixMaxPairs{} rounds. It
+stops once a bootstrap interval of the geometric mean ratio, for v2 and for the null arm against v1,
+lies outside $[\HSixStopLow, \HSixStopHigh]$. It also stops once that interval's half-width is below
+\HSixStopHalfWidthPct\%.
+
+Per pair, each arm's rate $X$ is the mean over its two windows, and its time per request $\tau$ is
+the reciprocal of $X$. The ratio is $X_{v2}/X_{v1}$, and the measured difference is
+$D_{\mathrm{meas}}=\tau_{v1}-\tau_{v2}$. The lookup difference $D_{T0}=t_{v1}-t_{v2}$ is v1's time
+minus v2's in the main grid's process at pair (\HSixTableSeed, \HSixRingSeed), in the same cell.
+H6(a) needs the lower bound of the ratio's \Level\% BCa interval above \SupMargin{} in all nine cells.
+H6(b) needs the lower bound of the interval of $D_{\mathrm{meas}}/D_{T0}$ at least \CarryBound{} in
+all nine. $D_{T0}$ is one value per cell, so the interval of (b) covers the variation of the
+end-to-end run only. The bound \CarryBound{} was chosen before the run, informed by development data
+from an earlier build that the paper does not report. With at least \HSixMinPairs{}
+pairs, a cell's exact sign test can reach \HSixSignMinP. Beside each cell, and untested, we report
+the null arm's time per request. We also report the ratio that the lookup times predict,
+$P=(\tau_{\mathrm{null}}+t_{v1})/(\tau_{\mathrm{null}}+t_{v2})$.
+
+\subsection{Exploratory Runs}\label{sec:explore}
+
+Each exploratory run used the main grid's gated build and order seed, on the first $R$ pairs. None
+has an interval, and none decides anything.
+\begin{itemize}
+\item Miss-heavy rings, where half the queries match no route: every cell, $R=\ExploreReps$.
+\item The GitHub interface table of the Go benchmark suite~\cite{schmidt2020gohttproutingbench}, with
+\GithubRoutes{} routes and four methods: one cell, $R=\ExGithubPairs$.
+\item Long literals of \LongWordMin{} to \LongWordMax{} letters at $m=\SizeTenThousand$ and
+\SizeHundredThousand, $R=\ExploreReps$. v2 keys a segment on its first \KeyBytes{} bytes, and short
+literals might favour it.
+\item A Zipf-distributed ring in the same cells, $R=\ExploreReps$.
+\item \shape{mixed-overlap} without decoys at every size, $R=\ExNoDecoyPairs$, where gin takes part
+because its walk then never needs to return.
+\item The ablation arm in every cell of the main grid.
+\end{itemize}
+The pre-specification named one more run, for an H7 cell with a table seed apart from the others.
+It measures that cell again, with the compile-time table copied into a heap block in the same
+binary. Its condition held, and the run was not made in the frozen order. It was made afterwards,
+as an exploratory run, gated by sanitizer records of its own (Section~\ref{sec:hseven}).
+
+\subsection{Deviations and the Revision Log}\label{sec:deviation}
+
+The revision log holds four entries. The first is a deviation, and it concerns the check on every
+query at the end of the main grid. The frozen text fixed the check, but not how many checks run at
+once. The run started
+\VerifyJobsFirst{} at once. The actix-router checks at $m=\SizeHundredThousand$ took up to
+\VerifyCheckGB~GB each and exhausted L's \VerifyMemoryGB~GB. The kernel killed \VerifyKilled{} of the
+\VerifyCut{} checks, all after the last measured cell, and none had reported a wrong answer.
+
+The repeat of all \VerifyCut{} checks, with \VerifyJobsRepeat{} at once, was logged before it ran,
+because it could change H1's decision. It used the same checking binary from the run's own build,
+after its hash was checked, and wrote a separate file. The first file was kept. The repeat checked
+answers only: nothing was timed again, and no time was replaced. The later exploratory grids ran their
+checks \VerifyJobsRepeat{} at once. The repeat changed which cells could be tested, as
+Section~\ref{sec:hone} shows.
+
+The other three entries change no decision. The second records that the paper's numbers come from two
+generated files. One holds the analysis's macros; the other was written after the run, from the
+analysis's outputs and the raw data. The third records that the conditional run of
+Section~\ref{sec:explore} was due, was not made in the frozen order, and was made afterwards. The
+fourth records how the
+paper mentions the development round: the origin of H6's bound, and the direction of one cell,
+without its numbers. One more departure is in the lab journal. A few seconds of analysis ran on L at
+the lowest priority while the main grid measured. No process was excluded for it.

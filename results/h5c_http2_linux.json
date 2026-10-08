@@ -1,0 +1,20 @@
+{
+  "_comment": "The lab host's (L) sanitizer records of the H5(c) HTTP/2 evidence, read by analysis/macros_review.py (h5_http2), which sets \\HFiveHttpTwoState: 0 while any record is pending, 1 when every record of the fix commit is green, 2 when one is red. A record marked green or red must be the named file in lab/sanitizer-records, and its own 'green' field must agree. The earlier commit's outcomes come from results/README.md, 'H5(c) over HTTP/2' (its red record stays on L, not committed). To finish H5(c): set each status and record name, then run analysis/macros.py again.",
+  "earlier": {
+    "commit": "ea4112b36f1165a623d05d0b4fbe40073e2fa37a",
+    "source": "results/README.md, H5(c) over HTTP/2",
+    "records": [
+      {"preset": "asan", "status": "green", "record": null},
+      {"preset": "tsan", "status": "green", "record": null},
+      {"preset": "msan-libcxx", "status": "red", "record": null}
+    ]
+  },
+  "fix": {
+    "commit": "f3c247833741c52c746f00435d155995c9c77f74",
+    "records": [
+      {"preset": "asan", "status": "pending", "record": null},
+      {"preset": "tsan", "status": "pending", "record": null},
+      {"preset": "msan-libcxx", "status": "pending", "record": null}
+    ]
+  }
+}

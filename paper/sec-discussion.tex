@@ -1,0 +1,106 @@
+\section{Discussion}\label{sec:discussion}
+
+\subsection{What the Results Support}
+
+In the setting of Section~\ref{sec:host}, v2 is the fastest of the route matchers measured here in
+\HOneSuperior{} of \HOneCells{} cells, and not slower in one more. ``Fastest'' is said of a cell only
+against the competitors that take part in it. The competitors left out are named with their reasons
+in Section~\ref{sec:run}, and the paper does not claim that they are slower.
+
+The advantage grows with the table. v2's work per lookup barely depends on $m$. On \shape{static} it
+ran \HTwoVtwoNetStaticTen{} net instructions per lookup at $m=\SizeTen$ and
+\HTwoVtwoNetStaticHundredThousand{} at $m=\SizeHundredThousand$, while the fastest competitor's count
+rose from \HTwoFastestNetStaticTen{} to \HTwoFastestNetStaticHundredThousand. A walk over path
+segments takes one step per segment, so its length follows the depth of the route, not the number of
+routes. The width of a node matters only through its scan of up to \VTwoLinearEdges{} literal
+children, or one probe of their hashed slots. In every cell, v2 also took fewer branch misses than
+the median competitor.
+
+\subsection{Small Tables Against gin}\label{sec:gin}
+
+Every loss or partial result of v2 in the lookup comparison sits at $m=\SizeTen$ and against gin.
+These are the \HTwoLost{} H2 losses, the one cell that does not pass H1, and the one cell that passes
+non-inferiority only. With ten routes, first words rarely repeat, so most nodes below the root have
+one child. A node of gin's tree compares its whole prefix at once, while v2 takes one step per
+segment. The development round attributed the instruction loss at \shape{mixed-disjoint} to this
+difference. The rework tried to remove it with chains, and its rules rejected every attempt
+(Section~\ref{sec:rework}).
+
+An instruction count is not a time, however. At \shape{param-last} with $m=\SizeTen$, v2 ran more net
+instructions than gin and was still faster, with the ratio \HOneRatioParamLastTen. Part of v2's count
+is the harness's adapter, which copies the captured values into the harness's own structure and folds
+them. gin folds its values inside Go, and its null pass does not. Appendix~\ref{app:lookup} lists
+these differences between the arms. We kept them, because removing them would change the harness for
+every arm.
+
+At \shape{wild} with $m=\SizeTen$, the development builds favoured v2. The run differs from those
+builds in the instruction set that every arm targets and in the build level of the Go arms. Both are
+candidate causes of the change in this cell, and neither was tested.
+
+\subsection{Build Time and the Compile-Time Table}
+
+The rework cut v2's build to \AbBuildMin{} to \AbBuildMax{} of the pre-release's time and reduced its
+heap. It was not enough in \HFourLostBuild{} cells, at \shape{static} and \shape{param-first} with
+$m=\SizeTenThousand$ and \SizeHundredThousand. We did not profile what remains of the build there. A
+server builds its table once at start, and v2's slowest build of the largest tables took
+\HFourBuildMaxMs~ms. As pre-specified, H4's claim is not made.
+
+The compile-time table passed its per-cell test in \HSevenHeld{} of \HSevenCells{} cells. The rule
+needs all of them, so H7 does not hold. The one cell that fails has \HSevenLostAboveMargin{} pairs at
+or above the margin, where the rule allows \HSevenAllowedAbove, and its interval lies wholly above
+one. One of them, at table seed \HSevenLostSeed, ran more cycles with the same instructions. The
+rework had already given both tables one layout. What remains between them includes where the table
+lies, in the binary or on the heap, and where the code lies. The pre-specified run with a heap copy,
+made afterwards, found single slow pairs at other seeds and in each arm. Neither the table seed nor
+the table's place in memory explains the cell, and its cause stays open. Zero-overhead abstraction is therefore not established
+here for compile-time tables~\cite{stroustrup2012foundations}.
+
+The costs set a practical limit. A compile-time table of \SizeThousand{} routes took
+\ClangThousandCompileMin{} to \ClangThousandCompileMax~s to compile with clang. With MSVC it took
+\MsvcPeakMinMiB{} to \MsvcPeakMaxMiB~MiB of memory, and MSVC crashed under the smallest budget of its
+search. A compile-time table is cheap at \SizeTen{} and \SizeHundred{} routes and expensive at
+\SizeThousand.
+
+\subsection{End to End}
+
+The lookup difference against v1 reached the client in every cell of H6. In the minimal server the
+null router's time per request was about \HSixNullUsMin~$\mu$s, so routing is a visible share of a
+request in a server this lean. The measured ratio stayed within \HSixPredMin{} to \HSixPredMax{} of
+the ratio that the lookup times predict. The share would be smaller in a full framework with more
+work per request.
+
+\subsection{Threats to Validity}\label{sec:threats}
+
+\begin{itemize}
+\item \textbf{One processor model and one core.} Every time comes from one core of one \HostLArch{}
+processor. Another microarchitecture may rank close cells differently, above all the cells at
+$m=\SizeTen$ against gin.
+\item \textbf{One compiler per language.} C and C++ were compiled by clang only, Rust by rustc and Go by
+its own toolchain. GCC and MSVC builds were not timed. MSVC appears only in the costs of compile-time
+tables.
+\item \textbf{The native instruction set.} Every arm was built for L's own processor. A generic build
+would give other code and other times, which may matter most for the small tables against gin.
+\item \textbf{Loopback for H6.} The end-to-end run used loopback, one server core and one request in
+flight per connection. A network, more cores or pipelining would change the share of routing.
+\item \textbf{The minimal server.} It parses, routes and answers a fixed body. A full framework adds
+work per request, which dilutes the difference between routers.
+\item \textbf{Development on the same host.} The engineering of v2 ran on L, on other seeds. The run's
+seeds were held out, but the design choices may still suit L's microarchitecture better than others.
+\item \textbf{The Drogon transcription.} Drogon's router needs a running application, so its lookup was
+transcribed into the harness from its source. The file's hash and line ranges are pinned. A
+transcription can still differ from the router as Drogon runs it.
+\item \textbf{The gin shim.} gin's tree is vendored unchanged, but the parts of gin's engine that a
+lookup uses are reproduced in a small shim. They are the reset of the context, the method's tree and
+the search in gin's default configuration. chi's arm uses a similar shim of its multiplexer. A shim
+can differ from the engine it stands for.
+\item \textbf{The repeated ring.} Every timed pass repeats the same \RingSize{} queries. Predictors and
+caches learn the ring, and a large table's hot part is at most the ring's routes. Real traffic, with
+more distinct paths, may favour other structures. The Zipf and miss-heavy rings explore two departures
+only.
+\item \textbf{Foreign-function boundaries.} The Rust arms are called through one C function per lookup,
+and the Go arms run their timed loops inside Go, entered through cgo. Their nulls remove the loops, not
+every cost of the boundary.
+\item \textbf{The cut for slow arms.} A competitor whose passes ran on a prefix of the ring has
+optimistic times and counters. None was the fastest competitor of an H1 cell, but the cut competitors
+enter the median of H2's branch misses, which Table~\ref{tab:htwo} gives with and without them.
+\end{itemize}

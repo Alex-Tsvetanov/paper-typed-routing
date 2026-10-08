@@ -1,0 +1,121 @@
+// go-chi/chi's router (Go), through a cgo C interface (arms/go/chi.go). The router is chi's
+// v5.3.2 sources, vendored unchanged (arms/go/chi), searched as chi's Mux searches it for a
+// request (arms/go/chi/rbshim.go): a route context reset per lookup, the tree search, then the
+// endpoint's handler, which records the route id. A parameter is {name} and a catch-all *;
+// chi's values are substrings of the path, so they come back as offsets into it (views). chi
+// answers 405 through the Mux's MethodNotAllowed handler, which a request reaches only when the
+// Mux serves HTTP; a lookup here finds no handler, so the harness's rule applies (not
+// native_405).
+//
+// As for gin and httprouter, the throughput passes run inside Go over the ring's paths, loaded
+// once (pass()); the agreement test and the latency samples go through one cgo call per lookup.
+// Go's allocations and heap bytes are counted by the Go runtime.
+#include <array>
+#include <cstdint>
+#include <string>
+#include <vector>
+
+#include "core/runner.hpp"
+#include "chi_sources.h"  // the digest of the Go module (cmake/ffi-go.cmake)
+
+static_assert(sizeof(RB_FFI_SOURCES) > 1);
+
+// The functions arms/go/chi.go and arms/go/main.go export.
+extern "C" {
+int rb_chi_new();
+void rb_chi_free(int h);
+int rb_chi_insert(int h, int method, char* pattern, std::size_t n, std::uint32_t id, char* errbuf, std::size_t errcap);
+std::uint32_t rb_chi_lookup(int h, int method, char* path, std::size_t n, std::uint32_t* caps, std::uint32_t max,
+                            std::uint32_t* ncaps);
+void rb_chi_load(int h, std::size_t count, int* methods, char** paths, std::size_t* lens);
+std::uint64_t rb_chi_pass(int h, std::size_t n);
+std::uint64_t rb_chi_null_pass(int h, std::size_t n);
+std::uint64_t rb_go_mallocs();
+std::int64_t rb_go_heap();
+void rb_go_nop();
+int rb_go_procs();
+std::uint64_t rb_go_gc_cycles();
+}
+
+namespace {
+
+using namespace rb;
+
+class ChiArm final {
+public:
+    static ArmInfo info() { return {"chi", "go-chi/chi v5.3.2 Mux (Go, cgo)", "views into the path"}; }
+
+    ChiArm() : h_(rb_chi_new()) {}
+    ~ChiArm() { rb_chi_free(h_); }
+    ChiArm(const ChiArm&) = delete;
+    ChiArm& operator=(const ChiArm&) = delete;
+
+    void add(const Route& r, RouteId id) {
+        std::string pattern;
+        for (const Segment& s : r.segs) {
+            pattern += '/';
+            pattern += s.kind == Seg::Literal ? s.text : (s.kind == Seg::Param ? "{" + s.text + "}" : std::string("*"));
+        }
+        std::array<char, 512> err{};
+        if (rb_chi_insert(h_, static_cast<int>(r.method), pattern.data(), pattern.size(), id, err.data(),
+                          err.size()) != 0) {
+            throw Refused(std::string("chi: ") + err.data());
+        }
+    }
+
+    void finalize() {}
+
+    RouteId lookup(Method m, const std::string& path, Captures& c) {
+        std::array<std::uint32_t, 2 * kMaxParams> caps;
+        std::uint32_t n = 0;
+        const std::uint32_t id = rb_chi_lookup(h_, static_cast<int>(m), const_cast<char*>(path.data()), path.size(),
+                                               caps.data(), kMaxParams, &n);
+        c.n = static_cast<std::uint8_t>(n);
+        for (std::uint32_t i = 0; i < n; ++i) {
+            c.v[i] = std::string_view(path).substr(caps[2 * i], caps[2 * i + 1]);
+        }
+        return id == 0xFFFF'FFFFu ? kNoRoute : id;
+    }
+
+    std::uint64_t pass(const Ring& r, std::size_t n) {
+        load(r, n);
+        return rb_chi_pass(h_, n);
+    }
+
+    // The same loop over the same loaded data with no router in it (H2's null for this arm).
+    std::uint64_t null_pass(const Ring& r, std::size_t n) {
+        load(r, n);
+        return rb_chi_null_pass(h_, n);
+    }
+
+    static std::uint64_t own_allocs() { return rb_go_mallocs(); }
+    static std::int64_t own_live_bytes() { return rb_go_heap(); }
+    static void ffi_nop() { rb_go_nop(); }
+    static int runtime_procs() { return rb_go_procs(); }
+    static std::uint64_t runtime_gc_cycles() { return rb_go_gc_cycles(); }
+
+private:
+    void load(const Ring& r, std::size_t n) {
+        if (loaded_ != &r || loaded_n_ != n) {
+            std::vector<int> methods;
+            std::vector<char*> paths;
+            std::vector<std::size_t> lens;
+            for (std::size_t i = 0; i < n; ++i) {
+                methods.push_back(static_cast<int>(r.queries[i].method));
+                paths.push_back(const_cast<char*>(r.queries[i].path.data()));
+                lens.push_back(r.queries[i].path.size());
+            }
+            rb_chi_load(h_, n, methods.data(), paths.data(), lens.data());
+            loaded_ = &r;
+            loaded_n_ = n;
+        }
+    }
+
+    int h_;
+    const Ring* loaded_ = nullptr;
+    std::size_t loaded_n_ = 0;
+};
+
+}  // namespace
+
+RB_ARM(ChiArm)

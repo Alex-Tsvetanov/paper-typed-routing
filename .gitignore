@@ -1,0 +1,16 @@
+build/
+build-*/
+*.aux
+*.log
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.out
+*.synctex.gz
+__pycache__/
+results/raw/
+paper/*.pdf
+target/
+bench/build-*.inputs.json
+paper/Definitions/*-eps-converted-to.pdf

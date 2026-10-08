@@ -1,0 +1,27 @@
+{
+ "about": "Arms that give other answers than the ring's expectation on a shape because of their path semantics, not because of a fault the sanitizers look for. Each entry declares the kind of wrong answer it allows: \"values\", the right route with other captured values (no query answered with another route or none), or \"404\", no route where the ring expects one (no query answered with another route, and none with other captured values). check_agree.py and sanitizer_record.py accept a disagreement only where it is declared here and of the declared kind; anything else fails. The summaries report the arm as absent from those cells, with the reason given as \"why\". The expectation is the most specific route with its captured values (core/table.hpp).",
+ "boost-url": {
+  "mixed-overlap": {
+   "kind": "values",
+   "why": "finds the route but keeps a value captured in a branch it left: a query resolved by backtracking comes back with three values where its route has two"
+  }
+ },
+ "gin": {
+  "mixed-overlap": {
+   "kind": "404",
+   "why": "answers 404 for every query resolved by backtracking: after the literal r matched and the parameter beside s1 took the next segment, the tree search returns at that parameter's leaf with path left over instead of going back to the parameter beside r"
+  }
+ },
+ "r3": {
+  "mixed-overlap": {
+   "kind": "404",
+   "why": "answers 404 for every query resolved by backtracking and, as the table grows, for queries of the other routes of a group as well: in the final T0 iteration grid (table seed 1, ring seed 2) its answers differed in 9.4% of the ring at m = 10, 25.0% at 100, 63.6% at 1,000, 70.8% at 10,000 and 71.6% at 100,000"
+  }
+ },
+ "uwebsockets": {
+  "wild": {
+   "kind": "values",
+   "why": "finds the route but captures no value for the catch-all: uWS::HttpRouter's * matches the rest of the path without a parameter (src/HttpRouter.h at v20.80.0), so every query of the shape comes back with one value fewer than its route has"
+  }
+ }
+}

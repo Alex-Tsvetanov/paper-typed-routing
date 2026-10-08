@@ -1,0 +1,134 @@
+\section[\appendixname~\thesection]{What Each Arm's Timed Lookup Includes}\label{app:lookup}
+
+For every arm, the timed loop calls the arm's own pass if it has one, as the Go arms do. Otherwise it
+runs the harness's loop over the compact copy of the ring. The loop adds each route number, and each
+captured value's length and first byte, to a sink that the compiler cannot remove. For an arm without
+a 405 of its own, a ``no route'' answer starts a lookup of the same path under every other method
+that has routes. Any hit makes the answer 405. On the all-hit rings of the grid, that fallback runs
+only after a wrong answer, but its test runs on every lookup. The allocation pass and the latency
+samples call each lookup through the harness, so a Go arm's latency includes one call across cgo.
+
+``Index'' in Table~\ref{tab:lookup} means that the harness passes the method as a number and the
+adapter indexes one router per method. ``String'' means that the router takes the method's name.
+
+\begin{table}[htbp]
+\caption{The timed call of each arm. ``Loop'' is the loop that times the arm, and ``null'' the null
+that H2 subtracts.\label{tab:lookup}}
+\begin{adjustwidth}{-\extralength}{0cm}
+\centering\scriptsize\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\fulllength}{@{}l X l X l l@{}}
+\toprule
+\textbf{Arm} & \textbf{Timed call} & \textbf{Method} & \textbf{Captured values} & \textbf{405} &
+\textbf{Loop; null} \\
+\midrule
+\arm{regexmatcher-v2} & \FindVtwo, out of line, which calls \texttt{matcher::route::find} & index & views into the path & its own & harness; \arm{null} \\
+\arm{regexmatcher-v2-ct} & the same, on the compile-time table & index & views & its own & harness; \arm{null} \\
+\AblationArm & the pre-release's lookup, out of line & index & views & its own & harness; \arm{null} \\
+\arm{regexmatcher-v1} & the wrapper's match, which calls v1's matching with groups & index & offsets; a new result vector per call & harness & harness; \NullNoFive \\
+radix, hash, regex & the harness's lookups & index & views (hash: none) & harness & harness; \NullNoFive \\
+Crow & \texttt{crow::Trie::find} & index & copied into strings; views of them & harness & harness; \NullNoFive \\
+Oat++ & \texttt{Router::getRoute} & index & views; the tail copied into a string & harness & harness; \NullNoFive \\
+Boost.URL & \texttt{parse\_path}, then the router's \texttt{find} & index & views & harness & harness; \NullNoFive \\
+r3 & one match entry created, matched and freed per lookup & a bit in the entry & views & harness & harness; \NullNoFive \\
+Drogon & the transcribed lookup: a lower-cased copy, two maps, then a regular expression per route & index & a new vector of strings per match & harness & harness; \NullNoFive \\
+Pistache & \texttt{sanitizeResource}, then \texttt{findRoute} & index & copies, its only public read & harness & harness; \NullNoFive \\
+matchit & \texttt{Router::at} behind one C call & index & offsets & harness & harness; \NullNoFive \\
+actix-router & \texttt{Path::set}, then \texttt{Router::recognize}, behind one C call & index & offsets, not decoded & harness & harness; \NullNoFive \\
+path-tree & \texttt{PathTree::find} behind one C call & index & offsets & harness & harness; \NullNoFive \\
+uWebSockets & \texttt{HttpRouter::route}; the handler stores the route & string & views; none for a catch-all & harness & harness; \NullNoFive \\
+glaze & \texttt{route\_table::match} & a switch & decoded strings in a map; one find per name & harness & harness; \NullNoFive \\
+cpp-httplib & the request's path assigned, then the method's matchers in order & index & named values copied; groups as views & harness & harness; \NullNoFive \\
+httprouter & \texttt{Router.Lookup}, then the handler, in Go & string & offsets & the harness's rule, in Go & its own; its own \\
+gin & the vendored tree's search, then the handlers, in Go & string & offsets; values after a return copied & the harness's rule, in Go & its own; its own \\
+net/http & \texttt{ServeMux.ServeHTTP} on one reused request, in Go & string & the handler copies each value & its own & its own; its own \\
+chi & the context reset, the method map, the tree search, then the handler, in Go & string & offsets & the harness's rule, in Go & its own; its own \\
+\bottomrule
+\end{tabularx}
+\end{adjustwidth}
+\end{table}
+
+What remains unequal is stated rather than removed, because removing it would leave the router's
+interface:
+\begin{itemize}
+\item The copies of captured values that a router's interface makes are in its time. This holds for
+Crow, Oat++'s tail, Drogon, Pistache, glaze and cpp-httplib's named values. v2 returns views.
+\item The adapters of Oat++ and Pistache index one router per method, where the framework looks the
+method up in a map. This removes a step from those arms and never adds one. Boost.URL's example
+router, matchit and path-tree have no methods, so their adapters keep one router per method.
+\item gin's adapter copies the values of a query that needed a return. Only \shape{mixed-overlap} has
+such queries, and there gin is incomparable.
+\item v2's lookup is an out-of-line call, while a header-only competitor can be inlined into the
+timed loop. This adds work to v2 only.
+\item The Go arms take the method as a string, inside the timed lookup.
+\item r3 creates and frees one match entry per lookup, as its interface requires.
+\end{itemize}
+
+\section[\appendixname~\thesection]{Competitor Configurations}\label{app:config}
+
+The C and C++ arms are built by clang \ClangVersion{} in CMake's Release configuration, without
+link-time optimization. Every target gets the same flags, \FlagsCxx. The libraries that the harness fetches
+and builds get the same flags. The Rust arms use \FlagRust{} and the harness's release profile, with
+the prebuilt standard library. The Go arms use \FlagGo, the highest level that L supports, and the C
+that cgo compiles gets the native flag too. Table~\ref{tab:config} gives what each competitor adds and
+the documentation it follows. ``Library default'' means that we found no documented advice.
+
+\begin{table}[htbp]
+\caption{Each competitor's configuration and its source.\label{tab:config}}
+\begin{adjustwidth}{-\extralength}{0cm}
+\centering\scriptsize\setlength{\tabcolsep}{3pt}
+\begin{tabularx}{\fulllength}{@{}l X X@{}}
+\toprule
+\textbf{Competitor} & \textbf{Build and run-time configuration} & \textbf{The library's documentation} \\
+\midrule
+Crow \VerCrow & header only, standalone Asio; log level Warning & no optimization advice; its setup page compiles without flags; its logging guide sets Warning \\
+Oat++ \VerOatpp & its own CMake, static; its object counters disabled & its build file says the option disables object counting for release builds, for performance \\
+Boost.URL \VerBoostUrl & the library and its example router, static & library default \\
+r3, \VerRThree & its sources compiled by the harness; PCRE2 \VerPcre{} by its CMake, static, without JIT & no build flags in its README; r3 never compiles a pattern with PCRE2's JIT, so the JIT would not apply \\
+Drogon \VerDrogon & its lookup transcribed into the adapter, common flags; the file's hash and line ranges pinned & its guide asks for a Release build of the library, which the harness does not build \\
+Pistache \VerPistache & its own CMake, Release, static, tests and TLS off & its README uses meson's release build; CMake's Release is used here \\
+uWebSockets \VerUWebSockets & header only; only the router compiled; native flags & no flags in its README; its own example build uses a native build, \FlagOthree{} and link-time optimization \\
+glaze \VerGlaze & header only; its CMake adds nothing else on Linux; native flags & its performance guide, written for its serialization, recommends \FlagOtwo{} or \FlagOthree{} and a native build when the program runs where it was built \\
+cpp-httplib \VerCppHttplib & header only, no TLS, no compression & library default \\
+matchit \VerMatchit & common Rust & library default \\
+actix-router \VerActixRouter & common Rust, default features & library default \\
+path-tree \VerPathTree & common Rust & library default \\
+httprouter \VerHttprouter & common Go & library default \\
+gin \VerGin & common Go; the tree vendored and called without gin's engine & its deployment page sets the release mode, which governs debug output only; the vendored lookup reads no mode \\
+net/http, Go \VerNetHttp & common Go & no build advice \\
+chi \VerChi & common Go; its sources vendored, each with its hash & library default \\
+\bottomrule
+\end{tabularx}
+\end{adjustwidth}
+\end{table}
+
+Link-time optimization stays off for every C and C++ arm, v2 included. Of the documentation read, only
+uWebSockets' example build uses it.
+
+\section[\appendixname~\thesection]{The Ablation Arm per Cell}\label{app:ablation}
+
+\begin{table}[htbp]
+\caption{v2 against the ablation arm, which keeps the pre-release's build and layout. Each value is the
+median over the \RoundTwoReps{} pairs of v2's value over the ablation arm's. The run decides nothing
+from these ratios.\label{tab:ablation}}
+\centering\footnotesize
+\begin{tabular}{@{}llrrrr@{}}
+\toprule
+\textbf{Shape} & $m$ & \textbf{Time} & \textbf{Net instructions} & \textbf{Build time} & \textbf{Heap bytes} \\
+\midrule
+\AbRowStaticTen \\ \AbRowStaticHundred \\ \AbRowStaticThousand \\ \AbRowStaticTenThousand \\
+\AbRowStaticHundredThousand \\ \addlinespace
+\AbRowParamLastTen \\ \AbRowParamLastHundred \\ \AbRowParamLastThousand \\ \AbRowParamLastTenThousand \\
+\AbRowParamLastHundredThousand \\ \addlinespace
+\AbRowParamFirstTen \\ \AbRowParamFirstHundred \\ \AbRowParamFirstThousand \\
+\AbRowParamFirstTenThousand \\ \AbRowParamFirstHundredThousand \\ \addlinespace
+\AbRowRestTen \\ \AbRowRestHundred \\ \AbRowRestThousand \\ \AbRowRestTenThousand \\
+\AbRowRestHundredThousand \\ \addlinespace
+\AbRowWildTen \\ \AbRowWildHundred \\ \AbRowWildThousand \\ \AbRowWildTenThousand \\
+\AbRowWildHundredThousand \\ \addlinespace
+\AbRowMixedDisjointTen \\ \AbRowMixedDisjointHundred \\ \AbRowMixedDisjointThousand \\
+\AbRowMixedDisjointTenThousand \\ \AbRowMixedDisjointHundredThousand \\ \addlinespace
+\AbRowMixedOverlapTen \\ \AbRowMixedOverlapHundred \\ \AbRowMixedOverlapThousand \\
+\AbRowMixedOverlapTenThousand \\ \AbRowMixedOverlapHundredThousand \\
+\bottomrule
+\end{tabular}
+\end{table}

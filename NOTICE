@@ -1,0 +1,84 @@
+paper-typed-routing
+Copyright 2026 Alex I. Tsvetanov
+
+This repository is licensed under the Apache License, Version 2.0 (see LICENSE). The licence
+covers every file in the repository except the manuscript (section 1) and the third-party files
+of section 2. That includes:
+
+  the code: CMakeLists.txt, bench/, server/, t1/, tools/ and analysis/, and the Python program
+  in paper/ (paper/check_text.py);
+  the data and notes: results/ (the tables, the JSON files and the generated macros.tex and
+  macros-paper.tex; the .tex files in results/ are generated data and are covered), design/,
+  hypotheses-round2.md, the README files, paper/TEMPLATE.md, paper/related-work-notes.md and
+  paper/venues.md.
+
+Section 3 names the code in covered files that comes from other projects, with its licence.
+Section 4 concerns the copy of RegexMatcher code in bench/arms/ablation/route_r1.hpp.
+
+1. The manuscript, not covered by the Apache-2.0 grant
+
+   The manuscript sources (paper/main.tex, the paper/sec-*.tex files and paper/refs.bib), the
+   figures made for it (paper/fig/), and every PDF or Word copy built from them are not covered
+   by the Apache-2.0 grant. No licence is granted for them.
+
+2. Third-party files not covered by the Apache-2.0 grant
+
+   These files are kept as their projects publish them and stay under their owners' terms.
+
+   - paper/Definitions/: the MDPI LaTeX template (MDPI_template_ACS.zip, downloaded by the
+     author from mdpi.com on 2026-09-28; mdpi.cls declares version v6.5a dated 2026-09-11).
+     paper/TEMPLATE.md records the source, the sha256 of each file and the licence terms found
+     in them. The files are kept only to build the manuscript.
+   - bench/arms/go/chi/chain.go, chi.go, context.go, mux.go and tree.go: go-chi/chi at tag
+     v5.3.2 (commit 38939062c5df4d3e8814aad1a488983112627ced), byte for byte. MIT License,
+     "Copyright (c) 2015-present Peter Kieltyka (https://github.com/pkieltyka), Google Inc.";
+     the text is bench/data/LICENSE-chi. tree.go states that it builds on armon/go-radix (MIT
+     licensed).
+   - bench/arms/go/gin/tree.go: gin-gonic/gin at tag v1.12.0 (commit
+     73726dc606796a025971fe451f0aa6f1b9b847f6), byte for byte. It carries the notice
+     "Copyright 2013 Julien Schmidt" and derives from julienschmidt/httprouter, under the BSD
+     3-Clause License; the text is bench/data/LICENSE-httprouter.
+   - bench/arms/go/gin/internal/bytesconv/bytesconv.go: gin at the same tag, byte for byte,
+     "Copyright 2023 Gin Core Team", under gin's MIT License; the text is bench/data/LICENSE-gin.
+   - bench/data/LICENSE-*: the licence texts of these projects and of the projects of
+     section 3.
+
+3. Code from other projects in covered files
+
+   The Apache-2.0 grant covers the author's own work in these files. The parts taken from other
+   projects stay under the licence named here, whose notice applies to them.
+
+   - bench/arms/go/gin/rbshim.go copies HandlerFunc and HandlersChain (gin.go) and assert1 and
+     safeUint16 (utils.go) from gin v1.12.0 unchanged, and follows gin.go and context.go of
+     that version. gin's MIT License, bench/data/LICENSE-gin.
+   - bench/arms/go/chi/rbshim.go follows Mux.routeHTTP of chi v5.3.2. chi's MIT License,
+     bench/data/LICENSE-chi.
+   - bench/arms/drogon.cpp transcribes the router lookup of drogonframework/drogon v1.9.13
+     (commit 4c5430757ea5451a7c38fbbef4b4bef7dbb47f2f, lib/src/HttpControllersRouter.cc).
+     MIT License, "Copyright (c) 2019-2023 An Tao"; the text is bench/data/LICENSE-drogon, the
+     LICENSE file at that commit.
+   - bench/arms/cpp_httplib.cpp transcribes the route matching of httplib::Server from
+     yhirose/cpp-httplib v0.58.0 (commit 4f3f9ef19be83ae97a5d9a059432dc00e445b7ab, httplib.h).
+     MIT License, "Copyright (c) 2017 yhirose"; the text is bench/data/LICENSE-cpp-httplib, the
+     LICENSE file at that commit.
+   - bench/core/github_api.cpp holds the GitHub API route list of
+     julienschmidt/go-http-routing-benchmark (github_test.go, variable githubAPI, at commit
+     d8f3b858995830fc29e26206d7d4d97ece34528c), and bench/gen/ct_github_203.cpp is generated
+     from it. BSD 3-Clause License, "Copyright (c) 2013, Julien Schmidt"; the text is
+     bench/data/LICENSE-go-http-routing-benchmark.
+
+4. RegexMatcher code licensed for this repository under Apache-2.0
+
+   bench/arms/ablation/route_r1.hpp is a copy of RegexMatcher code: the route matcher of
+   https://github.com/cpp-for-everything/RegexMatcher at commit 00a2053
+   (include/matcher/route.hpp), under the namespace matcher::route_r1 and the macro prefix
+   MATCHER_ROUTE_R1_. RegexMatcher itself is offered under the GNU General Public License,
+   version 3, or a commercial licence (its LICENSING.md). The sole author of that code, Alex I.
+   Tsvetanov, licenses this copy under the Apache License, Version 2.0.
+
+5. Programs and libraries that are not in this repository
+
+   The routers, libraries and tools that the benchmark and the minimal server build against are
+   fetched from the URLs and hashes pinned in bench/cmake/pins.cmake, bench/arms/go/go.sum and
+   bench/arms/rust/Cargo.lock, or come from the system (Boost, for example). They are not part
+   of this repository and keep their own licences.

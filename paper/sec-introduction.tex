@@ -1,0 +1,53 @@
+\section{Introduction}\label{sec:intro}
+
+An HTTP server must decide which code answers each request. Its router takes the request's method
+and path and returns the handler of the route that matches, with the values that the route's
+parameters capture. The lookup runs once per request, beside parsing and input and output. A
+server that answers many small requests on few cores pays for it on each one.
+
+Web frameworks in C, C++, Rust and Go each ship a router of their own, and the routers differ in
+structure. Some compress the routes into a radix
+tree~\cite{schmidt2019httprouter,gin2026gin,chi2026chi,ahmed2026matchit,viz2025pathtree}. Others
+build a trie of whole path segments~\cite{pistache2024pistache,uwebsockets2026uwebsockets,berry2026glaze}
+or a prefix trie that uses regular expressions for patterns~\cite{r32026r3}. Crow builds a character
+trie and merges chains of single children~\cite{crow2026crow}. Still others try a list of patterns in
+order~\cite{oatpp2024oatpp,hirose2026httplib,actix2026router}, or match a regular expression per
+parameter route~\cite{drogon2026drogon}. They also differ in what a route means: which of two
+matching routes wins, whether a trailing slash matters, and what a catch-all captures. The
+peer-reviewed literature on router speed is thin. We found two papers on routing with
+tries~\cite{zhang2015urlrouting,dsouza2018htu}. We also found benchmark suites kept beside
+routers~\cite{schmidt2020gohttproutingbench,ahmed2026matchit,sworn2026wayfind,vm0012024gateways}.
+
+The author's earlier, co-authored work introduced RegexMatcher~\cite{stankov2024regex}. It matches
+one string against many regular expressions at once, and web servers whose routes are regular
+expressions motivated it. A route written as a regular expression loses what a router needs,
+however. Precedence then follows the order of registration, a typed parameter is only a character
+class, and every lookup runs an automaton over the whole path. This paper reworks RegexMatcher into
+a route matcher, RegexMatcher~v2, and keeps the regular-expression engine, v1, beside it in the same
+library.
+
+The paper makes four contributions:
+\begin{itemize}
+\item A survey of the route matchers of sixteen routers written in C, C++, Rust and Go. It states
+how each one stores its routes and what its lookup returns. It then measures all of them on the
+same tables, with every answer checked, and runs eight probes of the path rules on each.
+\item RegexMatcher~v2, a route matcher in C++23. A method whose routes are all literal gets an
+exact-match table, and every other method a trie of path segments. The tables live in flat arrays
+and a lookup never allocates. Patterns, handler signatures and duplicate routes are checked when the program compiles.
+\item A comparison under seven hypotheses that were pre-specified in the paper's repository at
+commit \PreSpecCommit, before the run. It covers lookup time, work per lookup, allocation, build
+time and memory, the compile-time checks, an end-to-end server, and a table built at compile time.
+\item The results as the pre-specified rules decide them, losses included.
+\end{itemize}
+
+Lookup speed is the main result. v2 was not slower than the fastest competitor in \HOnePassed{}
+of \HOneCells{} cells, and faster in \HOneSuperior{}. Every such claim holds for one measured setting
+only: one core of an \HostLCpu{} (\HostLArch) and \RunCompiler. Every arm is compiled for that
+processor's own instruction set, and the competitors run in the configurations of
+Appendix~\ref{app:config}. The compile-time checks come second.
+
+Section~\ref{sec:related} surveys related work and the competing routers.
+Section~\ref{sec:design} describes v2. Section~\ref{sec:methods} gives the pre-specified design of
+the measurement. Section~\ref{sec:results} reports each hypothesis and the exploratory runs.
+Section~\ref{sec:discussion} discusses the losses and the threats to validity.
+Section~\ref{sec:conclusions} concludes.

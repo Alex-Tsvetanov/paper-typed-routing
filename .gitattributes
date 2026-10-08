@@ -1,0 +1,5 @@
+# LF in every working tree: vendored upstream files are pinned by their sha256 and the FFI
+# arms' sources are digested into the build, so a checkout on Windows must hash as on Linux.
+* text=auto eol=lf
+*.sh text eol=lf
+*.py text eol=lf

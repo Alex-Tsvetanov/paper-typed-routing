@@ -1,0 +1,169 @@
+\section{Related Work and a Survey of Route Matchers}\label{sec:related}
+
+\subsection{Tries and Lookup Structures}
+
+A route table is a set of keys made of path segments, so the trie is its natural structure.
+De~la~Briandais and Fredkin described the digital search tree, which Fredkin named
+``trie''~\cite{delabriandais1959file,fredkin1960trie}. PATRICIA compresses a binary trie by skipping
+nodes with a single branch~\cite{morrison1968patricia}. The radix trees of several routers follow
+this line. The double-array trie encodes a trie in flat arrays~\cite{aoe1989doublearray}. The burst
+trie mixes trie nodes with other containers~\cite{heinz2002burst}. The adaptive radix tree chooses
+a node's layout by its number of children, and its authors report lookups comparable to hash
+tables~\cite{leis2013art}. v2 borrows two of these ideas. It flattens its trie into arrays after the
+build, without the double-array encoding. It also changes how a node finds a literal child once the
+node has many children (Section~\ref{sec:design}).
+
+Address lookup in routers of the network layer is a large neighbouring field. Its surveys cover
+the design space~\cite{ruizsanchez2001survey,gupta2001classification,taylor2005survey}. Its methods
+include adaptive branching~\cite{andersson1993adaptive}, level compression~\cite{nilsson1999lctrie},
+prefix expansion~\cite{srinivasan1999cpe} and tables small enough for a cache~\cite{degermark1997small}.
+Others are binary search over hash tables~\cite{waldvogel1997scalable}, the tree
+bitmap~\cite{eatherton2004treebitmap} and Poptrie~\cite{asai2015poptrie}. Poptrie's authors evaluate their structure with an analysis of
+processor cycles. We follow that practice and report hardware counters beside every timing.
+Name lookup in named data networking is the closest analogue, because names there are hierarchies
+of components~\cite{wang2012nce,so2013ndn,yuan2015lnpm}. Those structures find the longest matching
+prefix. A route matcher instead needs an exact match with typed parameters, a catch-all, precedence
+and captured values.
+
+v2's exact-match table and its hashed trie nodes use open addressing~\cite{peterson1957addressing}.
+Robin Hood hashing~\cite{celis1985robinhood}, cuckoo hashing~\cite{pagh2004cuckoo}, and perfect and
+minimal perfect hashing~\cite{fredman1984sparse,czech1992optimal,belazzougui2009chd,pibiri2021pthash}
+are alternatives.
+GNU gperf generates perfect hash functions as source code~\cite{gnu2025gperf}, and the frozen library
+offers constant-evaluated hash containers~\cite{guelton2024frozen}. A table that is built when the
+program compiles knows its keys, so a perfect hash would be possible there. v2 builds the same layout
+at compile time and at run time instead, so that one lookup serves both. We did not test a perfect
+hash, and we make no claim about it.
+
+\subsection{Research on HTTP Routing}
+
+Zhang and Xu replace a table of regular expressions with a trie searched depth first, with
+static segments in a hash table~\cite{zhang2015urlrouting}. A work-in-progress paper embeds a hash
+trie for REST URLs in a server~\cite{dsouza2018htu}. Zeng and colleagues match literal URLs from a
+fixed start in HTTP streams, without parameters or precedence~\cite{zeng2017mh}. The Go benchmark
+suite of Schmidt compares Go routers on the route sets of real APIs~\cite{schmidt2020gohttproutingbench}.
+Our exploratory real-world table is its GitHub API list. That suite times Go routers inside Go.
+matchit's documentation ranks Rust routers by a benchmark~\cite{ahmed2026matchit}, and wayfind keeps
+a suite that times Rust routers~\cite{sworn2026wayfind}. A gateway benchmark times API gateways on the
+route sets of real interfaces~\cite{vm0012024gateways}. Each times routers of one language or one
+kind. We time routers of four languages behind one harness, with null arms and checked answers. The path
+grammar that a parameter accepts comes from RFC~3986~\cite{bernerslee2005rfc3986}. The meaning of
+HEAD and of a 405 answer comes from RFC~9110~\cite{fielding2022rfc9110}.
+
+\subsection{The Routers Measured}\label{sec:survey}
+
+Table~\ref{tab:survey} lists the sixteen competitors. Each was the latest release of its project
+when the hypotheses were frozen, or, for r3, the head of its maintained branch. The table says how
+each stores its routes, as its source or documentation at that version states it. It also says what
+its lookup returns. Appendix~\ref{app:lookup} gives the exact call that the harness times for each.
+
+\begin{table}[htbp]
+\caption{The sixteen routers compared with v2. ``Structure'' is read from the source or the
+documentation at the version measured. ``Values'' is what the lookup returns for a parameter.
+Appendix~\ref{app:config} gives the build of each.\label{tab:survey}}
+\begin{adjustwidth}{-\extralength}{0cm}
+\centering\small
+\begin{tabularx}{\fulllength}{@{}l l l X X@{}}
+\toprule
+\textbf{Router} & \textbf{Lang.} & \textbf{Version} & \textbf{Structure} & \textbf{Values} \\
+\midrule
+Crow~\cite{crow2026crow} & C++ & \VerCrow & a trie; each node holds a key, a parameter type and a vector of children & copies into strings \\
+Drogon~\cite{drogon2026drogon} & C++ & \VerDrogon & a lower-cased copy of the path in two hash maps, then a regular expression per parameter route, in turn & a new vector of strings \\
+Oat++~\cite{oatpp2024oatpp} & C++ & \VerOatpp & a list of patterns, tried in order & views; the tail copied \\
+Pistache~\cite{pistache2024pistache} & C++ & \VerPistache & a tree of segments whose children sit in hash maps & copies into strings \\
+Boost.URL~\cite{boosturl2026router} & C++ & \VerBoostUrl & the example router of the library: segment templates, literal first & views \\
+r3~\cite{r32026r3} & C & \VerRThree & a prefix trie compiled from the paths, with PCRE2 \VerPcre & views \\
+uWebSockets~\cite{uwebsockets2026uwebsockets} & C++ & \VerUWebSockets & a tree of segments under the method; children sorted literal, parameter, catch-all & views; none for a catch-all \\
+glaze~\cite{berry2026glaze} & C++ & \VerGlaze & a hash map of static paths, then a trie with hashed literal children & decoded strings in a map \\
+cpp-httplib~\cite{hirose2026httplib} & C++ & \VerCppHttplib & a list per method, tried in order; a regular expression where a pattern needs one & copies, or views of the expression's groups \\
+matchit~\cite{ahmed2026matchit} & Rust & \VerMatchit & a radix trie; a literal before a parameter & offsets \\
+actix-router~\cite{actix2026router} & Rust & \VerActixRouter & a list of resource definitions, tried in order & offsets \\
+path-tree~\cite{viz2025pathtree} & Rust & \VerPathTree & a compressed prefix tree with literal and parameter children & offsets \\
+httprouter~\cite{schmidt2019httprouter} & Go & \VerHttprouter & a compressing radix tree; a literal and a parameter never share a segment & offsets \\
+gin~\cite{gin2026gin} & Go & \VerGin & httprouter's tree, extended to let a literal stand beside a parameter & offsets \\
+net/http~\cite{go2026go1271,amsterdam2024routing} & Go & Go \VerNetHttp & the ServeMux; the most specific pattern wins & copies \\
+chi~\cite{chi2026chi} & Go & \VerChi & a radix tree with literal, regular-expression, parameter and catch-all nodes & offsets \\
+\bottomrule
+\end{tabularx}
+\end{adjustwidth}
+\end{table}
+
+Two of these are libraries that larger frameworks build on: matchit, which axum uses, and
+actix-router, the router of actix-web. axum's latest release, \VerAxum, pins matchit
+\VerAxumMatchit~\cite{axum2026axum}, so the arm measures matchit's latest release rather than the one
+that axum uses. gin's tree derives from httprouter's and carries its notice. Drogon's router
+needs a running application, so its lookup is transcribed into the harness from its source at the
+pinned tag. The transcription is a threat to validity (Section~\ref{sec:threats}).
+
+The routers disagree on what a route means. httprouter refuses a literal and a parameter at the same
+position for one method. Go's ServeMux panics at registration when two patterns overlap and neither
+is more specific. matchit refuses ambiguous routes when they are inserted. Lists tried in order give
+precedence to the earlier route. Section~\ref{sec:results} runs eight probes of the path rules on
+every arm and shows where the measured routers differ.
+
+\subsection{Routes Checked When the Program Compiles}
+
+Typed web frameworks check routes against handlers in several languages. In Servant, a web API is a
+Haskell type, interpreted as a server, a client and documentation~\cite{mestanogullari2015servant}.
+Ocsigen uses OCaml's types for valid links and service calls~\cite{balat2006ocsigen}. Yesod turns a
+route language into Haskell code with Template Haskell. Its route quasiquoter stops the compilation
+when a route line is malformed or two routes may overlap. Each route's arguments take the types of
+its dynamic pieces~\cite{yesod2026routing,yesod2025core}. The mechanism is quasiquotation, which checks a
+language written as a string when the program compiles~\cite{mainland2007quasiquoting}. Play
+compiles its route file but resolves overlaps by declaration order~\cite{play2026routing}. Rocket
+requires each dynamic parameter to appear as a typed argument of its handler. Colliding routes stop
+Rocket at launch, not at compile time~\cite{rocket2024rocket}. Beyond routing, Ur/Web is a statically
+typed language for web applications~\cite{chlipala2015urweb}.
+
+Two C++ routers among the related work check part of a route when the program compiles. Crow's
+route macro derives the argument types from the parameter tags of a pattern, and a handler that
+cannot take them does not compile. A pattern without a leading slash, and a route defined twice, are
+found at run time~\cite{crow2026routing}. RESTinio builds a route from parsers whose results reach
+the handler as separate arguments, so a mismatched handler does not compile. Its route is a C++
+expression rather than a pattern string~\cite{stiffstream2025restinio}.
+
+v2's front end builds on the C++ techniques that check a string argument when the program compiles.
+The control string of printf decides the types of the arguments that follow it, and Danvy typed
+printf in ML by changing that string's representation~\cite{danvy1998unparsing}. Before strings could be constant expressions, Porkol\'ab and Sinkovics
+built a parser generator from template metaprograms, with a type-safe printf as its
+demonstration~\cite{porkolab2010dsl}. Class types as template parameters let a string literal be a
+template argument~\cite{snyder2018p0732}. Compile-time regular expressions pass a pattern as such an
+argument and check it when the program compiles~\cite{dusikova2019p1433,dusikova2026ctre}. The
+standard formatting library makes an invalid format string
+ill-formed~\cite{zverovich2021p2216,zverovich2026fmt}. A Scala library checks regular expressions
+during type checking, with match types~\cite{blanvillain2022regex}. Constant evaluation itself has grown from generalised constant
+expressions~\cite{dosreis2010constexpr,stroustrup2020hopl}. The standard leaves the limits of constant evaluation to the
+implementation~\cite{smith2020n4861}. Clang and MSVC expose them as a number of steps, set with
+\ClangSteps\ and \MsvcSteps~\cite{llvm2026clangmanual,microsoft2026constexpr}. A table built at compile
+time should cost nothing when the program runs, which is C++'s aim of zero-overhead
+abstraction~\cite{stroustrup2012foundations}. H7 tests that aim on v2's tables.
+
+\subsection{Measurement}
+
+Small changes to an experimental setup can bias a performance evaluation~\cite{mytkowicz2009wrong}.
+Benchmarks need repetition at several levels and honest estimates of variation
+\cite{georges2007rigorous,kalibera2013rigorous,hoefler2015scientific,curtsinger2013stabilizer,laaber2019cloud}.
+Counts that should be exact, such as retired instructions, vary from run to
+run~\cite{weaver2013nondeterminism}, so we report counters as medians over processes. The harness
+reads counters through the Linux interface~\cite{manpages2026perfeventopen,browne2000papi} and times
+with nanobench~\cite{leitnerankerl2026nanobench}. The intervals are bias-corrected and accelerated
+bootstrap intervals~\cite{efron1987bca,efron1993bootstrap,diciccio1996bootstrap}, cross-checked
+against SciPy's~\cite{virtanen2020scipy}. The family of cells is controlled with Holm's step-down
+procedure~\cite{holm1979simple}. The tests against a margin follow the framework of non-inferiority
+and equivalence testing~\cite{schuirmann1987tost,wellek2010testing}.
+
+\subsection{What This Paper Adds}
+
+Typed frameworks check routes when the program compiles, and C++ libraries check strings the same
+way. The sources we read report no comparison of lookup time against radix-tree routers, for typed
+frameworks or for C++ string checks. Fast routers document radix trees that match without garbage or
+copies~\cite{schmidt2019httprouter,ahmed2026matchit}. None of the C++ sources we read checks a route's
+pattern, its handler's signature and its duplicates together when the program compiles. Yesod does
+all three in Haskell, and reports no comparison of lookup time. The router evaluations we found are
+benchmark suites kept beside routers, of Go routers, of Rust routers and of API gateways on real route
+sets~\cite{schmidt2020gohttproutingbench,ahmed2026matchit,sworn2026wayfind,vm0012024gateways}. One
+more compares a router with one table-based router~\cite{zhang2015urlrouting}. We found none that
+measures routers of several languages on the same tables, checks their answers, and decides
+under pre-specified tests. This paper does all three for one C++ route matcher. We do not claim that
+v2 is the first typed router, or the first segment trie with hashed children. Pistache's tree and the
+router of Zhang and Xu are both segment structures with hashed literal children.

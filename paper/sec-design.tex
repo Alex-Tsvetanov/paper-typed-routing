@@ -1,0 +1,173 @@
+\section{RegexMatcher~v2}\label{sec:design}
+
+\subsection{From a Set of Regular Expressions to a Route Matcher}
+
+RegexMatcher~v1 matches one string against a set of regular expressions in a single pass over a
+prefix tree~\cite{stankov2024regex,regexmatcher2026v1}. The paper measures its engine at commit
+\RegexMatcherVOneCommit. To route with it, a wrapper turns each pattern into a regular expression
+with one capture group per parameter, and compiles one automaton per method. The lowest route
+number among the matches wins, so precedence follows registration order. The wrapper finds a 405
+by trying the other methods.
+
+v2 adds a route matcher to the same library and leaves v1's engine unchanged. The route matcher is a
+second set of headers in its own namespace, \texttt{matcher::route}, with its own build target. It
+needs C++23 and the standard library only, and neither part of the library includes the other. Its
+parser, table, lookup and compile-time table began as a pre-release that a development round
+measured (Section~\ref{sec:prespec}). The paper measures v2 at commit \RegexMatcherCommit.
+
+\subsection{Patterns and Their Meaning}\label{sec:semantics}
+
+A pattern starts with a slash and splits at every slash into segments (Table~\ref{tab:segments}). A
+literal segment may hold only the bytes that RFC~3986 allows in a path segment, the pchar
+set~\cite{bernerslee2005rfc3986}. A pattern holds at most \VTwoMaxSegments{} segments and
+\VTwoMaxParams{} parameters, and a parameter name appears once.
+
+\begin{table}[H]
+\caption{The segments of a pattern.\label{tab:segments}}
+\centering\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Segment} & \textbf{Matches} \\
+\midrule
+\texttt{users} & the same bytes \\
+\texttt{\{name\}} or \texttt{\{name:string\}} & one non-empty segment \\
+\texttt{\{name:u64\}} & one segment that is an unsigned decimal number of type u64 \\
+\texttt{\{name:i64\}} & one segment that is a signed decimal number of type i64 \\
+\texttt{\{*name\}} & the non-empty rest of the path; only as the last segment \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Seven rules give a route its meaning. They are also the rules against which every arm's answers
+are checked (Section~\ref{sec:checks}).
+\begin{enumerate}
+\item Paths are compared and captured as sent. Nothing is percent-decoded.
+\item A parameter matches one segment of one or more bytes, so it accepts every pchar.
+\item A catch-all matches a non-empty remainder of the path, slashes included, as sent.
+\item A trailing slash is strict. The matcher never redirects.
+\item At every segment, from left to right, a literal beats a typed parameter, which beats a plain
+parameter, which beats a catch-all. The most specific route wins in any order of registration.
+\item The matcher first looks for the request method's most specific route. Without one, it
+answers ``method not allowed'' with the set of methods whose routes match, or ``not found''.
+\item Two routes of one method that match exactly the same paths are an error. A compile-time
+table fails to compile, and a build at run time returns an error.
+\end{enumerate}
+What HEAD and OPTIONS mean is the server's choice. The matcher answers for the method it is asked.
+
+\subsection{The Table}\label{sec:table}
+
+One table holds the routes of every method. A method whose routes are all literal is answered by an
+exact-match table alone. It uses open addressing over a hash of the whole path and the method.
+A slot holds the hash, the method, the route and the place of the path's bytes in a shared arena,
+and a hit is confirmed by comparing those bytes.
+
+Any other method gets a trie over path segments. Its fully literal routes stay in the trie too,
+because the walk tries literal children first and so finds them first. A node records where its
+literal children start and how many there are. It also records its typed, plain and catch-all
+children, the route that ends at it, and how many kinds of child it has. An edge to a literal child
+holds the first \KeyBytes{} bytes of the label as one machine word, the child, and the place of the
+whole label in the arena. A node with up to \VTwoLinearEdges{} literal children scans them in order.
+A wider node keeps them in a power-of-two array of slots, hashed by the word and the segment.
+
+The four arrays of a table are the nodes, the edges, the exact-match slots and the arena. After the
+build they lie in one block aligned to a page of \VTwoPageBytes{} bytes. Each array starts at the
+offset that a table built at compile time gives it. So a table has the same layout in both forms,
+and only its place in memory differs.
+
+\subsection{The Lookup}\label{sec:lookup}
+
+A lookup takes the table, the method and the path, and fills a result in place. The result holds
+the status, the route, and up to \VTwoMaxParams{} captured values. Each value is a pointer and a
+length into the request's path, so a lookup never allocates. On ``method not allowed'' the result
+also holds the set of methods that match.
+
+For a method whose routes are all literal, the lookup probes the exact-match table. Otherwise it
+walks the method's trie one segment at a time. It finds the end of a segment by loading the path a
+word at a time and searching the word for a slash, without reading outside the path. It then tries
+the literal children by word and length, comparing the remaining bytes only for labels longer than
+a word. Then it tests the typed children, then the plain parameter, then the catch-all. A node with
+more than one kind of child leaves a choice point. If the walk fails deeper down, it returns to the
+last choice and tries the next kind. A node with one kind of child never causes a return. Without a
+route of the request's method, the lookup tries each other method that has routes and reports the
+set that matches.
+
+\subsection{Building a Table at Run Time}\label{sec:build}
+
+The build takes a span of route specifications, each a method, a pattern and a route number. It
+returns the table, or an error that names the failing route. The build parses
+every pattern into one shared array of segment records, which holds only the segments that each
+pattern has. A route's entry is then small: its method, route, specification, first segment and
+segment count. The build sorts indices of entries rather than the entries themselves, and splits
+them between the exact-match table and the tries. One scratch stack holds the literal children of
+the node under construction. The arrays are reserved from counts known after the sort, and the
+result is copied once into the page-aligned block.
+
+\subsection{Checked When the Program Compiles}\label{sec:checked}
+
+The checked front end passes a pattern as a template argument, a string literal held in a class
+type~\cite{snyder2018p0732}. One static assertion per kind of error then stops the compilation with
+a message that names the error, such as \texttt{route pattern: unclosed '\{'}. The front end derives
+the C++ type of each parameter: \texttt{std::string\_view}, \texttt{std::uint64\_t} or
+\texttt{std::int64\_t}. A route declaration pairs a method and a pattern with a handler. The
+handler must take one argument per parameter, in order, with those types, and then the server's
+context arguments. Two static assertions check the count and then the types. A generic lambda has
+no fixed arity, so it is checked by whether it can be called with those arguments.
+
+A table of declarations is built during constant evaluation by the same build function as at run
+time. A malformed pattern or two routes of one method that match the same paths stop the
+compilation. The compiler then names a function that tells the reason. Listing~\ref{lst:api} shows
+the front end. The negative-compilation cases of H5(a) cover each of these errors.
+
+\begin{lstlisting}[language=C++,caption={The checked front end. Each commented declaration at the
+end, added to the array, stops the compilation with the reason shown.},label={lst:api},float=t]
+#include <matcher/route.hpp>
+using namespace matcher::route;
+
+struct Ctx { /* the server's request and response */ };
+std::string get_user(std::uint64_t id, Ctx& c);
+std::string get_file(std::string_view name, std::string_view rest, Ctx& c);
+
+using H = handlers<std::string, Ctx&>;
+inline constexpr H::decl kApi[] = {
+    H::get<"/users/{id:u64}", &get_user>(),
+    H::get<"/files/{name}/{*rest}", &get_file>(),
+    H::post<"/users/{id:u64}", &get_user>(),
+};
+inline constexpr auto kTable = make_route_table<kApi>();
+static_assert(kTable.table.find(0u, "/files/a/b/c").route == 1);  // 0u is GET
+
+// H::get<"/u/{id", &get_user>()        route pattern: unclosed '{'
+// H::get<"/u/{id:u64}", &get_file>()    route handler: takes a different number
+//                                        of parameters than the route pattern has
+// H::get<"/users/{n:u64}", &get_user>() compile_time_table_has_duplicate_routes
+\end{lstlisting}
+
+A table built at compile time costs constant-evaluation steps and compiler memory. Clang and MSVC
+bound the steps per evaluation~\cite{llvm2026clangmanual,microsoft2026constexpr}. The harness
+compiles each table with a budget of \ConstexprSteps{} steps. Section~\ref{sec:hseven} reports
+what each table needed.
+
+\subsection{What the Rework Changed}\label{sec:rework}
+
+Before the run, the engineering of v2 had three targets, each with a rule of adoption declared
+before anything was measured. The first was the build time of large tables, which the development
+round had found slower than the median competitor's. The rework of Section~\ref{sec:build} met
+its rule, a lower build time in every development cell, and was adopted. It left the table's
+contents identical, byte for byte, to those of the pre-release.
+
+The second target was the instructions per lookup at \shape{mixed-disjoint} with \SizeTen{} routes,
+where gin had run fewer. A node of gin's tree compares its whole prefix at once, which can span
+several segments, while v2 takes one trie step per segment. The development round took this for the
+cause. Chained edges, and two builds of a separate chain node, were built and measured on the lab
+host. Each either raised the instructions of other cells or did not beat gin's count, which its rule
+forbade, so none was adopted. The loss was therefore expected, and H2's text predicted it before the
+run.
+
+The third target was the gap between a table built at compile time and one built at run time. Both
+arms of the harness now share one adapter, and both tables share one layout
+(Section~\ref{sec:table}).
+
+None of this changed the lookup's code. The out-of-line lookup that every v2 arm calls compiles to
+identical machine code from the pre-release and from v2, with the run's compiler and flags. The
+ablation arm of Section~\ref{sec:arms} keeps the pre-release's build and layout, so it measures what
+the rework changed.

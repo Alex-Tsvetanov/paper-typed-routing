@@ -1,0 +1,31 @@
+{
+ "about": "Targets a sanitizer record may leave out, and why. check_records.py refuses any other gap; sanitize_rbench.sh leaves these arms out of that sanitizer's build. Under ASan the Go and Rust code of the FFI arms is instrumented as well (go build -asan; rustc -Zsanitizer=address, which the lab's stable rustc accepts with RUSTC_BOOTSTRAP=1, over an uninstrumented Rust standard library); under TSan only their C++ adapters are instrumented, not the Go and Rust code.",
+ "arm_matchit": {
+  "not_covered_by": ["msan"],
+  "reason": "MemorySanitizer needs every library in the process instrumented; matchit and the Rust standard library are compiled by stable rustc, which has no MemorySanitizer"
+ },
+ "arm_httprouter": {
+  "not_covered_by": ["msan"],
+  "reason": "MemorySanitizer needs every library in the process instrumented; the Go runtime and httprouter are compiled by the Go toolchain, which has no MemorySanitizer"
+ },
+ "arm_nethttp": {
+  "not_covered_by": ["msan"],
+  "reason": "MemorySanitizer needs every library in the process instrumented; the Go runtime and net/http (the ServeMux) are compiled by the Go toolchain, which has no MemorySanitizer"
+ },
+ "arm_gin": {
+  "not_covered_by": ["msan"],
+  "reason": "MemorySanitizer needs every library in the process instrumented; the Go runtime and gin's route tree are compiled by the Go toolchain, which has no MemorySanitizer"
+ },
+ "arm_actix_router": {
+  "not_covered_by": ["msan"],
+  "reason": "MemorySanitizer needs every library in the process instrumented; actix-router, its dependencies and the Rust standard library are compiled by stable rustc, which has no MemorySanitizer"
+ },
+ "arm_chi": {
+  "not_covered_by": ["msan"],
+  "reason": "MemorySanitizer needs every library in the process instrumented; the Go runtime and chi are compiled by the Go toolchain, which has no MemorySanitizer"
+ },
+ "arm_path_tree": {
+  "not_covered_by": ["msan"],
+  "reason": "MemorySanitizer needs every library in the process instrumented; path-tree, its dependency smallvec and the Rust standard library are compiled by stable rustc, which has no MemorySanitizer"
+ }
+}

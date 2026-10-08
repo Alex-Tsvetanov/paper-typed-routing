@@ -1,0 +1,1122 @@
+% References for P2, "Compile-time-checked HTTP routing at the speed of the fastest tries".
+% Verified 2026-09-27.
+% Papers: metadata from https://api.crossref.org/works/<doi>. Content claims in
+% related-work-notes.md rest on the abstract (OpenAlex) or the publisher page, as noted there.
+% Software: tag, commit and date from the GitHub API (gh api repos/<o>/<r>/git/ref/tags/<tag>),
+% licence from the repository's LICENSE file or the crate manifest, all read on 2026-09-27.
+% Versions are exactly those of bench/cmake/pins.cmake.
+% Documentation and WG21 papers: the official page or PDF was read.
+% Fields that could not be verified are omitted. An entry with any doubt is marked
+% "% UNVERIFIED: reason" directly above it.
+% Titles whose Crossref record contains an en or em dash are written with a colon or hyphen
+% instead (noted at the entry). Page ranges are written as 1\bibhyph{,}4 (paper/TEMPLATE.md explains why), so no
+% style prints a range dash; bib/own.bib keeps its own form.
+%
+% Alex Tsvetanov's own work: the entry in section (g) is copied from bib/own.bib, which is the
+% source of truth; key unchanged. Keep it in sync with that file. The two publish/subscribe papers
+% of earlier drafts were removed on 2026-10-02 (Alex: unrelated to P2).
+
+% mdpi.bst defines no month strings, so the months are defined here.
+@string{jan = "January"}
+@string{feb = "February"}
+@string{mar = "March"}
+@string{apr = "April"}
+@string{may = "May"}
+@string{jun = "June"}
+@string{jul = "July"}
+@string{aug = "August"}
+@string{sep = "September"}
+@string{oct = "October"}
+@string{nov = "November"}
+@string{dec = "December"}
+
+% IEEEtran control: print repeated author names instead of a dash.
+@IEEEtranBSTCTL{IEEEexample:BSTcontrol,
+  CTLdash_repeated_names = "no"
+}
+
+% ===========================================================================
+% (a) Tries and URL routing
+% ===========================================================================
+
+@inproceedings{delabriandais1959file,
+  author    = {De La Briandais, Rene},
+  title     = {File Searching Using Variable Length Keys},
+  booktitle = {Papers Presented at the March 3-5, 1959, Western Joint Computer Conference (IRE-AIEE-ACM '59 Western)},
+  address   = {San Francisco, CA, USA},
+  publisher = {ACM},
+  year      = {1959},
+  pages     = {295\bibhyph{,}298},
+  doi       = {10.1145/1457838.1457895}
+}
+
+@article{fredkin1960trie,
+  author    = {Fredkin, Edward},
+  title     = {Trie Memory},
+  journal   = {Communications of the ACM},
+  volume    = {3},
+  number    = {9},
+  pages     = {490\bibhyph{,}499},
+  year      = {1960},
+  month     = sep,
+  doi       = {10.1145/367390.367400}
+}
+
+% Crossref title separates "PATRICIA" and the expansion with an em dash; a colon is used here.
+@article{morrison1968patricia,
+  author    = {Morrison, Donald R.},
+  title     = {{PATRICIA}: Practical Algorithm To Retrieve Information Coded in Alphanumeric},
+  journal   = {Journal of the ACM},
+  volume    = {15},
+  number    = {4},
+  pages     = {514\bibhyph{,}534},
+  year      = {1968},
+  month     = oct,
+  doi       = {10.1145/321479.321481}
+}
+
+@article{aoe1989doublearray,
+  author    = {Aoe, J.-I.},
+  title     = {An Efficient Digital Search Algorithm by Using a Double-Array Structure},
+  journal   = {IEEE Transactions on Software Engineering},
+  volume    = {15},
+  number    = {9},
+  pages     = {1066\bibhyph{,}1077},
+  year      = {1989},
+  doi       = {10.1109/32.31365}
+}
+
+@article{heinz2002burst,
+  author    = {Heinz, Steffen and Zobel, Justin and Williams, Hugh E.},
+  title     = {Burst Tries: A Fast, Efficient Data Structure for String Keys},
+  journal   = {ACM Transactions on Information Systems},
+  volume    = {20},
+  number    = {2},
+  pages     = {192\bibhyph{,}223},
+  year      = {2002},
+  month     = apr,
+  doi       = {10.1145/506309.506312}
+}
+
+@inproceedings{leis2013art,
+  author    = {Leis, V. and Kemper, Alfons and Neumann, T.},
+  title     = {The Adaptive Radix Tree: {ARTful} Indexing for Main-Memory Databases},
+  booktitle = {2013 IEEE 29th International Conference on Data Engineering (ICDE)},
+  address   = {Brisbane, QLD, Australia},
+  publisher = {IEEE},
+  year      = {2013},
+  month     = apr,
+  pages     = {38\bibhyph{,}49},
+  doi       = {10.1109/ICDE.2013.6544812}
+}
+
+@inproceedings{zhang2015urlrouting,
+  author    = {Zhang, Yijun and Xu, Lizhen},
+  title     = {An Algorithm for {URL} Routing Based on Trie Structure},
+  booktitle = {2015 12th Web Information System and Application Conference (WISA)},
+  address   = {Jinan, China},
+  publisher = {IEEE},
+  year      = {2015},
+  month     = sep,
+  pages     = {157\bibhyph{,}160},
+  doi       = {10.1109/WISA.2015.62}
+}
+
+@inproceedings{dsouza2018htu,
+  author    = {Dsouza, Igneta and Dewan, Hrishikesh and Singh, Prashant and Hansdah, Ramesh},
+  title     = {[{WiP}] {HTU}: An Efficient Hash-Trie Data Structure for {URL} Matching for Programmable Web Resources},
+  booktitle = {2018 IEEE 11th Conference on Service-Oriented Computing and Applications (SOCA)},
+  address   = {Paris, France},
+  publisher = {IEEE},
+  year      = {2018},
+  month     = nov,
+  pages     = {233\bibhyph{,}238},
+  doi       = {10.1109/SOCA.2018.00041}
+}
+
+@article{zeng2017mh,
+  author    = {Zeng, Ping and Tan, Qingping and Meng, Xiankai and Shao, Zeming and Xie, Qinzheng and Yan, Ying and Cao, Wei and Xu, Jianjun},
+  title     = {A Multi-Pattern Hash-Binary Hybrid Algorithm for {URL} Matching in the {HTTP} Protocol},
+  journal   = {PLOS ONE},
+  volume    = {12},
+  number    = {4},
+  pages     = {e0175500},
+  year      = {2017},
+  month     = apr,
+  doi       = {10.1371/journal.pone.0175500}
+}
+
+@techreport{bernerslee2005rfc3986,
+  author      = {Berners-Lee, T. and Fielding, R. and Masinter, L.},
+  title       = {Uniform Resource Identifier ({URI}): Generic Syntax},
+  type        = {RFC},
+  number      = {3986},
+  institution = {RFC Editor},
+  year        = {2005},
+  month       = jan,
+  doi         = {10.17487/RFC3986}
+}
+
+% Crossref lists Fielding, Nottingham and Reschke as editors of RFC 9110, not authors. They are in
+% the editor field, and mdpi.bst prints them with "Eds.".
+@book{fielding2022rfc9110,
+  editor    = {Fielding, R. and Nottingham, M. and Reschke, J.},
+  title     = {{HTTP} Semantics},
+  series    = {RFC},
+  number    = {9110},
+  publisher = {RFC Editor},
+  year      = {2022},
+  month     = jun,
+  doi       = {10.17487/RFC9110}
+}
+
+% Router benchmark. Commit d8f3b858 (2020-07-26) is the one whose GitHub API route list P2 uses.
+@www{schmidt2020gohttproutingbench,
+  author  = {Schmidt, Julien},
+  title   = {Go {HTTP} Router Benchmark (go-http-routing-benchmark)},
+  url     = {https://github.com/julienschmidt/go-http-routing-benchmark},
+  urldate = {27 September 2026},
+  note    = {Commit d8f3b858995830fc29e26206d7d4d97ece34528c, July 2020}
+}
+
+% ===========================================================================
+% Competitor routers, at the pins of bench/cmake/pins.cmake
+% ===========================================================================
+
+@www{schmidt2019httprouter,
+  author  = {Schmidt, Julien},
+  title   = {{HttpRouter}},
+  url     = {https://github.com/julienschmidt/httprouter},
+  urldate = {27 September 2026},
+  note    = {Version v1.3.0, commit 4eec211fa4e8df74ed978dc5681612131854144f, September 2019}
+}
+
+% Only the router tree is used: tree.go and internal/bytesconv/bytesconv.go, vendored unchanged.
+% Title is the repository name; the repository description is not quoted (it contains a dash).
+@www{gin2026gin,
+  author  = {{Gin contributors}},
+  title   = {Gin},
+  url     = {https://github.com/gin-gonic/gin},
+  urldate = {27 September 2026},
+  note    = {Version v1.12.0, commit 73726dc606796a025971fe451f0aa6f1b9b847f6, February 2026}
+}
+
+@www{ahmed2026matchit,
+  author  = {Ahmed, Ibraheem},
+  title   = {matchit: A High Performance, Zero-Copy {URL} Router},
+  url     = {https://github.com/ibraheemdev/matchit},
+  urldate = {27 September 2026},
+  note    = {Crate version 0.9.2, tag v0.9.2, commit 4b5a2c356022f544187d6e67325d8e98dd7f11ca, April 2026}
+}
+
+@www{actix2026router,
+  author  = {{Actix contributors}},
+  title   = {actix-router},
+  url     = {https://github.com/actix/actix-web/tree/router-v0.5.4/actix-router},
+  urldate = {27 September 2026},
+  note    = {Crate version 0.5.4, tag router-v0.5.4 of actix-web, commit 6e4e040ee033f330f736dbfe9c4a0c121f8ca94a, February 2026}
+}
+
+@www{go2026go1271,
+  author  = {{The Go Authors}},
+  title   = {The {Go} Programming Language, including net/http {ServeMux}},
+  url     = {https://github.com/golang/go},
+  urldate = {27 September 2026},
+  note    = {Release go1.27.1, commit 862c888e612ac346c7c4d99c9392bdfd265f33b0, September 2026}
+}
+
+@www{amsterdam2024routing,
+  author  = {Amsterdam, Jonathan},
+  title   = {Routing Enhancements for {Go} 1.22},
+  url     = {https://go.dev/blog/routing-enhancements},
+  urldate = {27 September 2026},
+  note    = {The Go Blog, February 2024}
+}
+
+@www{crow2026crow,
+  author  = {{CrowCpp contributors}},
+  title   = {Crow},
+  url     = {https://github.com/CrowCpp/Crow},
+  urldate = {27 September 2026},
+  note    = {Version v1.3.4, commit ae0fef0ee67eec897e401321b99b6dd7cfbdc155, September 2026}
+}
+
+% Not linked: bench/arms/drogon.cpp transcribes the lookup of lib/src/HttpControllersRouter.cc.
+@www{drogon2026drogon,
+  author  = {{Drogon contributors}},
+  title   = {Drogon},
+  url     = {https://github.com/drogonframework/drogon},
+  urldate = {27 September 2026},
+  note    = {Version v1.9.13, commit 4c5430757ea5451a7c38fbbef4b4bef7dbb47f2f, May 2026}
+}
+
+@www{oatpp2024oatpp,
+  author  = {{Oat++ contributors}},
+  title   = {Oat++},
+  url     = {https://github.com/oatpp/oatpp},
+  urldate = {27 September 2026},
+  note    = {Version 1.3.1, commit 17ef2a7f6c8a932498799b2a5ae5aab2869975c7, February 2024}
+}
+
+@www{pistache2024pistache,
+  author  = {{Pistache contributors}},
+  title   = {Pistache},
+  url     = {https://github.com/pistacheio/pistache},
+  urldate = {27 September 2026},
+  note    = {Version v0.4.26, commit ddffda861aa49012dcda28f1362d0339e718cd52, December 2024}
+}
+
+@www{boosturl2026router,
+  author  = {{Boost.URL contributors}},
+  title   = {{Boost.URL}, example/router},
+  url     = {https://github.com/boostorg/url/tree/boost-1.92.0/example/router},
+  urldate = {27 September 2026},
+  note    = {Tag boost-1.92.0, commit a34f3a4a1a0e695f679453af71dfc050a59170e6, May 2026}
+}
+
+% The 2.0 branch head on 2026-09-27 is this commit (compare: identical); the last tag, 1.3.4,
+% is from 2015 (bench/cmake/pins.cmake).
+% Title from the GitHub repository description, read 2026-09-27.
+@www{r32026r3,
+  author  = {{r3 contributors}},
+  title   = {libr3: A High-Performance Path Dispatching Library},
+  url     = {https://github.com/c9s/r3},
+  urldate = {27 September 2026},
+  note    = {Branch 2.0, commit 83d362f80eeae0a5d5064f9db7ae6fd9ad27ea4e, September 2026}
+}
+
+% Round 2 competitors (hypotheses-round2.md, section 2). Each tag was resolved to the commit
+% below through https://api.github.com/repos/<o>/<r>/git/ref/tags/<tag> (unauthenticated, no
+% personal data sent) on 2026-10-02, and each commit equals the pin of bench/cmake/pins.cmake.
+% Release dates from lab/evidence/2026-09-30-W-pins-freshness/pins.txt (read-only release pages).
+% Titles are the repository names; repository descriptions are not quoted.
+@www{uwebsockets2026uwebsockets,
+  author  = {{uNetworking contributors}},
+  title   = {{uWebSockets}},
+  url     = {https://github.com/uNetworking/uWebSockets},
+  urldate = {2 October 2026},
+  note    = {Version v20.80.0, commit 3ffd6f44c9c3c92c96345d9f96bd01ba9c025ab5, September 2026; the router is src/HttpRouter.h}
+}
+
+@www{berry2026glaze,
+  author  = {{Glaze contributors}},
+  title   = {Glaze},
+  url     = {https://github.com/stephenberry/glaze},
+  urldate = {2 October 2026},
+  note    = {Version v9.0.0, commit d78832c82289c61a9315bfbc35332cec9f4e93ca, September 2026; the router is include/glaze/net/http\_router.hpp}
+}
+
+@www{hirose2026httplib,
+  author  = {{cpp-httplib contributors}},
+  title   = {cpp-httplib},
+  url     = {https://github.com/yhirose/cpp-httplib},
+  urldate = {2 October 2026},
+  note    = {Version v0.58.0, commit 4f3f9ef19be83ae97a5d9a059432dc00e445b7ab, September 2026}
+}
+
+@www{chi2026chi,
+  author  = {{go-chi contributors}},
+  title   = {chi},
+  url     = {https://github.com/go-chi/chi},
+  urldate = {2 October 2026},
+  note    = {Version v5.3.2, commit 38939062c5df4d3e8814aad1a488983112627ced, August 2026}
+}
+
+% The tag v0.8.3 is an annotated tag whose commit is 158f350; the crate archive's sha256 on
+% crates.io (https://crates.io/api/v1/crates/path-tree/0.8.3, read 2026-10-02) equals the one
+% bench/arms/rust/Cargo.lock and bench/cmake/pins.cmake pin.
+@www{viz2025pathtree,
+  author  = {{viz-rs contributors}},
+  title   = {path-tree},
+  url     = {https://github.com/viz-rs/path-tree},
+  urldate = {2 October 2026},
+  note    = {Crate version 0.8.3, tag v0.8.3, commit 158f3507c3ee64589f19645e9d0664b362f56cb1, March 2025}
+}
+
+% Benchmark suites kept beside routers (design/round2/competitor-survey.md), read 2026-10-02
+% through the GitHub API without authentication: wayfind's benches/ (matchit.rs times wayfind,
+% actix-router, matchit and ntex-router, among others) at the head of main; the gateway benchmark's
+% README (Kong, APISIX and Tyk on route sets of the OpenAI, Okta and GitHub interfaces) at its last
+% commit.
+@www{sworn2026wayfind,
+  author  = {{SwornSystems contributors}},
+  title   = {wayfind},
+  url     = {https://github.com/SwornSystems/wayfind},
+  urldate = {2 October 2026},
+  note    = {Commit 2300ca7687f9f690ae8246dbedf3dfa1eb0eed75, August 2026; its benchmarks of Rust routers are in benches/}
+}
+
+@www{vm0012024gateways,
+  author  = {{vm-001}},
+  title   = {gateways-routing-benchmark},
+  url     = {https://github.com/vm-001/gateways-routing-benchmark},
+  urldate = {2 October 2026},
+  note    = {Commit 8122a5cf2ed2cc2fb69f7bc7ab09022322a4b525, April 2024}
+}
+
+% axum's Cargo.toml at tag axum-v0.8.9, read 2026-10-02 at
+% https://raw.githubusercontent.com/tokio-rs/axum/axum-v0.8.9/axum/Cargo.toml: the lines
+% version = "0.8.9" and matchit = "=0.8.4". Release date from crates.io (2026-04-14).
+@www{axum2026axum,
+  author  = {{Tokio contributors}},
+  title   = {axum},
+  url     = {https://github.com/tokio-rs/axum},
+  urldate = {2 October 2026},
+  note    = {Version 0.8.9, tag axum-v0.8.9, April 2026; its axum/Cargo.toml pins matchit 0.8.4}
+}
+
+% RegexMatcher's regex-set engine (v1) at the commit the reference arm and the server's v1 arm
+% pin (bench/cmake/pins.cmake); the commit is RegexMatcher's tag 2.0.0.1, on its main branch.
+% Authors as the repository's CITATION.cff lists them.
+@www{regexmatcher2026v1,
+  author  = {Stankov, Ivan and Tsvetanov, Alex},
+  title   = {{RegexMatcher}: Matching Text Against Multiple Regular Expressions},
+  url     = {https://github.com/cpp-for-everything/RegexMatcher},
+  urldate = {2 October 2026},
+  note    = {Tag 2.0.0.1, commit d16f30a81158d620e5a5514087b175a2251e4fa3, August 2026}
+}
+
+% ===========================================================================
+% (b) Lookup structures in networking
+% ===========================================================================
+
+@article{andersson1993adaptive,
+  author    = {Andersson, Arne and Nilsson, Stefan},
+  title     = {Improved Behaviour of Tries by Adaptive Branching},
+  journal   = {Information Processing Letters},
+  volume    = {46},
+  number    = {6},
+  pages     = {295\bibhyph{,}300},
+  year      = {1993},
+  month     = jul,
+  doi       = {10.1016/0020-0190(93)90068-K}
+}
+
+@article{nilsson1999lctrie,
+  author    = {Nilsson, S. and Karlsson, G.},
+  title     = {{IP}-Address Lookup Using {LC}-Tries},
+  journal   = {IEEE Journal on Selected Areas in Communications},
+  volume    = {17},
+  number    = {6},
+  pages     = {1083\bibhyph{,}1092},
+  year      = {1999},
+  month     = jun,
+  doi       = {10.1109/49.772439}
+}
+
+@inproceedings{degermark1997small,
+  author    = {Degermark, Mikael and Brodnik, Andrej and Carlsson, Svante and Pink, Stephen},
+  title     = {Small Forwarding Tables for Fast Routing Lookups},
+  booktitle = {ACM SIGCOMM '97 Conference on Applications, Technologies, Architectures, and Protocols for Computer Communication},
+  address   = {Cannes, France},
+  publisher = {ACM},
+  year      = {1997},
+  month     = oct,
+  pages     = {3\bibhyph{,}14},
+  doi       = {10.1145/263105.263133}
+}
+
+@inproceedings{waldvogel1997scalable,
+  author    = {Waldvogel, Marcel and Varghese, George and Turner, Jon and Plattner, Bernhard},
+  title     = {Scalable High Speed {IP} Routing Lookups},
+  booktitle = {ACM SIGCOMM '97 Conference on Applications, Technologies, Architectures, and Protocols for Computer Communication},
+  address   = {Cannes, France},
+  publisher = {ACM},
+  year      = {1997},
+  month     = oct,
+  pages     = {25\bibhyph{,}36},
+  doi       = {10.1145/263105.263136}
+}
+
+@article{srinivasan1999cpe,
+  author    = {Srinivasan, V. and Varghese, G.},
+  title     = {Fast Address Lookups Using Controlled Prefix Expansion},
+  journal   = {ACM Transactions on Computer Systems},
+  volume    = {17},
+  number    = {1},
+  pages     = {1\bibhyph{,}40},
+  year      = {1999},
+  month     = feb,
+  doi       = {10.1145/296502.296503}
+}
+
+@article{ruizsanchez2001survey,
+  author    = {Ruiz-Sanchez, M. A. and Biersack, E. W. and Dabbous, W.},
+  title     = {Survey and Taxonomy of {IP} Address Lookup Algorithms},
+  journal   = {IEEE Network},
+  volume    = {15},
+  number    = {2},
+  pages     = {8\bibhyph{,}23},
+  year      = {2001},
+  doi       = {10.1109/65.912716}
+}
+
+@article{gupta2001classification,
+  author    = {Gupta, P. and McKeown, N.},
+  title     = {Algorithms for Packet Classification},
+  journal   = {IEEE Network},
+  volume    = {15},
+  number    = {2},
+  pages     = {24\bibhyph{,}32},
+  year      = {2001},
+  doi       = {10.1109/65.912717}
+}
+
+@article{eatherton2004treebitmap,
+  author    = {Eatherton, Will and Varghese, George and Dittia, Zubin},
+  title     = {Tree Bitmap: Hardware/Software {IP} Lookups with Incremental Updates},
+  journal   = {ACM SIGCOMM Computer Communication Review},
+  volume    = {34},
+  number    = {2},
+  pages     = {97\bibhyph{,}122},
+  year      = {2004},
+  month     = apr,
+  doi       = {10.1145/997150.997160}
+}
+
+@article{taylor2005survey,
+  author    = {Taylor, David E.},
+  title     = {Survey and Taxonomy of Packet Classification Techniques},
+  journal   = {ACM Computing Surveys},
+  volume    = {37},
+  number    = {3},
+  pages     = {238\bibhyph{,}275},
+  year      = {2005},
+  month     = sep,
+  doi       = {10.1145/1108956.1108958}
+}
+
+@inproceedings{asai2015poptrie,
+  author    = {Asai, Hirochika and Ohara, Yasuhiro},
+  title     = {Poptrie: A Compressed Trie with Population Count for Fast and Scalable Software {IP} Routing Table Lookup},
+  booktitle = {2015 ACM Conference on Special Interest Group on Data Communication (SIGCOMM)},
+  publisher = {ACM},
+  year      = {2015},
+  month     = aug,
+  pages     = {57\bibhyph{,}70},
+  doi       = {10.1145/2785956.2787474}
+}
+
+@inproceedings{wang2012nce,
+  author    = {Wang, Yi and He, Keqiang and Dai, Huichen and Meng, Wei and Jiang, Junchen and Liu, Bin and Chen, Yan},
+  title     = {Scalable Name Lookup in {NDN} Using Effective Name Component Encoding},
+  booktitle = {2012 IEEE 32nd International Conference on Distributed Computing Systems (ICDCS)},
+  publisher = {IEEE},
+  year      = {2012},
+  month     = jun,
+  pages     = {688\bibhyph{,}697},
+  doi       = {10.1109/ICDCS.2012.35}
+}
+
+@inproceedings{so2013ndn,
+  author    = {So, Won and Narayanan, Ashok and Oran, David},
+  title     = {Named Data Networking on a Router: Fast and {DoS}-Resistant Forwarding with Hash Tables},
+  booktitle = {Architectures for Networking and Communications Systems (ANCS)},
+  publisher = {IEEE},
+  year      = {2013},
+  month     = oct,
+  pages     = {215\bibhyph{,}225},
+  doi       = {10.1109/ANCS.2013.6665203}
+}
+
+@inproceedings{yuan2015lnpm,
+  author    = {Yuan, Haowei and Crowley, Patrick},
+  title     = {Reliably Scalable Name Prefix Lookup},
+  booktitle = {2015 ACM/IEEE Symposium on Architectures for Networking and Communications Systems (ANCS)},
+  publisher = {IEEE},
+  year      = {2015},
+  month     = may,
+  pages     = {111\bibhyph{,}121},
+  doi       = {10.1109/ANCS.2015.7110125}
+}
+
+% ===========================================================================
+% (c) Hashing and perfect hashing for static key sets
+% ===========================================================================
+
+@article{peterson1957addressing,
+  author    = {Peterson, W. W.},
+  title     = {Addressing for Random-Access Storage},
+  journal   = {IBM Journal of Research and Development},
+  volume    = {1},
+  number    = {2},
+  pages     = {130\bibhyph{,}146},
+  year      = {1957},
+  month     = apr,
+  doi       = {10.1147/rd.12.0130}
+}
+
+% Crossref title marks the O in italics; written as $O(1)$ here.
+@article{fredman1984sparse,
+  author    = {Fredman, Michael L. and Koml{\'o}s, J{\'a}nos and Szemer{\'e}di, Endre},
+  title     = {Storing a Sparse Table with ${O}(1)$ Worst Case Access Time},
+  journal   = {Journal of the ACM},
+  volume    = {31},
+  number    = {3},
+  pages     = {538\bibhyph{,}544},
+  year      = {1984},
+  month     = jun,
+  doi       = {10.1145/828.1884}
+}
+
+@inproceedings{celis1985robinhood,
+  author    = {Celis, Pedro and Larson, Per-Ake and Munro, J. Ian},
+  title     = {Robin Hood Hashing},
+  booktitle = {26th Annual Symposium on Foundations of Computer Science (SFCS 1985)},
+  address   = {Portland, OR, USA},
+  publisher = {IEEE},
+  year      = {1985},
+  pages     = {281\bibhyph{,}288},
+  doi       = {10.1109/SFCS.1985.48}
+}
+
+@article{czech1992optimal,
+  author    = {Czech, Zbigniew J. and Havas, George and Majewski, Bohdan S.},
+  title     = {An Optimal Algorithm for Generating Minimal Perfect Hash Functions},
+  journal   = {Information Processing Letters},
+  volume    = {43},
+  number    = {5},
+  pages     = {257\bibhyph{,}264},
+  year      = {1992},
+  month     = oct,
+  doi       = {10.1016/0020-0190(92)90220-P}
+}
+
+@article{pagh2004cuckoo,
+  author    = {Pagh, Rasmus and Rodler, Flemming Friche},
+  title     = {Cuckoo Hashing},
+  journal   = {Journal of Algorithms},
+  volume    = {51},
+  number    = {2},
+  pages     = {122\bibhyph{,}144},
+  year      = {2004},
+  month     = may,
+  doi       = {10.1016/j.jalgor.2003.12.002}
+}
+
+@incollection{belazzougui2009chd,
+  author    = {Belazzougui, Djamal and Botelho, Fabiano C. and Dietzfelbinger, Martin},
+  title     = {Hash, Displace, and Compress},
+  booktitle = {Algorithms, {ESA} 2009},
+  series    = {Lecture Notes in Computer Science},
+  publisher = {Springer},
+  address   = {Berlin, Heidelberg},
+  year      = {2009},
+  pages     = {682\bibhyph{,}693},
+  doi       = {10.1007/978-3-642-04128-0_61}
+}
+
+@inproceedings{pibiri2021pthash,
+  author    = {Pibiri, Giulio Ermanno and Trani, Roberto},
+  title     = {{PTHash}: Revisiting {FCH} Minimal Perfect Hashing},
+  booktitle = {44th International ACM SIGIR Conference on Research and Development in Information Retrieval},
+  publisher = {ACM},
+  year      = {2021},
+  month     = jul,
+  pages     = {1339\bibhyph{,}1348},
+  doi       = {10.1145/3404835.3462849}
+}
+
+% Release 3.3, dated 2025-04-20 in https://ftp.gnu.org/gnu/gperf/. Licence from the gperf manual.
+@www{gnu2025gperf,
+  author  = {{Free Software Foundation}},
+  title   = {{GNU} gperf: A Perfect Hash Function Generator},
+  url     = {https://www.gnu.org/software/gperf/},
+  urldate = {27 September 2026},
+  note    = {Version 3.3, April 2025}
+}
+
+% Title is the GitHub repository description, read 2026-09-27.
+@www{guelton2024frozen,
+  author  = {{Serge sans Paille}},
+  title   = {frozen: A Header-Only, Constexpr Alternative to gperf for {C++14} Users},
+  url     = {https://github.com/serge-sans-paille/frozen},
+  urldate = {27 September 2026},
+  note    = {Version 1.2.0, commit 06bee5321cecd9a9ffaceb164b5adb2ffafae781, June 2024}
+}
+
+% ===========================================================================
+% (d) Typed routing and compile-time checking of string DSLs
+% ===========================================================================
+
+@article{danvy1998unparsing,
+  author    = {Danvy, Olivier},
+  title     = {Functional Unparsing},
+  journal   = {Journal of Functional Programming},
+  volume    = {8},
+  number    = {6},
+  pages     = {621\bibhyph{,}625},
+  year      = {1998},
+  month     = nov,
+  doi       = {10.1017/S0956796898003104}
+}
+
+@inproceedings{balat2006ocsigen,
+  author    = {Balat, Vincent},
+  title     = {Ocsigen: Typing Web Interaction with Objective {Caml}},
+  booktitle = {2006 Workshop on ML},
+  address   = {Portland, OR, USA},
+  publisher = {ACM},
+  year      = {2006},
+  month     = sep,
+  pages     = {84\bibhyph{,}94},
+  doi       = {10.1145/1159876.1159889}
+}
+
+@inproceedings{mainland2007quasiquoting,
+  author    = {Mainland, Geoffrey},
+  title     = {Why It's Nice to Be Quoted: Quasiquoting for {Haskell}},
+  booktitle = {ACM SIGPLAN Workshop on Haskell},
+  address   = {Freiburg, Germany},
+  publisher = {ACM},
+  year      = {2007},
+  month     = sep,
+  pages     = {73\bibhyph{,}82},
+  doi       = {10.1145/1291201.1291211}
+}
+
+@inproceedings{porkolab2010dsl,
+  author    = {Porkol{\'a}b, Zolt{\'a}n and Sinkovics, {\'A}bel},
+  title     = {Domain-Specific Language Integration with Compile-Time Parser Generator Library},
+  booktitle = {Ninth International Conference on Generative Programming and Component Engineering (GPCE)},
+  address   = {Eindhoven, The Netherlands},
+  publisher = {ACM},
+  year      = {2010},
+  month     = oct,
+  pages     = {137\bibhyph{,}146},
+  doi       = {10.1145/1868294.1868315}
+}
+
+@inproceedings{chlipala2015urweb,
+  author    = {Chlipala, Adam},
+  title     = {{Ur/Web}: A Simple Model for Programming the Web},
+  booktitle = {42nd Annual ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages (POPL)},
+  address   = {Mumbai, India},
+  publisher = {ACM},
+  year      = {2015},
+  month     = jan,
+  pages     = {153\bibhyph{,}165},
+  doi       = {10.1145/2676726.2677004}
+}
+
+@inproceedings{mestanogullari2015servant,
+  author    = {Mestanogullari, Alp and Hahn, S{\"o}nke and Arni, Julian K. and L{\"o}h, Andres},
+  title     = {Type-Level Web {APIs} with {Servant}: An Exercise in Domain-Specific Generic Programming},
+  booktitle = {11th ACM SIGPLAN Workshop on Generic Programming (WGP)},
+  address   = {Vancouver, BC, Canada},
+  publisher = {ACM},
+  year      = {2015},
+  month     = aug,
+  pages     = {1\bibhyph{,}12},
+  doi       = {10.1145/2808098.2808099}
+}
+
+@inproceedings{blanvillain2022regex,
+  author    = {Blanvillain, Olivier},
+  title     = {Type-Safe Regular Expressions},
+  booktitle = {13th ACM SIGPLAN Scala Symposium},
+  address   = {Berlin, Germany},
+  publisher = {ACM},
+  year      = {2022},
+  month     = jun,
+  pages     = {1\bibhyph{,}8},
+  doi       = {10.1145/3550198.3550425}
+}
+
+@www{rocket2024rocket,
+  author  = {{Rocket contributors}},
+  title   = {Rocket},
+  url     = {https://github.com/rwf2/Rocket},
+  urldate = {27 September 2026},
+  note    = {Version v0.5.1, commit f53611f74f2c777b9d7ebb40f8ec3f8dadd0a6f6, May 2024}
+}
+
+@www{snyder2018p0732,
+  author  = {Snyder, Jeff and Dionne, Louis},
+  title   = {Class Types in Non-Type Template Parameters},
+  url     = {https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2018/p0732r2.pdf},
+  urldate = {27 September 2026},
+  note    = {WG21 paper P0732R2, ISO/IEC JTC1/SC22/WG21, June 2018}
+}
+
+@www{dusikova2019p1433,
+  author  = {Dus{\'\i}kov{\'a}, Hana},
+  title   = {Compile Time Regular Expressions},
+  url     = {https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2019/p1433r0.pdf},
+  urldate = {27 September 2026},
+  note    = {WG21 paper P1433R0, ISO/IEC JTC1/SC22/WG21, January 2019}
+}
+
+@www{zverovich2021p2216,
+  author  = {Zverovich, Victor},
+  title   = {std::format Improvements},
+  url     = {https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p2216r3.html},
+  urldate = {27 September 2026},
+  note    = {WG21 paper P2216R3, ISO/IEC JTC1/SC22/WG21, February 2021}
+}
+
+@www{dusikova2026ctre,
+  author  = {Dus{\'\i}kov{\'a}, Hana},
+  title   = {Compile Time Regular Expressions ({CTRE}) v3},
+  url     = {https://github.com/hanickadot/compile-time-regular-expressions},
+  urldate = {27 September 2026},
+  note    = {Version v3.11.0, commit 4ab18abfd88ccfc867734bf5d31b13285854577e, May 2026}
+}
+
+@www{zverovich2026fmt,
+  author  = {Zverovich, Victor and others},
+  title   = {{fmt}: A Modern Formatting Library},
+  url     = {https://github.com/fmtlib/fmt},
+  urldate = {27 September 2026},
+  note    = {Version 12.2.0, commit 1be298e1bd68957e4cd352e1f676f00e07dcfb57, June 2026}
+}
+
+% ===========================================================================
+% (e) Zero-overhead abstraction and constant evaluation in C++
+% ===========================================================================
+
+@inproceedings{dosreis2010constexpr,
+  author    = {Dos Reis, Gabriel and Stroustrup, Bjarne},
+  title     = {General Constant Expressions for System Programming Languages},
+  booktitle = {2010 ACM Symposium on Applied Computing (SAC)},
+  address   = {Sierre, Switzerland},
+  publisher = {ACM},
+  year      = {2010},
+  month     = mar,
+  pages     = {2131\bibhyph{,}2136},
+  doi       = {10.1145/1774088.1774537}
+}
+
+% Series volume and editor read from the chapter's first page (open-access PDF at Springer).
+@incollection{stroustrup2012foundations,
+  author    = {Stroustrup, Bjarne},
+  title     = {Foundations of {C++}},
+  booktitle = {Programming Languages and Systems (ESOP 2012)},
+  editor    = {Seidl, H.},
+  series    = {Lecture Notes in Computer Science},
+  volume    = {7211},
+  publisher = {Springer},
+  address   = {Berlin, Heidelberg},
+  year      = {2012},
+  pages     = {1\bibhyph{,}25},
+  doi       = {10.1007/978-3-642-28869-2_1}
+}
+
+% Crossref title ends "C++ 2006" en dash "2020"; written with a hyphen here.
+@article{stroustrup2020hopl,
+  author    = {Stroustrup, Bjarne},
+  title     = {Thriving in a Crowded and Changing World: {C++} 2006-2020},
+  journal   = {Proceedings of the ACM on Programming Languages},
+  volume    = {4},
+  number    = {HOPL},
+  pages     = {1\bibhyph{,}168},
+  year      = {2020},
+  month     = jun,
+  doi       = {10.1145/3386320}
+}
+
+@www{smith2020n4861,
+  author  = {Smith, Richard and Koeppe, Thomas and Maurer, Jens and Perchik, Dawn},
+  title   = {Working Draft, Standard for Programming Language {C++}},
+  url     = {https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2020/n4861.pdf},
+  urldate = {27 September 2026},
+  note    = {WG21 document N4861, ISO/IEC JTC1/SC22/WG21, April 2020}
+}
+
+@www{llvm2026clangmanual,
+  author  = {{The Clang Team}},
+  title   = {Clang Compiler User's Manual: -fconstexpr-steps},
+  url     = {https://clang.llvm.org/docs/UsersManual.html},
+  urldate = {27 September 2026},
+  note    = {Clang documentation}
+}
+
+@misc{gcc2026dialect,
+  author       = {{Free Software Foundation}},
+  title        = {Options Controlling {C++} Dialect: -fconstexpr-ops-limit},
+  howpublished = {GCC 16.2 manual},
+  url          = {https://gcc.gnu.org/onlinedocs/gcc/C_002b_002b-Dialect-Options.html},
+  note         = {Accessed 2026-09-27}
+}
+
+@www{microsoft2026constexpr,
+  author  = {{Microsoft}},
+  title   = {/constexpr (Control constexpr Evaluation)},
+  url     = {https://learn.microsoft.com/en-us/cpp/build/reference/constexpr-control-constexpr-evaluation?view=msvc-170},
+  urldate = {27 September 2026},
+  note    = {Microsoft C++ documentation, Microsoft Learn}
+}
+
+% ===========================================================================
+% (f) Benchmarking methodology and statistics
+% ===========================================================================
+
+@www{leitnerankerl2026nanobench,
+  author  = {Leitner-Ankerl, Martin},
+  title   = {nanobench},
+  url     = {https://github.com/martinus/nanobench},
+  urldate = {27 September 2026},
+  note    = {Version v4.6.0, commit b709728dba4df0356d467abfb0ba20781a8031c0, August 2026}
+}
+
+@article{browne2000papi,
+  author    = {Browne, S. and Dongarra, J. and Garner, N. and Ho, G. and Mucci, P.},
+  title     = {A Portable Programming Interface for Performance Evaluation on Modern Processors},
+  journal   = {The International Journal of High Performance Computing Applications},
+  volume    = {14},
+  number    = {3},
+  pages     = {189\bibhyph{,}204},
+  year      = {2000},
+  month     = aug,
+  doi       = {10.1177/109434200001400303}
+}
+
+@inproceedings{weaver2013nondeterminism,
+  author    = {Weaver, Vincent M. and Terpstra, Dan and Moore, Shirley},
+  title     = {Non-Determinism and Overcount on Modern Hardware Performance Counter Implementations},
+  booktitle = {2013 IEEE International Symposium on Performance Analysis of Systems and Software (ISPASS)},
+  address   = {Austin, TX, USA},
+  publisher = {IEEE},
+  year      = {2013},
+  month     = apr,
+  pages     = {215\bibhyph{,}224},
+  doi       = {10.1109/ISPASS.2013.6557172}
+}
+
+@www{manpages2026perfeventopen,
+  author  = {{Linux man-pages project}},
+  title   = {perf\_event\_open(2): Set up Performance Monitoring},
+  url     = {https://man7.org/linux/man-pages/man2/perf_event_open.2.html},
+  urldate = {27 September 2026},
+  note    = {Linux man-pages 6.19, May 2026}
+}
+
+% UNVERIFIED: the Processor Programming Reference for L's CPU (Ryzen 7 5800H), which defines
+% the events 0xAE and 0xAF, was not found on docs.amd.com; its title, document number and
+% revision are unknown. The title below is a placeholder, not a verified title. Find the
+% document before citing it.
+@manual{amd2026ppr,
+  author       = {{Advanced Micro Devices}},
+  title        = {Processor Programming Reference ({PPR}) for the {CPU} of host {L}},
+  note         = {Placeholder. Document not located}
+}
+
+@inproceedings{georges2007rigorous,
+  author    = {Georges, Andy and Buytaert, Dries and Eeckhout, Lieven},
+  title     = {Statistically Rigorous {Java} Performance Evaluation},
+  booktitle = {22nd Annual ACM SIGPLAN Conference on Object-Oriented Programming Systems, Languages and Applications (OOPSLA)},
+  address   = {Montreal, QC, Canada},
+  publisher = {ACM},
+  year      = {2007},
+  month     = oct,
+  pages     = {57\bibhyph{,}76},
+  doi       = {10.1145/1297027.1297033}
+}
+
+@inproceedings{mytkowicz2009wrong,
+  author    = {Mytkowicz, Todd and Diwan, Amer and Hauswirth, Matthias and Sweeney, Peter F.},
+  title     = {Producing Wrong Data without Doing Anything Obviously Wrong!},
+  booktitle = {14th International Conference on Architectural Support for Programming Languages and Operating Systems (ASPLOS)},
+  address   = {Washington, DC, USA},
+  publisher = {ACM},
+  year      = {2009},
+  month     = mar,
+  pages     = {265\bibhyph{,}276},
+  doi       = {10.1145/1508244.1508275}
+}
+
+@inproceedings{curtsinger2013stabilizer,
+  author    = {Curtsinger, Charlie and Berger, Emery D.},
+  title     = {{STABILIZER}: Statistically Sound Performance Evaluation},
+  booktitle = {Eighteenth International Conference on Architectural Support for Programming Languages and Operating Systems (ASPLOS)},
+  address   = {Houston, TX, USA},
+  publisher = {ACM},
+  year      = {2013},
+  month     = mar,
+  pages     = {219\bibhyph{,}228},
+  doi       = {10.1145/2451116.2451141}
+}
+
+@inproceedings{kalibera2013rigorous,
+  author    = {Kalibera, Tomas and Jones, Richard},
+  title     = {Rigorous Benchmarking in Reasonable Time},
+  booktitle = {2013 International Symposium on Memory Management (ISMM)},
+  address   = {Seattle, WA, USA},
+  publisher = {ACM},
+  year      = {2013},
+  month     = jun,
+  pages     = {63\bibhyph{,}74},
+  doi       = {10.1145/2464157.2464160}
+}
+
+@inproceedings{hoefler2015scientific,
+  author    = {Hoefler, Torsten and Belli, Roberto},
+  title     = {Scientific Benchmarking of Parallel Computing Systems: Twelve Ways to Tell the Masses when Reporting Performance Results},
+  booktitle = {International Conference for High Performance Computing, Networking, Storage and Analysis (SC15)},
+  address   = {Austin, TX, USA},
+  publisher = {ACM},
+  year      = {2015},
+  month     = nov,
+  pages     = {1\bibhyph{,}12},
+  doi       = {10.1145/2807591.2807644}
+}
+
+@article{laaber2019cloud,
+  author    = {Laaber, Christoph and Scheuner, Joel and Leitner, Philipp},
+  title     = {Software Microbenchmarking in the Cloud. How Bad Is It Really?},
+  journal   = {Empirical Software Engineering},
+  volume    = {24},
+  number    = {4},
+  pages     = {2469\bibhyph{,}2508},
+  year      = {2019},
+  doi       = {10.1007/s10664-019-09681-1}
+}
+
+@article{efron1987bca,
+  author    = {Efron, Bradley},
+  title     = {Better Bootstrap Confidence Intervals},
+  journal   = {Journal of the American Statistical Association},
+  volume    = {82},
+  number    = {397},
+  pages     = {171\bibhyph{,}185},
+  year      = {1987},
+  month     = mar,
+  doi       = {10.1080/01621459.1987.10478410}
+}
+
+@book{efron1993bootstrap,
+  author    = {Efron, Bradley and Tibshirani, Robert J.},
+  title     = {An Introduction to the Bootstrap},
+  publisher = {Springer US},
+  year      = {1993},
+  doi       = {10.1007/978-1-4899-4541-9}
+}
+
+% Crossref has no page range; pages from the Project Euclid article page. The month is Crossref's
+% issue date (1996-09-01, read 2026-10-02).
+@article{diciccio1996bootstrap,
+  author    = {DiCiccio, Thomas J. and Efron, Bradley},
+  title     = {Bootstrap Confidence Intervals},
+  journal   = {Statistical Science},
+  volume    = {11},
+  number    = {3},
+  pages     = {189\bibhyph{,}228},
+  year      = {1996},
+  month     = sep,
+  doi       = {10.1214/ss/1032280214}
+}
+
+% No DOI is registered (doi.org returns 404 for 10.2307/4615733), and the JSTOR page
+% (https://www.jstor.org/stable/4615733) did not load for a script. Volume 6 and pages 65 to 70
+% are OpenAlex's (queried 2026-09-29); the issue number is left out until checked at JSTOR.
+% UNVERIFIED: volume and pages rest on OpenAlex alone, not on JSTOR or the printed issue.
+@article{holm1979simple,
+  author    = {Holm, Sture},
+  title     = {A Simple Sequentially Rejective Multiple Test Procedure},
+  journal   = {Scandinavian Journal of Statistics},
+  volume    = {6},
+  pages     = {65\bibhyph{,}70},
+  year      = {1979}
+}
+
+@article{schuirmann1987tost,
+  author    = {Schuirmann, Donald J.},
+  title     = {A Comparison of the Two One-Sided Tests Procedure and the Power Approach for Assessing the Equivalence of Average Bioavailability},
+  journal   = {Journal of Pharmacokinetics and Biopharmaceutics},
+  volume    = {15},
+  number    = {6},
+  pages     = {657\bibhyph{,}680},
+  year      = {1987},
+  month     = dec,
+  doi       = {10.1007/BF01068419}
+}
+
+@book{wellek2010testing,
+  author    = {Wellek, Stefan},
+  title     = {Testing Statistical Hypotheses of Equivalence and Noninferiority},
+  publisher = {Chapman and Hall/CRC},
+  year      = {2010},
+  doi       = {10.1201/EBK1439808184}
+}
+
+% 112 authors in Crossref; the first four are listed.
+@article{virtanen2020scipy,
+  author    = {Virtanen, Pauli and Gommers, Ralf and Oliphant, Travis E. and Haberland, Matt and others},
+  title     = {{SciPy} 1.0: Fundamental Algorithms for Scientific Computing in {Python}},
+  journal   = {Nature Methods},
+  volume    = {17},
+  number    = {3},
+  pages     = {261\bibhyph{,}272},
+  year      = {2020},
+  doi       = {10.1038/s41592-019-0686-2}
+}
+
+% ===========================================================================
+% (g) Alex Tsvetanov's prior work: copied from bib/own.bib, which is the source of truth.
+% Key unchanged. DOI checked again against Crossref on 2026-09-27.
+% ===========================================================================
+
+@inproceedings{stankov2024regex,
+  author    = {Stankov, Ivan and Tsvetanov, Alex},
+  title     = {Matching Text from Start to Finish Against Multiple Regular Expressions},
+  booktitle = {2024 32nd National Conference with International Participation (TELECOM)},
+  address   = {Sofia, Bulgaria},
+  year      = {2024},
+  month     = nov,
+  pages     = {1\bibhyph{,}4},
+  publisher = {IEEE},
+  doi       = {10.1109/TELECOM63374.2024.10812214}
+}
+
+
+
+% ===========================================================================
+% (h) Added in the revision of 2026-09-28. Each was read at the source named in its note.
+% ===========================================================================
+
+% Read at the pinned commit, include/crow/app.h (CROW_ROUTE), include/crow/utility.h
+% (get_parameter_tag, a constexpr function) and include/crow/middleware.h (the overloads of
+% wrapped_handler_call); the tag v1.3.4 resolves to the commit of crow2026crow.
+@www{crow2026routing,
+  author  = {{CrowCpp contributors}},
+  title   = {Crow: {CROW\_ROUTE} and its handler call},
+  url     = {https://github.com/CrowCpp/Crow/tree/ae0fef0ee67eec897e401321b99b6dd7cfbdc155/include/crow},
+  urldate = {28 September 2026},
+  note    = {Version v1.3.4, commit ae0fef0ee; files include/crow/app.h, utility.h, routing.h and middleware.h, September 2026}
+}
+
+@www{yesod2026routing,
+  author  = {{Yesod Web Framework}},
+  title   = {Routing and Handlers},
+  url     = {https://www.yesodweb.com/book/routing-and-handlers},
+  urldate = {28 September 2026},
+  note    = {Yesod Web Framework Book, Version 1.6}
+}
+
+% yesod-core/src/Yesod/Routes/Parse.hs: parseRoutes is a QuasiQuoter whose quoteExp calls
+% error ("Overlapping routes") when findOverlapNames finds any.
+@www{yesod2025core,
+  author  = {{Yesod contributors}},
+  title   = {yesod-core: {Yesod.Routes.Parse}},
+  url     = {https://github.com/yesodweb/yesod/blob/f0e2f04b7ddb93a92272a7a810a673bc9017b5a9/yesod-core/src/Yesod/Routes/Parse.hs},
+  urldate = {28 September 2026},
+  note    = {Version 1.6.28.1, tag yesod-core-1.6.28.1, commit f0e2f04b7, October 2025}
+}
+
+@www{play2026routing,
+  author  = {{Play Framework}},
+  title   = {{HTTP} Routing, Scala},
+  url     = {https://www.playframework.com/documentation/3.0.x/ScalaRouting},
+  urldate = {28 September 2026},
+  note    = {Play Framework documentation, version 3.0.x}
+}
+
+% dev/restinio/router/easy_parser_router.hpp: path_to_params builds a route from parsers whose
+% results are passed to the handler as separate arguments (call_with_tuple).
+@www{stiffstream2025restinio,
+  author  = {{Stiffstream}},
+  title   = {{RESTinio}: easy\_parser\_router},
+  url     = {https://github.com/Stiffstream/restinio},
+  urldate = {28 September 2026},
+  note    = {Version v.0.7.4, commit 0b7a523cb, file dev/restinio/router/easy\_parser\_router.hpp, February 2025}
+}

@@ -1,0 +1,194 @@
+% P2: RegexMatcher v2, a route matcher, measured against the routers of C, C++, Rust and Go
+% frameworks; for MDPI Future Internet, on MDPI's class (paper/TEMPLATE.md).
+% Every number in the text comes from ../results/round2/macros.tex (analysis/macros.py, the frozen
+% analysis) or ../results/round2/macros-paper.tex (analysis/paper_macros.py).
+\documentclass[futureinternet,article,submit,oneauthor]{Definitions/mdpi}
+
+% MDPI internal commands, as template.tex sets them for a submission.
+\firstpage{1}
+\makeatletter
+\setcounter{page}{\@firstpage}
+\makeatother
+\pubvolume{1}
+\issuenum{1}
+\articlenumber{0}
+\pubyear{2026}
+\copyrightyear{2026}
+\datereceived{ }
+\daterevised{ }
+\dateaccepted{ }
+\datepublished{ }
+
+% The class loads hyperref, geometry, caption, tabularx, booktabs, tikz, seqsplit, xcolor, url,
+% amssymb and enumitem; the paper adds these.
+\usepackage{listings}
+
+\input{../results/round2/macros}
+\input{../results/round2/macros-paper}
+% Round 1's macros (archived privately) had the same names; stop if round 2's are not loaded.
+\ifdefined\RoundTwoReps\else\PackageError{main}{round 2's macros are not loaded}{}\fi
+\ifdefined\PreSpecCommit\else\PackageError{main}{round 2's paper macros are not loaded}{}\fi
+
+% Something only Alex can supply or decide. Find them with: grep -n "TODO\|ForAlex" *.tex.
+% A draft build prints them in colour; with \submissiontrue they print nothing, and each one
+% leaves a warning in the log, so a submission build still lists what is missing.
+\newif\ifsubmission
+\submissionfalse
+\newcommand{\TODO}[1]{\ifsubmission\PackageWarning{main}{a TODO is left in the text}\else
+  \textcolor{red}{[TODO: #1]}\fi}
+\newcommand{\ForAlex}[1]{\ifsubmission\PackageWarning{main}{a ForAlex note is left in the text}\else
+  \textcolor{blue}{[For Alex: #1]}\fi}
+
+% RegexMatcher's public home, and its release that holds the measured commit d1d73e99b (the
+% release's route matcher is byte for byte that commit's).
+\newcommand{\RegexMatcherURL}{\url{https://github.com/cpp-for-everything/RegexMatcher}}
+\newcommand{\RegexMatcherRelease}{2.1.0.0}
+
+% A run-in heading at the start of a paragraph; MDPI's \paragraph sets its heading on a line of
+% its own.
+\newcommand{\runin}[1]{\textit{#1}\enspace}
+\newcommand{\arm}[1]{\texttt{#1}}
+\newcommand{\shape}[1]{\texttt{#1}}
+% Names and code that contain digits, kept out of the prose so that every digit there is a number
+% from the macro files (check_text.py).
+\newcommand{\AblationArm}{\arm{regexmatcher-v2-r1}}
+\newcommand{\NullNoFive}{\arm{null-no405}}
+\newcommand{\FlagsCxx}{\texttt{-O3 -DNDEBUG -std=c++23 -march=native}}
+\newcommand{\FlagRust}{\texttt{-C target-cpu=native}}
+\newcommand{\FlagGo}{\texttt{GOAMD64=\GoAmdLevel}}
+\newcommand{\RustProfile}{\texttt{opt-level = 3}, \texttt{lto = true}, \texttt{codegen-units = 1},
+  \texttt{panic = "abort"}}
+\newcommand{\ClangSteps}{\texttt{-fconstexpr-steps}}
+\newcommand{\MsvcSteps}{\texttt{/constexpr:steps}}
+\newcommand{\EventsAmd}{\texttt{0xAE} and \texttt{0xAF}}
+\newcommand{\FlagOtwo}{\texttt{-O2}}
+\newcommand{\FlagOthree}{\texttt{-O3}}
+\newcommand{\StallEvidence}{\texttt{lab/evidence/2026-09-27-L-dispatch-stall-validation}}
+\newcommand{\RecordsDir}{\texttt{lab/sanitizer-records/}}
+\newcommand{\FindVtwo}{\texttt{find\_v2}}
+% A long hexadecimal string in typewriter type that may break anywhere.
+\newcommand{\hex}[1]{\texttt{\expandafter\seqsplit\expandafter{#1}}}
+% The hyphen of a page range in refs.bib: BibTeX sees the comma of its argument and prints
+% "pp.", LaTeX prints a hyphen, and mdpi.bst's dashify never sees one (paper/TEMPLATE.md).
+\newcommand{\bibhyph}[1]{-}
+% natbib, which the class loads with sort&compress, joins a range of citations such as [3, 4, 5]
+% with a range dash. Alex's rule allows no range dash, so the range takes a hyphen: [3-5].
+% The pattern is built from two \string- so that this file holds no double hyphen.
+\makeatletter
+\begingroup
+\edef\x{\endgroup
+  \noexpand\patchcmd{\noexpand\NAT@citexnum}%
+    {\noexpand\def@NAT@last@yr{\string-\string-\noexpand\NAT@penalty}}%
+    {\noexpand\def@NAT@last@yr{-\noexpand\NAT@penalty}}{}%
+    {\noexpand\PackageError{main}{natbib's citation range could not be patched}{}}}
+\x
+\let\@citex\NAT@citexnum
+\makeatother
+
+\emergencystretch=3em
+\lstset{basicstyle=\ttfamily\small,columns=fullflexible,keepspaces=true,frame=single,
+  breaklines=true,showstringspaces=false}
+
+\Title{A Fast HTTP Route Matcher with Compile-Time Checks: RegexMatcher~v2 Measured Against
+Sixteen Routers in C, C++, Rust and Go}
+
+\newcommand{\orcidauthorA}{0009-0001-8369-150X}
+
+\Author{Alex I. Tsvetanov \orcidA{}}
+
+\AuthorNames{Alex I. Tsvetanov}
+
+\address[1]{Faculty of Computer Systems and Technologies, Technical University of Sofia,
+ul.~Professor Georgi Bradistilov 11, Sofia, Bulgaria; atsvetanov@tu-sofia.bg}
+
+% With the class option oneauthor, mdpi.cls prints no correspondence line, so the e-mail is in
+% the address above as well.
+\corres{Correspondence: atsvetanov@tu-sofia.bg}
+
+\abstract{Every HTTP request passes through a route matcher, which maps its method and path to a
+handler and captured values. We survey the route matchers of sixteen routers in C, C++, Rust and Go,
+and rework the author's RegexMatcher library into a route matcher, RegexMatcher~v2. Literal-only
+methods get an exact-match table, other methods a trie of path segments, and a lookup allocates
+nothing. A compile-time front end rejects malformed patterns, mismatched handlers and duplicate
+routes. Pre-specified hypotheses compare v2 with the fastest competitor in each of \HOneCells{}
+cells. The setting is one core of an \HostLCpu, \RunCompiler, and every arm built for that
+processor's own instruction set. v2 was not slower in \HOnePassed{} cells, and faster in
+\HOneSuperior, taking \HOneSupRatioMin{} to \HOneSupRatioMax{} of the fastest competitor's time. At
+the wild shape with \SizeTen{} routes, neither claim holds against gin. v2 ran more instructions than
+gin in \HTwoLost{} cells, and built large tables more slowly than the median competitor in
+\HFourLostBuild. A minimal HTTP/1.1 server answered more requests per second with v2 than with v1 in
+all \HSixCells{} cells. A compile-time table passed its per-cell test in \HSevenHeld{} of
+\HSevenCells{} cells, so that hypothesis does not hold.}
+
+\keyword{HTTP routing; route matching; URL routing; trie; C++; compile-time checking; constant
+evaluation; web frameworks; benchmarking; non-inferiority test}
+
+\begin{document}
+
+\input{sec-introduction}
+\input{sec-related}
+\input{sec-design}
+\input{sec-methods}
+\input{sec-results}
+\input{sec-discussion}
+\input{sec-conclusions}
+
+\vspace{6pt}
+
+\supplementary{The following supporting information can be downloaded at
+\ForAlex{the public link once the paper's repository is public}: Table S1, every arm in every cell of
+the main grid. Table S1 gives each value as the median over the arm's processes. It is the file
+\texttt{results/round2/all\_arms.csv} of the paper's repository. Its columns are the arm's role, its processes and their statuses, and whether it takes part in the
+cell, with the reason when it does not. They also hold the time per lookup, the raw and net
+instructions, the branch misses, the cycles, and the L1d, L2 and DTLB misses. The allocations per
+lookup, the build time, the bytes allocated by the build and the heap bytes of the table follow.
+The latency percentiles and, for the Go arms, the cost of an empty call across cgo complete them.}
+
+\authorcontributions{Conceptualization, A.I.T.; methodology, A.I.T.; software, A.I.T.;
+validation, A.I.T.; formal analysis, A.I.T.; investigation, A.I.T.; resources, A.I.T.; data
+curation, A.I.T.; writing, original draft preparation, A.I.T.; writing, review and editing,
+A.I.T.; visualization, A.I.T.; supervision, A.I.T.; project administration, A.I.T.; funding
+acquisition, A.I.T. The author has read and agreed to the published version of the manuscript.}
+
+\funding{The publication of this paper was financially supported by the scientific research
+sector of the Technical University of Sofia.}
+
+\institutionalreview{Not applicable.}
+
+\informedconsent{Not applicable.}
+
+\dataavailability{The raw main grid is archived as \hex{\ArchiveMain}, SHA-256
+\hex{\ArchiveMainSha}. The repeated check of its answers is archived as \hex{\ArchiveVerify},
+SHA-256 \hex{\ArchiveVerifySha}. The clang costs of the compile-time tables are archived as
+\hex{\ArchiveCt}, SHA-256 \hex{\ArchiveCtSha}. The MSVC costs are archived as \hex{\ArchiveMsvc},
+SHA-256 \hex{\ArchiveMsvcSha}. The end-to-end run is archived as \hex{\ArchiveHSix}, SHA-256
+\hex{\ArchiveHSixSha}. The exploratory runs are archived as \hex{\ArchiveExGithub}, SHA-256
+\hex{\ArchiveExGithubSha}, and \hex{\ArchiveExMiss}, SHA-256 \hex{\ArchiveExMissSha}. They are also
+archived as \hex{\ArchiveExVocab}, SHA-256 \hex{\ArchiveExVocabSha}; \hex{\ArchiveExZipf}, SHA-256
+\hex{\ArchiveExZipfSha}; and \hex{\ArchiveExNoDecoy}, SHA-256 \hex{\ArchiveExNoDecoySha}. The
+heap-block follow-up of H7 is archived as \hex{\ArchiveCtHeap}, SHA-256 \hex{\ArchiveCtHeapSha}. The
+sanitizer records behind every gated build, and behind H5(a) and H5(c), are in \RecordsDir{} of
+the author's repository of papers, with their logs archived by SHA-256. RegexMatcher~v2 is commit \hex{\RegexMatcherCommitFull}. It is
+available at \RegexMatcherURL{} in release \RegexMatcherRelease. The harness at commit
+\hex{\RbenchCommitFull}, the minimal server, the analysis, the pre-specification and the derived
+tables will be made available in the paper's repository. The archives will be made available with
+them. \ForAlex{the public links and DOIs of the paper's repository, the repository of papers that
+holds the sanitizer records, and the archives.}}
+
+\acknowledgments{The author would like to thank the scientific research sector of the Technical University of Sofia for financial support for publishing the present paper.}
+
+\conflictsofinterest{The author declares no conflicts of interest. The funder had no role in the
+design of the study; in the collection, analyses, or interpretation of data; in the writing of
+the manuscript; or in the decision to publish the results.}
+
+\appendixtitles{yes}
+\appendixstart
+\appendix
+\input{sec-appendix}
+
+\begin{adjustwidth}{-\extralength}{0cm}
+\reftitle{References}
+\bibliography{refs}
+\PublishersNote{}
+\end{adjustwidth}
+\end{document}

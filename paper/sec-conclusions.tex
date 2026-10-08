@@ -1,0 +1,22 @@
+\section{Conclusions}\label{sec:conclusions}
+
+We surveyed the route matchers of sixteen routers in C, C++, Rust and Go, and reworked the author's
+RegexMatcher library into a route matcher, RegexMatcher~v2. Its lookup walks a trie of path segments
+stored in flat arrays, answers literal-only methods from an exact-match table, and never allocates.
+Its front end checks patterns, handler signatures and duplicate routes when the program compiles.
+
+Under hypotheses pre-specified before the run, and in the setting of Section~\ref{sec:host}, v2 was
+faster than the fastest competitor in \HOneSuperior{} of \HOneCells{} cells. It was not slower in
+one more. At the \shape{wild} shape with \SizeTen{} routes, neither claim holds against gin. v2 ran more
+instructions than gin in \HTwoLost{} cells of \SizeTen{} routes. It built its table more slowly than
+the median competitor in \HFourLostBuild{} cells with large tables. The compile-time table passed its
+per-cell test in \HSevenHeld{} of \HSevenCells{} cells; the rule needs all, so H7 does not hold. No
+lookup of v2 allocated, every probe of the path rules passed, and the compile-time checks rejected
+every malformed case. In a minimal server, the lookup difference against v1 reached the client in
+every cell.
+
+Three questions remain open. The first is whether the results hold on other processors and with other
+compilers, above all for small tables. The second is why the compile-time table was slower at
+\HSevenLostCell. The pre-specified run with a heap copy did not tie the slow pairs to the table's
+place in memory, and it cannot rule out the placement of code. The third is what remains of the build
+time for large literal tables.
