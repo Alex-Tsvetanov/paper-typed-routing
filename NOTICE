@@ -7,6 +7,8 @@ of section 2. That includes:
 
   the code: CMakeLists.txt, bench/, server/, t1/, tools/ and analysis/, and the Python program
   in paper/ (paper/check_text.py);
+  lab/: the copies of the author's laboratory files (the T1 tools in lab/t1/, the evidence in
+  lab/evidence/ and the sanitizer records in lab/sanitizer-records/);
   the data and notes: results/ (the tables, the JSON files and the generated macros.tex and
   macros-paper.tex; the .tex files in results/ are generated data and are covered), design/,
   hypotheses-round2.md, PROVENANCE.md, the README files, paper/TEMPLATE.md,

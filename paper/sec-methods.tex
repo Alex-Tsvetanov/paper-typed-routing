@@ -3,13 +3,14 @@
 \subsection{Pre-Specification and the Development Round}\label{sec:prespec}
 
 The hypotheses, the design of the runs, the statistics and the rules of decision were pre-specified
-in the paper's repository at commit \PreSpecCommit, before the run. From then on the file was frozen,
-and every change went into its revision log with its reason. Section~\ref{sec:deviation} describes the
-log's entries. Commit \PreSpecCommit{} is in the repository's earlier history, which is archived privately. The
-published history holds the file as frozen, with the later entries of its revision log appended
-(\texttt{PROVENANCE.md}). The analysis that decides every hypothesis was written and
-tested on synthetic runs before the freeze. The two files of macros that carry its numbers into this
-paper were extended after the run, from its outputs and raw data, without changing a decision.
+in one file of the paper's repository, \PreSpecFile. Its status line records that it was frozen
+before the run. From then on, every change went into its revision log, dated and with its reason.
+Section~\ref{sec:deviation} describes the log's entries. The repository's public history begins
+after the run. It holds the file and its log, but by itself it cannot show when the file was frozen.
+The frozen text names the analysis that computes the decisions, and states that the analysis's
+tests passed on synthetic runs. Those tests are in the repository. The two files of macros that carry
+its numbers into this paper were extended after the run, from its outputs and raw data, without
+changing a decision.
 
 A development round measured a pre-release of the same lookup code, with the same harness and
 design, on other seeds. It guided the changes that Section~\ref{sec:rework} describes. Its numbers
@@ -115,7 +116,7 @@ median time per lookup over nanobench's epochs. Per lookup it also reports instr
 misses, cycles, L1d misses, L2 misses of data requests and L1 DTLB misses, all in user space. The
 dispatch-stall cycles of every unit-mask bit of AMD's events \EventsAmd{} are counted, each bit on its
 own. We found no AMD document that defines these events for L's processor, so they rest on a
-validation run on L, kept as \StallEvidence. Latency percentiles come from one lookup at a time. Heap allocations per lookup are counted in a
+validation run on L, kept in the paper's repository as \StallEvidence. Latency percentiles come from one lookup at a time. Heap allocations per lookup are counted in a
 separate pass, never in a timed loop. The process also reports the build time, the bytes allocated by
 the build and the heap bytes that the built table holds.
 
@@ -174,8 +175,14 @@ ThreadSanitizer and MemorySanitizer, all with clang \ClangVersion. A record cove
 hashes of their inputs match, with the same compiler, configuration, pins and fetched archives.
 RegexMatcher's own suite, with its negative-compilation cases, passed under all three on L. That
 suite's records cover v2's headers. The harness's records cover every arm, and the server's records
-cover the server with its end-to-end exercise. Every measured build passed the gate, and a build of
-every arm for another instruction set failed it.
+cover the server with its end-to-end exercise. Every measured build passed the gate before it ran.
+The archive of each gated build holds the gate's output, which names the records it matched. Those
+records are in \RecordsDir{} of the repository, with records made later from the root commit of its
+public history that cover the same inputs. The later records used that commit's file of pins.
+It differs from the runs' file, also in the repository, only in the pin of v2, which no gated build
+used, since each gave v2's sources. The repository's gate scripts check both sets of records against
+each run's archived inputs (\texttt{results/round2/records-cover.txt}). The program that hashes a
+build's inputs is a laboratory tool and is not published; \texttt{PROVENANCE.md} states its rule.
 
 MemorySanitizer needs every library in the process instrumented, and the Go and Rust standard
 libraries are prebuilt and uninstrumented. Its record therefore leaves out the \MsanGapArms{} arms
@@ -274,10 +281,9 @@ If H4, H6 or H7 fails, the paper reports the loss and does not make that hypothe
 
 \subsection{The Minimal Server and the End-to-End Run}\label{sec:server}
 
-H5(c) and H6 use a minimal HTTP/1.1 server written for this paper, at repository commit
-\ServerPublicCommit. The run compiled the same first-party files, those of commit \ServerCommit, which
-the published history does not contain (\texttt{PROVENANCE.md}). It runs
-one worker thread over epoll with keep-alive, and answers pipelined requests in order. Each route
+H5(c) and H6 use a minimal HTTP/1.1 server written for this paper, at commit \ServerPublicCommit{} of
+its repository. The files that the run compiled are identical to that commit's, as the matching hashes
+of Section~\ref{sec:gate} show. It runs one worker thread over epoll with keep-alive, and answers pipelined requests in order. Each route
 answers with a fixed body of \HSixBodyBytes{} bytes. HEAD and the Allow field live above the router,
 so every router arm runs the same code for them. One binary holds three router arms behind one
 function pointer: v1 behind its wrapper, v2, and a null router that answers without reading the path.
@@ -291,7 +297,10 @@ runs on CPU~\HSixServerCpu, whose sibling CPU~\HSixServerSibling{} idles. The lo
 CPUs \HSixGenCpuFirst{} to \HSixGenCpuLast, over \HSixConnections{} connections over loopback, with
 one request in flight on each. Each window starts a fresh server, probes it, warms it up for
 \HSixWarmupSeconds~s and measures for \HSixWindowSeconds~s. Requests per second are the completed
-successful responses over the measured wall time.
+successful responses over the measured wall time. The load generator and the program that runs the
+windows are the laboratory's T1 tools. Their sources, as the run used them, are in \texttt{lab/t1/}
+of the repository. The load generator's own sanitizer record is a laboratory record and is not
+published.
 
 The arms run in mirrored rounds of v1, v2, null, null, v2 and v1, and one round is one pair. A window
 is invalid if its server did not start or answer its probe, or if it completed no request. It is also
@@ -338,7 +347,7 @@ as an exploratory run, gated by sanitizer records of its own (Section~\ref{sec:h
 
 \subsection{Deviations and the Revision Log}\label{sec:deviation}
 
-The revision log holds four entries. The first is a deviation, and it concerns the check on every
+The revision log holds five entries. The first is a deviation, and it concerns the check on every
 query at the end of the main grid. The frozen text fixed the check, but not how many checks run at
 once. The run started
 \VerifyJobsFirst{} at once. The actix-router checks at $m=\SizeHundredThousand$ took up to
@@ -352,11 +361,12 @@ answers only: nothing was timed again, and no time was replaced. The later explo
 checks \VerifyJobsRepeat{} at once. The repeat changed which cells could be tested, as
 Section~\ref{sec:hone} shows.
 
-The other three entries change no decision. The second records that the paper's numbers come from two
+The other four entries change no decision. The second records that the paper's numbers come from two
 generated files. One holds the analysis's macros; the other was written after the run, from the
 analysis's outputs and the raw data. The third records that the conditional run of
 Section~\ref{sec:explore} was due, was not made in the frozen order, and was made afterwards. The
 fourth records how the
 paper mentions the development round: the origin of H6's bound, and the direction of one cell,
-without its numbers. One more departure is in the lab journal. A few seconds of analysis ran on L at
+without its numbers. The fifth records that the conditional run used a fresh build, which adds its one
+arm and changes no file that the measured arms compile. One more departure is not in the revision log. A few seconds of analysis ran on L at
 the lowest priority while the main grid measured. No process was excluded for it.

@@ -1,0 +1,25 @@
+Where the code and the tables lie: the main grid's binary (rbench sha256 28defc7b...,
+results/raw/2026-09-30-L-publication/symbols.tsv) against the follow-up's (fca7cb1d...).
+
+1. Timed functions (bench/symbols.py: address, address modulo 64).
+   136 functions in both; 20 changed their address modulo 64, all of them in the
+   Rust and Go archives (core::, addr2line::, rb_chi_*, rb_gin_*, rb_hr_*, rb_nh_*), which this run
+   does not measure. Every C++ function kept it: the 58 C++ functions moved by 0x180, the code of
+   the Go and Rust archives by 0x8dc0 or 0x8de0.
+   v2's timed functions, main grid -> follow-up:
+   compile-time harness_pass  0x1661a0 (32) -> 0x166320 (32)
+   compile-time lookup        0x15f060 (32) -> 0x15f1e0 (32)
+   run-time harness_pass      0x154fe0 (32) -> 0x155160 (32)
+   run-time lookup            0x14e4a0 (32) -> 0x14e620 (32)
+   find_v2                    0x14d880 ( 0) -> 0x14da00 ( 0)
+   heap copy harness_pass     new      -> 0x228ab0 (48)
+   heap copy lookup           new      -> 0x221760 (32)
+
+2. The compile-time tables of param-last m = 1,000 (readelf -sW, the local symbol kTable after
+   each translation unit's FILE symbol; address, size in bytes):
+   ct_param_last_1000_s111.cpp  0xbe6000 -> 0xbef000  0x21b40
+   ct_param_last_1000_s114.cpp  0xc4e000 -> 0xc57000  0x22740
+   ct_param_last_1000_s124.cpp  0xdae000 -> 0xdb7000  0x23380
+   Each table lies nine pages (0x9000 bytes) further in the follow-up's binary, at page offset 0 in
+   both. The heap copy's block and the run-time table's block start on a page (table_layout equal
+   for the three arms in every pair, analysis/ct_heap_summary.py).

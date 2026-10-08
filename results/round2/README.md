@@ -1,17 +1,28 @@
 # Round 2 results
 
 The files here are written by `analysis/analyse.py` (and `macros.tex` by `analysis/macros.py`) from
-the publication runs of round 2, as `hypotheses-round2.md` (frozen at 9d7e8fe) pre-specifies them.
-Nothing here is edited by hand. The paper's numbers come from `macros.tex` only.
+the publication runs of round 2, as `hypotheses-round2.md` (frozen before the run) pre-specifies
+them. Nothing here is edited by hand. The paper's numbers come from `macros.tex` and
+`macros-paper.tex` only.
 
-The commits that the files here name (9d7e8fe, the head the runs were built at; 90beca488 and
-4cc42bf11, the code of the harness and of the server; 35554b3, the heap-block arm) are in the
-repository's earlier history, which is archived privately. `../PROVENANCE.md` maps them to this
-history's root commit, f626955, and shows that the files the builds compiled are the same.
+These files rest on public material: this repository at its root commit f626955 and later, the
+assets of its release `data-2026-10`
+(https://github.com/Alex-Tsvetanov/paper-typed-routing/releases/tag/data-2026-10), and RegexMatcher
+v2 at d1d73e99b (release 2.1.0.0 of https://github.com/cpp-for-everything/RegexMatcher). What stays
+private is listed in `../README.md`.
+
+Some files here (`summary.json`, its `provenance`) and the runs themselves name commits of the
+repository's earlier history, which is archived privately: 9d7e8fe, the head the runs were built
+at; 90beca488 and 4cc42bf11, the code of the harness and of the server; 35554b3, the heap-block
+arm. No claim rests on them. `../PROVENANCE.md` maps them to this history's root commit, f626955,
+for the record.
 
 ## Inputs
 
-| Run | Archive (`D:\Archive\p2-raw\` and `~/lab` on L) | sha256 |
+Each run is an asset of release `data-2026-10`. `archives.sha256` lists every asset with its
+sha256, and the release gives each asset a `.sha256` file beside it.
+
+| Run | Asset of release `data-2026-10` | sha256 |
 |---|---|---|
 | main grid | `p2-raw-2026-09-30-L-publication.tar.gz` | efc3b2fc6c74bc21d8ac7a152abfb6704345b309352b2971d219c4612601e8a6 |
 | its repeated check on every query | `p2-raw-2026-09-30-L-publication-verify-repeat.tar.gz` | 19600f543dfd56d3bc548d959d550fbc136ec6262088abc223246b2c01ff4420 |
@@ -19,8 +30,22 @@ history's root commit, f626955, and shows that the files the builds compiled are
 | H6 at T1 | `p2-raw-2026-09-30-L-h6.tar.gz` | effe075b696c916ac83391fa58d627d5e8729c874a2be693b1571e28f7c90da7 |
 | H7's MSVC costs on W | `p2-raw-2026-10-01-W-ct-msvc.tar.gz` | 1e32cfbffc60a9f099cf026c32bd23681e57fb220ce261334fc75e404ab5d06a |
 | H7's heap-block follow-up (exploratory) | `p2-raw-2026-10-02-L-exploratory-ct-heap.tar.gz` | ee2571a8f29ea55e549fe647726933122194d2050219b0823daf18313fc72912 |
+| exploratory: the GitHub table | `p2-raw-2026-09-30-L-exploratory-github.tar.gz` | 7c3b05894b8f9a4408708b8ee3dd259e1e6e2bf6c36a570f2ef46ae0ec0a24b8 |
+| exploratory: misses | `p2-raw-2026-09-30-L-exploratory-miss.tar.gz` | 70216a094cf9b752144bd29e35c1fdbf78e702d9ed05483afe41c1c7cf4a4fd8 |
+| exploratory: no decoys | `p2-raw-2026-09-30-L-exploratory-no-decoy.tar.gz` | 0a57f2134cf2be69157194c60410885a16d45a94db10587c05356e3f81f916f8 |
+| exploratory: long literals | `p2-raw-2026-09-30-L-exploratory-vocab-long.tar.gz` | e72917dc66b7d8a27c194ec60ea7337921459ae06068197fbbab7e893a6dac1e |
+| exploratory: a Zipf ring | `p2-raw-2026-09-30-L-exploratory-zipf.tar.gz` | 57b4d973afb050bb2d8794ef45e5fcf3ea30698ca6f36b0c2312ff2df525cef7 |
 
-The command (on W, NumPy, from the unpacked archives):
+Unpack every asset into one directory, `RUNS`. Each holds one run directory; the repeated check
+adds `verified-repeat.jsonl` and its logs to the main grid's directory,
+`RUNS/2026-09-30-L-publication`. The archives keep the runs as they were written: host names, home
+directories and the commits of the earlier history appear in their metadata. The inputs metadata of
+the main grid, of H7's costs and of the heap-block run (`inputs.json`, `v2-include.json`) name the
+other code base of round 1 in their scope line and in an empty configuration key. The H6 run's build
+tree holds the fetched sources of RegexMatcher v1 (tag 2.0.0.1), whose licensing note and one test
+comment name that code base too.
+
+The command (on W, NumPy):
 
 ```
 python analysis/analyse.py RUNS/2026-09-30-L-publication \
@@ -30,12 +55,53 @@ python analysis/analyse.py RUNS/2026-09-30-L-publication \
 ```
 
 `launch.md` named `results/` as the output directory; `results/round2/` keeps round 1's files in
-`results/` apart. The MSVC costs are reported from their `tables.jsonl`
-(`lab/evidence/2026-10-01-W-ct-msvc`) as they are.
+`results/` apart. The MSVC costs are reported from the run's `tables.jsonl` (in its asset) as they
+are.
 
 The exploratory runs decide nothing. `explore_<run>.csv` is `analysis/explore_summary.py` over each
-(with its own `verified.jsonl`); their archives, `p2-raw-2026-09-30-L-exploratory-<run>.tar.gz`, and
-sha256 are in `lab/evidence/2026-10-01-L-exploratory`.
+(with its own `verified.jsonl`):
+
+```
+python analysis/explore_summary.py RUNS/2026-09-30-L-exploratory-<run> --out results/round2/explore_<run>.csv
+```
+
+On 2026-10-08, every generated file here was made again on W from the tarballs that are the
+release's assets, unpacked as above, with the commands of this file. Each is identical to the committed file after
+line endings are converted to LF, except `summary.json` and `summary-before-repeat.json`, whose two
+fields `run` and `verified` name the input paths of the command.
+
+## The sanitizer gate
+
+A record covers a build when it compiled the same first-party inputs (per target, the sha256 of
+each file the target compiled), with the same compiler, configuration, pins and fetched archives,
+whatever its commit (`bench/gate_lib.py`). Every measured build passed the gate before it ran
+(`bench/run_baseline.sh`, `bench/ct_cost_run.sh` and `t1/run_h6.sh` refuse to measure otherwise);
+the asset of each gated build holds the gate's output (`gate.json`), which names the records it
+matched. The MSVC costs are not gated (compiler measurements of code that never runs), and the
+exploratory grids used the main grid's gated build.
+
+`../lab/sanitizer-records/` holds 22 records: the ten records of the harness and the server that
+gated the runs, named for commits of the earlier history (`rbench-90beca488-L-asan`,
+`rbench-4cc42bf11-L-{asan,tsan,msan}`, `mserver-4cc42bf11-L-{asan,tsan,msan}`,
+`rbench-35554b313-L-{asan,tsan,msan}-ctheap`), RegexMatcher's three records on L
+(`regexmatcher-d1d73e99b-L-*`), and the nine records made on 2026-10-08 for this history's root
+commit (`rbench-f626955eb-L-*`, `mserver-f626955eb-L-*`). The gating records and the gates were made
+with the runs' `bench/cmake/pins.cmake`, which `pins-of-the-runs.cmake` holds (sha256
+`fd987818804ada347ef5ef74977909412e0775cd698e510b51a86631885d15fc`); the records for the root
+commit were made with the root's file. The two differ only in RegexMatcher v2's pin, unused when
+`REGEXMATCHER_DIR` is given, as every gated build gave it.
+
+`records-cover.txt`, written by `python analysis/records_cover.py RUNS --out
+results/round2/records-cover.txt`, applies the repository's own gate scripts (`bench/check_records.py`,
+`t1/check_h6_records.py`) to the inputs each gated build's asset records (`inputs.json`,
+`build.inputs.json`), once with each pins file. With the runs' file the gating records cover every
+target, and the gate written now equals each archived `gate.json` once the heap-block records, made
+after the main grid and H7's costs, are set aside. With the root's file the records for the root
+commit cover every target. The records name the logs of their runs by the sha256 of an archive; the
+logs are not published.
+
+The one gated tool outside the harness and the server, t1gen (the H6 load generator, `../lab/t1/gen`),
+has a record of its own in the laboratory repository, which is not published.
 
 ## The deviation
 
@@ -45,11 +111,26 @@ out-of-memory killer had stopped 79 of the 115 checks run 16 at once (revision l
 timing was re-measured or replaced. All 115 processes agreed on every query. The analysis reads the
 repeat's `verified-repeat.jsonl`; the first check's `verified.jsonl` stays in the run.
 
+One more departure is not in the revision log: an analysis smoke test (`analysis/analyse.py` on the
+first 23 rows, at nice 19, a few seconds) ran on L at 18:41 on 2026-09-30 while the main grid
+measured. No process was excluded for it.
+
 ## Holm's family and mixed-disjoint, m = 10
 
 H1's cell at mixed-disjoint, m = 10 passes in this analysis and did not pass in the analysis of the
 run before the repeat. Its data are the same; what changed is the family Holm's step-down adjusts it
 in. The paper must say so.
+
+`summary-before-repeat.json` is the analysis before the repeat, the frozen analysis of the run as it
+stood (10,000 resamples, seed 20261010), made with the run's first check:
+
+```
+python analysis/analyse.py RUNS/2026-09-30-L-publication \
+  --verified RUNS/2026-09-30-L-publication/verified.jsonl --out-dir OUT
+```
+
+`OUT/summary.json` is `summary-before-repeat.json`. In it H1 passes 27 of 35 cells, H2 27 of 35, H3
+holds, H4 does not hold, H5(b) holds and H7 holds in 20 of 21 cells.
 
 - Before the repeat, the six cells at m = 100,000 with actix-router could not be tested (79
   processes not verified on every query). Each entered Holm with p = 1, as the frozen text
@@ -73,15 +154,23 @@ in. The paper must say so.
 frozen text's section 9 sets it. The paper also states numbers that `summary.json` does not carry:
 the rows of its per-cell tables, H7's costs, the exploratory runs, the ablation arm, the design's
 constants, the tool versions and the archives. `macros-paper.tex` holds them, written by
-`analysis/paper_macros.py` from the files here, the runs' evidence and records in the Papers
-repository, the unpacked main grid (`toolchain.txt`, `cells.jsonl`, `verified*.jsonl`) and the
-constants of the frozen text, each named in the script. It decides nothing and changes no file
-above:
+`analysis/paper_macros.py` from public sources only: the files here (`summary-before-repeat.json`
+and `archives.sha256` among them), the records in `../lab/sanitizer-records/`, the unpacked main
+grid (`toolchain.txt`, `cells.jsonl`, `pin.json`, `rb_isa.h`), the unpacked MSVC costs
+(`tables.jsonl`) and the constants of the frozen text, each named in the script. It decides nothing
+and changes no file above:
 
 ```
 python analysis/paper_macros.py --results results/round2 \
-  --run D:/Archive/p2-raw/runs/2026-09-30-L-publication --out results/round2/macros-paper.tex
+  --run RUNS/2026-09-30-L-publication --out results/round2/macros-paper.tex
 ```
+
+(`--msvc` defaults to `RUNS/2026-10-01-W-ct-msvc`.) On 2026-10-08 the script was changed to read
+these public sources instead of copies in the author's laboratory repository, which were checked to
+be byte-identical to the files in the assets (and, for the `.sha256` files, to hold the same
+values). Its output then differed from the earlier file only by
+three macros the paper no longer uses, which named commits of the earlier history (`\PreSpecCommit`,
+`\RbenchCommitFull`, `\ServerCommit`); every other line is unchanged.
 
 ## H7's heap-block follow-up (exploratory)
 
@@ -91,19 +180,19 @@ others, that cell again, with the compile-time table copied into a heap block in
 seed 124 at 1.1595 (`\HSevenLostMaxPair`) with equal instructions. The follow-up ran on L on
 2026-10-02 and decides nothing.
 
-- The arm. `regexmatcher-v2-ct-heap` (paper 35554b3, `bench/arms/regexmatcher_v2_ct_heap.cpp`)
-  finds the compile-time table as the compile-time arm does and copies its bytes, in their own
-  layout, into one heap block aligned to a page. It shares the adapter and `find_v2` with the
-  other two arms. It is built only when `RB_ARMS` names it; no file the measured arms compile
-  changed.
-- The gate. Three new records cover the new arm, `rbench-35554b313-L-{asan,tsan,msan}-ctheap`
-  (the three v2 arms; all green, no sanitizer report; Papers `lab/sanitizer-records`). The
-  existing records cover every other target. One binary held every arm of the main grid and the
-  new arm, linked last, and passed the gate. The section 7 runs used the main grid's build; this
-  one cannot, since that build has no such arm.
+- The arm. `regexmatcher-v2-ct-heap` (`bench/arms/regexmatcher_v2_ct_heap.cpp`) finds the
+  compile-time table as the compile-time arm does and copies its bytes, in their own layout, into
+  one heap block aligned to a page. It shares the adapter and `find_v2` with the other two arms. It
+  is built only when `RB_ARMS` names it; no file the measured arms compile changed.
+- The gate. At the run, three records made for the new arm covered it (the three v2 arms; all
+  green, no sanitizer report). The records published here for the root commit,
+  `rbench-f626955eb-L-{asan,tsan,msan}-ctheap`, cover the same inputs (`records-cover.txt`). The
+  other records cover every other target. One binary held every arm of the main grid and the new
+  arm, linked last, and passed the gate. The section 7 runs used the main grid's build; this one
+  cannot, since that build has no such arm.
 - The run. The three v2 arms at param-last m = 1,000, the sixteen pairs of H7, order seed
   20261009, the check on every query 4 at once. All 48 processes ran, agreed and were verified on
-  every query. Evidence: `lab/evidence/2026-10-02-L-exploratory-ct-heap`.
+  every query. The run is the asset `p2-raw-2026-10-02-L-exploratory-ct-heap.tar.gz`.
 - The summary is `explore_ct_heap.csv`; the paper's numbers are the `\ExCtHeap*` macros of
   `macros-paper.tex`.
 
@@ -125,9 +214,11 @@ What it shows:
 - Placement. Against the main grid's binary, every C++ function kept its address modulo 64,
   `find_v2` and both H7 arms' timed loops included; each compile-time table lies nine pages
   further, at the same page offset. The heap copy's timed loop starts at 48 modulo 64, the other
-  two arms' at 32 (`layout.txt` in the evidence).
+  two arms' at 32 (`../lab/evidence/2026-10-02-L-exploratory-ct-heap/layout.txt`: its part 1 from
+  the `symbols.tsv` of the two runs, in their assets; its part 2, the tables' addresses, from
+  `readelf` on the two binaries, which the assets do not hold).
 
-The commands (on W, from the unpacked archives):
+The commands (on W, from the unpacked assets):
 
 ```
 python analysis/ct_heap_summary.py RUNS/2026-10-02-L-exploratory-ct-heap \

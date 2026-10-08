@@ -27,7 +27,7 @@
 \input{../results/round2/macros-paper}
 % Round 1's macros (archived privately) had the same names; stop if round 2's are not loaded.
 \ifdefined\RoundTwoReps\else\PackageError{main}{round 2's macros are not loaded}{}\fi
-\ifdefined\PreSpecCommit\else\PackageError{main}{round 2's paper macros are not loaded}{}\fi
+\ifdefined\RbenchPublicCommitFull\else\PackageError{main}{round 2's paper macros are not loaded}{}\fi
 
 % Something only Alex can supply or decide. Find them with: grep -n "TODO\|ForAlex" *.tex.
 % A draft build prints them in colour; with \submissiontrue they print nothing, and each one
@@ -43,6 +43,12 @@
 % release's route matcher is byte for byte that commit's).
 \newcommand{\RegexMatcherURL}{\url{https://github.com/cpp-for-everything/RegexMatcher}}
 \newcommand{\RegexMatcherRelease}{2.1.0.0}
+% The paper's public repository, and the release whose assets are the raw runs (each with its
+% SHA-256 in results/round2/archives.sha256).
+\newcommand{\PaperRepoURL}{\url{https://github.com/Alex-Tsvetanov/paper-typed-routing}}
+\newcommand{\DataRelease}{\texttt{data-2026-10}}
+\newcommand{\DataReleaseURL}{\url{https://github.com/Alex-Tsvetanov/paper-typed-routing/releases/tag/data-2026-10}}
+\newcommand{\PreSpecFile}{\texttt{hypotheses-round2.md}}
 
 % A run-in heading at the start of a paragraph; MDPI's \paragraph sets its heading on a line of
 % its own.
@@ -136,7 +142,7 @@ evaluation; web frameworks; benchmarking; non-inferiority test}
 \vspace{6pt}
 
 \supplementary{The following supporting information can be downloaded at
-\ForAlex{the public link once the paper's repository is public}: Table S1, every arm in every cell of
+\PaperRepoURL: Table S1, every arm in every cell of
 the main grid. Table S1 gives each value as the median over the arm's processes. It is the file
 \texttt{results/round2/all\_arms.csv} of the paper's repository. Its columns are the arm's role, its processes and their statuses, and whether it takes part in the
 cell, with the reason when it does not. They also hold the time per lookup, the raw and net
@@ -157,25 +163,24 @@ sector of the Technical University of Sofia.}
 
 \informedconsent{Not applicable.}
 
-\dataavailability{The raw main grid is archived as \hex{\ArchiveMain}, SHA-256
-\hex{\ArchiveMainSha}. The repeated check of its answers is archived as \hex{\ArchiveVerify},
-SHA-256 \hex{\ArchiveVerifySha}. The clang costs of the compile-time tables are archived as
-\hex{\ArchiveCt}, SHA-256 \hex{\ArchiveCtSha}. The MSVC costs are archived as \hex{\ArchiveMsvc},
-SHA-256 \hex{\ArchiveMsvcSha}. The end-to-end run is archived as \hex{\ArchiveHSix}, SHA-256
-\hex{\ArchiveHSixSha}. The exploratory runs are archived as \hex{\ArchiveExGithub}, SHA-256
+\dataavailability{The paper's repository, \PaperRepoURL, holds the harness and the minimal server at
+commit \hex{\RbenchPublicCommitFull}, with the analysis, the pre-specification and the derived
+tables. It also holds the sources of the T1 tools that ran H6 (\texttt{lab/t1/}). The raw runs are
+the assets of its release \DataRelease{} (\DataReleaseURL), and \texttt{results/round2/archives.sha256}
+lists them. The raw main grid is \hex{\ArchiveMain}, SHA-256 \hex{\ArchiveMainSha}. The repeated
+check of its answers is \hex{\ArchiveVerify}, SHA-256 \hex{\ArchiveVerifySha}. The clang costs of
+the compile-time tables are \hex{\ArchiveCt}, SHA-256 \hex{\ArchiveCtSha}. The MSVC costs are
+\hex{\ArchiveMsvc}, SHA-256 \hex{\ArchiveMsvcSha}. The end-to-end run is \hex{\ArchiveHSix}, SHA-256
+\hex{\ArchiveHSixSha}. The exploratory runs are \hex{\ArchiveExGithub}, SHA-256
 \hex{\ArchiveExGithubSha}, and \hex{\ArchiveExMiss}, SHA-256 \hex{\ArchiveExMissSha}. They are also
-archived as \hex{\ArchiveExVocab}, SHA-256 \hex{\ArchiveExVocabSha}; \hex{\ArchiveExZipf}, SHA-256
+\hex{\ArchiveExVocab}, SHA-256 \hex{\ArchiveExVocabSha}; \hex{\ArchiveExZipf}, SHA-256
 \hex{\ArchiveExZipfSha}; and \hex{\ArchiveExNoDecoy}, SHA-256 \hex{\ArchiveExNoDecoySha}. The
-heap-block follow-up of H7 is archived as \hex{\ArchiveCtHeap}, SHA-256 \hex{\ArchiveCtHeapSha}. The
-sanitizer records behind every gated build, and behind H5(a) and H5(c), are in \RecordsDir{} of
-the author's repository of papers, with their logs archived by SHA-256. RegexMatcher~v2 is commit \hex{\RegexMatcherCommitFull}. It is
-available at \RegexMatcherURL{} in release \RegexMatcherRelease. The harness and the minimal server
-at commit \hex{\RbenchPublicCommitFull}, the analysis, the pre-specification and the derived tables
-will be made available in the paper's repository. The runs compiled the same first-party files, those
-of the harness at commit \hex{\RbenchCommitFull} and of the server at commit \ServerCommit. The
-published history does not contain these two commits (\texttt{PROVENANCE.md}). The archives will be
-made available with the paper's repository. \ForAlex{the public links and DOIs of the paper's repository, the repository of papers that
-holds the sanitizer records, and the archives.}}
+heap-block follow-up of H7 is \hex{\ArchiveCtHeap}, SHA-256 \hex{\ArchiveCtHeapSha}. The sanitizer
+records that gated the harness and the server, those made later for the published commit, and those
+behind H5(a) and H5(c) are in \RecordsDir{} of the repository. Each record names the SHA-256 of an archive of its logs, which are not published.
+RegexMatcher~v2 is commit \hex{\RegexMatcherCommitFull}. It is available at \RegexMatcherURL{} in
+release \RegexMatcherRelease. \ForAlex{the DOIs of the paper's repository and of its release
+\DataRelease, which need Alex's account (for example a Zenodo archive of the release).}}
 
 \acknowledgments{The author would like to thank the scientific research sector of the Technical University of Sofia for financial support for publishing the present paper.}
 

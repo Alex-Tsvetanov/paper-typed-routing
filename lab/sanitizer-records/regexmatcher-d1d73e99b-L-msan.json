@@ -1,0 +1,56 @@
+{
+ "repo": "cpp-for-everything/RegexMatcher (local branch v2/route-matcher, from the bare repository on L)",
+ "commit": "d1d73e99b7b26f54ba75354f4880780ece32e8ed",
+ "date": "2026-09-30T04:57:58+00:00",
+ "host": "alex-laptop",
+ "sanitizer": "msan",
+ "sanitizer_options": "MSAN_OPTIONS=halt_on_error=1:print_stats=1:fast_unwind_on_fatal=1",
+ "compiler": "Clang 22.1.8",
+ "cmake_args": "-G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DREGEXMATCHER_BUILD_TESTS=ON -DREGEXMATCHER_SANITIZER=memory -DREGEXMATCHER_MSAN_LIBCXX=/home/alex/opt/libcxx-msan-gcc -DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=/home/alex/lab/p2/rec/googletest-b514bdc89",
+ "green": true,
+ "build_exit": 0,
+ "ctest_exit": 0,
+ "tests_total": 87,
+ "tests_failed": 0,
+ "sanitizer_reports": 0,
+ "report_blocks": [],
+ "seconds": 171,
+ "inputs_scope": "first-party: files under the project's top-level source directory, and files generated into the build tree outside _deps; CRLF read as LF; paths lower-cased on Windows",
+ "inputs_hash": {
+  "route_tests": "8bcb19df7d03138ad6bba4f87f3cbd4f66096afb2eb70941821cd3e9ee4cb9fe",
+  "route_checked_tests": "27780a3a2544c9ed1487feb254c3b925a091e1a0124175a8b52328660ad765c2",
+  "route_ct_table_tests": "db2d26afcd6285eca7fcb746662a4bf084d361aadf1f8c38130f4d2b48084e53",
+  "tests": "082fcd80f068a340f15dd3c4d40bdf5d6865bdd61856b30cd09410e65459d903"
+ },
+ "inputs_files": {
+  "route_tests": 17,
+  "route_checked_tests": 12,
+  "route_ct_table_tests": 42,
+  "tests": 7
+ },
+ "prefix_hashes": {
+  "route_tests": {
+   "regexmatcher/include/": "5737e40609f1d03b0742f214c87af8f09e61cb27bd8907095b80af83093defe2"
+  },
+  "route_checked_tests": {
+   "regexmatcher/include/": "5737e40609f1d03b0742f214c87af8f09e61cb27bd8907095b80af83093defe2"
+  },
+  "route_ct_table_tests": {
+   "regexmatcher/include/": "5737e40609f1d03b0742f214c87af8f09e61cb27bd8907095b80af83093defe2"
+  },
+  "tests": {
+   "regexmatcher/include/": "976049e27a646daf1cae5a2cce9f6f70eb957c6afc841cd554cd73b876536b22"
+  }
+ },
+ "logs": "/home/alex/lab/records-logs/regexmatcher-d1d73e99b-L-msan",
+ "logs_sha256": [
+  "adf9653ff07bbf284c20853715338eff06c053a7aa0097f8c74515af825b552e  ./build.log",
+  "5c3a3a3e86235b045991896856c1a2892d7cffe671653a75cb15df48deb402c6  ./ctest.log",
+  "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  ./inputs.err",
+  "e275d945cb83700f0f6f3d16e7dfa8cf37b32f014bb8504c5fa2e5114cb349f9  ./inputs.json"
+ ],
+ "logs_archive": "/home/alex/lab/records-logs/regexmatcher-d1d73e99b-L-msan.tar.gz",
+ "logs_archive_sha256": "f7538d24bebd47bef813b23ee4e1711a36a2f791a79742f91ec24448939dd877",
+ "note": "GoogleTest: FETCHCONTENT_SOURCE_DIR_GOOGLETEST=/home/alex/lab/p2/rec/googletest-b514bdc89, a git archive of a checkout of the official repository (origin git@github.com:google/googletest.git) at b514bdc898e2951020cbdca1304b75f5950d1f59 (v1.15.2), tree f24514f1cb8fc121fad03ef3b7b0cdc91f0910bc, git fsck --full clean; archive sha256 c081295f2c22705e07fc430e152a30b36f949a179075d47d3e12ff3109d43c6a (googletest-b514bdc89.tar); no download.",
+ "googletest": "https://github.com/google/googletest.git b514bdc898e2951020cbdca1304b75f5950d1f59 (v1.15.2), RegexMatcher's external/CMakeLists.txt, unless cmake_args names a local copy"
+}

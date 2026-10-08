@@ -2,10 +2,17 @@
 
 The public history of this repository starts at the root commit
 `f626955ebd94398a1376af4d48d61ee7a9ca9f6c`. The work before it was done in an earlier history of
-this repository, which is archived privately. The paper, `results/round2/` (`macros.tex`,
-`macros-paper.tex`, `summary.json` and the README), `hypotheses-round2.md`, the design notes, the
-analysis and the sanitizer records cite commits of that earlier history. This file maps each of
-them to this history. Checked on 2026-10-08.
+this repository, which is archived privately. `results/round2/` (`macros.tex`, `summary.json` and
+the README), `hypotheses-round2.md`, the design notes, the analysis, the sanitizer records and the
+runs' metadata cite commits of that earlier history. This file maps each of them to this history,
+for the record. Checked on 2026-10-08.
+
+The paper cites none of them, and none of its claims rests on them. It names this history's root
+commit, the assets of the release `data-2026-10` (the raw runs, each with its sha256 in
+`results/round2/archives.sha256`) and the records in `lab/sanitizer-records/`, and the public checks
+of `results/round2/` connect them: the generators regenerate every result file from the assets
+(`results/round2/README.md`), and the repository's gate scripts find every gated build, as each
+asset records its inputs, covered by the published records (`results/round2/records-cover.txt`).
 
 ## The measured code
 
@@ -15,18 +22,21 @@ sources of the program, is named by the run or by its sanitizer records.
 
 | Run | Built at | Code commit | Cited as |
 |---|---|---|---|
-| main grid (H1 to H4, H5(b) and H7), its repeated check, and the five exploratory runs | `9d7e8fe` | rbench `90beca488d68d29bf98aa16bce415c3b02892785` | `\RbenchCommit`, `\RbenchCommitFull`; `summary.json`, `provenance` |
+| main grid (H1 to H4, H5(b) and H7), its repeated check, and the five exploratory runs | `9d7e8fe` | rbench `90beca488d68d29bf98aa16bce415c3b02892785` | `summary.json`, `provenance`; `\RbenchCommit` in `macros.tex`, which the paper does not use |
 | H7's costs on L (clang) | `9d7e8fe` | rbench `90beca488` | `ct-provenance.txt` of the run |
-| H6 at T1 (the minimal server) | `9d7e8fe` | the server `4cc42bf11ace589f29de6194142c1d8cb7dfd062` | `\ServerCommit`; the server's records |
+| H6 at T1 (the minimal server) | `9d7e8fe` | the server `4cc42bf11ace589f29de6194142c1d8cb7dfd062` | the server's records made at the run |
 | H7's heap-block follow-up (exploratory) | `35554b313301727d642280524a0a05e343126744` | rbench `35554b3` | `results/round2/README.md`; `hypotheses-round2.md`, revision log |
-| H7's MSVC costs on W | `262f24d` | (no record; bench/ as at `9d7e8fe`) | the run's evidence in the Papers repository |
+| H7's MSVC costs on W | `262f24d` | (no record; bench/ as at `9d7e8fe`) | the run's notes in the Papers repository (not public); the asset does not name a commit |
 
 `9d7e8fe0a510514225b3235a515bba1837972a95` is also the commit that froze `hypotheses-round2.md`
-(`\PreSpecCommit`; below). All of them map to the root commit
-`f626955ebd94398a1376af4d48d61ee7a9ca9f6c`: what the measured builds compiled is byte-identical
-there. The paper names the root commit beside the measured ones (`\RbenchPublicCommitFull` and
-`\ServerPublicCommit` in `results/round2/macros-paper.tex`, through `PUBLIC_COMMIT` in
-`analysis/paper_macros.py`, which stops on a measured commit it does not list).
+(below). All of them map to the root commit `f626955ebd94398a1376af4d48d61ee7a9ca9f6c`: what the
+measured builds compiled is byte-identical there. The paper names only the root commit:
+`\RbenchPublicCommitFull` in `results/round2/macros-paper.tex`, from the code commit of
+`summary.json` through `PUBLIC_COMMIT` in `analysis/paper_macros.py`, which stops on a measured
+commit it does not list, and `\ServerPublicCommit`, the commit the server's published records are
+named for. Until 2026-10-08 `macros-paper.tex` also held `\PreSpecCommit` (`9d7e8fe`),
+`\RbenchCommitFull` (`90beca488`) and `\ServerCommit` (`4cc42bf11`); the paper no longer names
+them, and `analysis/paper_macros.py` no longer writes them.
 
 ### Same files
 
@@ -70,8 +80,8 @@ tree `bench/arms` is `3585ee61461a` at both.
 Each run and each sanitizer record states an inputs hash per build target: the sha256 of the text
 made of one line `<path>\t<sha256 of the file>\n` per first-party file the target compiled,
 sorted by path, RegexMatcher's files under the label `regexmatcher/` (the Papers repository's
-`lab/bin/inputs_hash.py`, which `bench/build.sh` and `t1/sanitize_h6.sh` call). It includes the
-generated `rb_isa.h`, so it also fixes the instruction set.
+`lab/bin/inputs_hash.py`, which `bench/build.sh` and `t1/sanitize_h6.sh` call; that program is not
+published). It includes the generated `rb_isa.h`, so it also fixes the instruction set.
 
 Every target that a measured build compiled has one inputs hash, the same in the measured run's
 `inputs.json`, in the records that gated it, in the records named for the root commit and in the
@@ -117,7 +127,10 @@ other columns count the records of each set, and the gate builds, that name the 
 | `rbench` | `39b25d41d9e6` | main grid, heap-block run | 6 | 6 | 2 |
 
 The full comparison, of every target in every source, is the Papers repository's
-`lab/evidence/2026-10-08-L-p2-public-records/compare.txt`.
+`lab/evidence/2026-10-08-L-p2-public-records/compare.txt`. Its public part is
+`results/round2/records-cover.txt`: the gate scripts of this repository, applied to the inputs that
+each run's asset records and to the records in `lab/sanitizer-records/`, find every target of every
+measured build covered.
 
 ### Pins
 
@@ -144,8 +157,12 @@ pass on this tree. No reported number changes.
 
 ### Sanitizer records
 
-The measured builds were gated by these records, kept in the author's laboratory repository
-(Papers, `lab/sanitizer-records/`, not public). Each is green with 0 sanitizer reports, Clang
+The measured builds were gated by these records, made in the author's laboratory repository
+(Papers, `lab/sanitizer-records/`). This repository's `lab/sanitizer-records/` holds each of them,
+identical to the committed laboratory record. The records of the harness and the server are named
+for commits of the earlier history; the paper does not name them. The runs' `pins.cmake`, whose
+sha256 they name, is `results/round2/pins-of-the-runs.cmake`. Each is green with 0 sanitizer
+reports, Clang
 22.1.8 on L, pins `fd987818804a`. A record covers a build when it names the same inputs hash per
 target, compiler, configuration, pins and fetched archives, whatever its commit.
 
@@ -165,7 +182,8 @@ RegexMatcher's commit `d1d73e99b`, carry no pins and do not depend on this repos
 
 #### Records named for this history
 
-These records were made on 2026-10-08 on L for this history. They are named for its code commit,
+These records were made on 2026-10-08 on L for this history, and this repository's
+`lab/sanitizer-records/` holds them byte for byte. They are named for its code commit,
 the root commit `f626955ebd94398a1376af4d48d61ee7a9ca9f6c` (`f626955eb`), as
 `bench/sanitize_rbench.sh` and `t1/sanitize_h6.sh` name a record (the last commit that changed
 the program's sources). They were made from a clone of this history at the root commit, with
@@ -214,17 +232,21 @@ In each, every target was covered by the records named for the root commit (the 
 ASan and TSan, MSan being their declared gap), RegexMatcher's headers (`5737e40609f1`) by its three
 records on L, and none by a record made with the earlier `pins.cmake`. Each build's inputs hashes
 are those of the table above. The logs are in `lab/evidence/2026-10-08-L-p2-public-records/` of
-the Papers repository.
+the Papers repository, which is not public; `results/round2/records-cover.txt` is the public check
+of the measured builds' own inputs against the same records.
 
 ## The pre-specification: `9d7e8fe`
 
 `9d7e8fe0a510514225b3235a515bba1837972a95` froze `hypotheses-round2.md` on 2026-09-30, before the
-run (`\PreSpecCommit`). It is in the earlier history only. The file there, blob
+run. It is in the earlier history only, and the paper no longer names it (it did as
+`\PreSpecCommit`). The file there, blob
 `e7d05278f9169700cf07dce3afcd53b3d2baacf0` (57,466 bytes), is a byte prefix of the file at the
 root, blob `63638f99cf0dea7e2d19e6628555e7d558b49a4a` (61,161 bytes). The 41 lines after it are the
 entries of its revision log dated 2026-10-01 and 2026-10-02 (commits `262f24d`, `3fbbb86`,
-`3210b8e` and `7c1e248` of the earlier history). The paper says that the commit is in the earlier
-history and that the published history holds the file as frozen, with those entries appended.
+`3210b8e` and `7c1e248` of the earlier history). The paper cites no commit for the freeze. It says
+that the file's status line records that it was frozen before the run, and that the public history,
+which begins after the run, cannot show by itself when the file was frozen. No archive of a run
+records a hash of the file.
 
 ## Generated results
 
@@ -238,6 +260,18 @@ committed `summary.json`; `analysis/explore_summary.py` writes the five `explore
 `PUBLIC_COMMIT` added, writes `macros-paper.tex` with the two public-commit macros added and every
 other line unchanged. No number of the paper changed. The commands and the comparison are the
 Papers repository's `lab/evidence/2026-10-08-L-p2-public-records/w-regen.txt`.
+
+Later on 2026-10-08, `analysis/paper_macros.py` was changed to read only public sources: the records
+in `lab/sanitizer-records/` (the server's records named for the root commit, and RegexMatcher's),
+`results/round2/archives.sha256`, `results/round2/summary-before-repeat.json`, and the main grid and
+the MSVC costs unpacked from their assets. The laboratory copies it read before (the analysis before
+the repeat, `tables.jsonl`, `pin.json`, `rb_isa.h` and the `.sha256` files) are byte-identical to
+these (the `.sha256` files hold the same values), except that `summary-before-repeat.json` names
+other input paths in its fields `run` and `verified`. Every generated file of `results/round2/` was
+then made again on W from the tarballs that are the release's assets, unpacked into one directory: each is identical to the committed file after line
+endings are converted to LF (`summary.json` and `summary-before-repeat.json` except their two path
+fields), and `macros-paper.tex` differs from the earlier file only by the three macros the paper no
+longer uses (`\PreSpecCommit`, `\RbenchCommitFull`, `\ServerCommit`).
 
 ## Round 1's files, archived privately
 

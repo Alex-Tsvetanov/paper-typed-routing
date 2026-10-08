@@ -1,0 +1,236 @@
+{
+ "repo": "https://github.com/Alex-Tsvetanov/paper-typed-routing.git",
+ "commit": "4cc42bf11ace589f29de6194142c1d8cb7dfd062",
+ "repo_head": "4cc42bf11ace589f29de6194142c1d8cb7dfd062",
+ "date": "2026-09-30T17:11:02+03:00",
+ "host": "alex-laptop",
+ "green": true,
+ "compiler": "Clang 22.1.8",
+ "inputs_hash": {
+  "mserver": "fbebb0e050a0855c29b767b4a60fcd1ea868b6fa8b54baae798dab1f5426da8e",
+  "mserver_arms": "f329db787dd741e1f05ecac773d55433f61179f44986098b19a372c70d772bcb",
+  "mserver_http1": "e87addc7ec46f3c0110a04bcb9662d1d397372aba8a17a4cda664cc8ed5ad752",
+  "mserver_loop": "0b0a2ef3b075a0d3bff9bdffe4bc905bf66bbff2969337cfe50a32f7126632b2",
+  "mserver_v1": "5d6f89d967b026ab4bcc15425b71a5387d70dd8bf7f3f8c157af5d778f8c32f5",
+  "h6_targets": "f8149ba8f4d01cd2b16693616a09a24f7a50dfd3f72c66bf949c0a6072c6c7fe"
+ },
+ "inputs_files": {
+  "mserver": 10,
+  "mserver_arms": 15,
+  "mserver_http1": 9,
+  "mserver_loop": 10,
+  "mserver_v1": 5,
+  "h6_targets": 9
+ },
+ "config": {},
+ "dep_roots": {
+  "regexmatcher": {
+   "cache_key": "RegexMatcher_SOURCE_DIR",
+   "dir": "/home/alex/lab/p2/r2/rm-src-d1d73e99b7b26f54ba75354f4880780ece32e8ed-full"
+  }
+ },
+ "third_party": {
+  "fetched": {
+   "rb_regexmatcher_v1_src": {
+    "url": "https://codeload.github.com/cpp-for-everything/RegexMatcher/tar.gz/d16f30a81158d620e5a5514087b175a2251e4fa3",
+    "url_hash": "SHA256=2e631b74469e87ff97fe27ffcfd8b938ed6dd1a1d0ee73b0b7aa88b56ecb7108"
+   }
+  },
+  "found": {}
+ },
+ "prefix_hashes": {
+  "mserver_arms": {
+   "regexmatcher/include/": "5737e40609f1d03b0742f214c87af8f09e61cb27bd8907095b80af83093defe2"
+  }
+ },
+ "pins_sha256": "fd987818804ada347ef5ef74977909412e0775cd698e510b51a86631885d15fc",
+ "pins_file": "bench/cmake/pins.cmake",
+ "presets": [
+  {
+   "preset": "build",
+   "status": "green",
+   "detail": "exit 0",
+   "compiler": "Clang 22.1.8"
+  },
+  {
+   "preset": "ctest",
+   "status": "green",
+   "detail": "exit 0, 4 tests, 0 failed"
+  },
+  {
+   "preset": "cell/static-10/v2",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/static-10/v1",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/static-10/null",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/param-last-10/v2",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/param-last-10/v1",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/param-last-10/null",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/param-first-10/v2",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/param-first-10/v1",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/param-first-10/null",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/rest-10/v2",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/rest-10/v1",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/rest-10/null",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/wild-10/v2",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/wild-10/v1",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/wild-10/null",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/mixed-disjoint-10/v2",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/mixed-disjoint-10/v1",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/mixed-disjoint-10/null",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/mixed-overlap-10/v2",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/mixed-overlap-10/v1",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/mixed-overlap-10/null",
+   "status": "green",
+   "detail": "h6_targets exit 0, 22 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/rest-10000/v2",
+   "status": "green",
+   "detail": "h6_targets exit 0, 10034 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/rest-10000/v1",
+   "status": "green",
+   "detail": "h6_targets exit 0, 10034 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/rest-10000/null",
+   "status": "green",
+   "detail": "h6_targets exit 0, 10034 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/param-last-10000/v2",
+   "status": "green",
+   "detail": "h6_targets exit 0, 10034 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/param-last-10000/v1",
+   "status": "green",
+   "detail": "h6_targets exit 0, 10034 requests, 0 failed, server exit 0",
+   "failures": []
+  },
+  {
+   "preset": "cell/param-last-10000/null",
+   "status": "green",
+   "detail": "h6_targets exit 0, 10034 requests, 0 failed, server exit 0",
+   "failures": []
+  }
+ ],
+ "tool": "mserver",
+ "sanitizer": "asan",
+ "regexmatcher_commit": "d1d73e99b7b26f54ba75354f4880780ece32e8ed",
+ "cmake_args": "-G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DREGEXMATCHER_DIR=/home/alex/lab/p2/r2/rm-src-d1d73e99b7b26f54ba75354f4880780ece32e8ed-full -DP2_SANITIZER=address+undefined",
+ "sanitizer_options": "ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1:strict_string_checks=1:symbolize=1;UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1",
+ "build_exit": 0,
+ "ctest_exit": 0,
+ "seconds": 83,
+ "sanitizer_reports": 0,
+ "report_blocks": [],
+ "logs_archive": "/home/alex/lab/records-logs/mserver-4cc42bf11-L-asan.tar.gz",
+ "logs_archive_sha256": "29f5e43f122ef929579c6241da01f5296de32fe7d1d4fb94bc05e97944e52acf",
+ "note": "The paper's minimal server (server/) and t1/h6_targets, built under the sanitizer: the server's tests, then each H6 cell served by each router arm (t1/sanitize_h6.sh)."
+}

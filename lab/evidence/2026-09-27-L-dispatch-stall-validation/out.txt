@@ -1,0 +1,48 @@
+## mode 0 event 0xae bits 0-3
+13924819636,,cycles,4394748326,100.00,,
+4228642,,cpu/event=0xae,umask=0x01/,4394748326,100.00,,
+13159165184,,cpu/event=0xae,umask=0x02/,4394748326,100.00,,
+23631804,,cpu/event=0xae,umask=0x04/,4394748326,100.00,,
+265382,,cpu/event=0xae,umask=0x08/,4394748326,100.00,,
+## mode 0 event 0xae bits 4-7
+13908931782,,cycles,4389675448,100.00,,
+762779,,cpu/event=0xae,umask=0x10/,4389675448,100.00,,
+123,,cpu/event=0xae,umask=0x20/,4389675448,100.00,,
+0,,cpu/event=0xae,umask=0x40/,4389675448,100.00,,
+377,,cpu/event=0xae,umask=0x80/,4389675448,100.00,,
+## mode 0 event 0xaf bits 0-3
+13929170581,,cycles,4396113537,100.00,,
+2203335,,cpu/event=0xaf,umask=0x01/,4396113537,100.00,,
+515106,,cpu/event=0xaf,umask=0x02/,4396113537,100.00,,
+3548208,,cpu/event=0xaf,umask=0x04/,4396113537,100.00,,
+154850,,cpu/event=0xaf,umask=0x08/,4396113537,100.00,,
+## mode 0 event 0xaf bits 4-7
+13922114524,,cycles,4393868541,100.00,,
+116534,,cpu/event=0xaf,umask=0x10/,4393868541,100.00,,
+515310292,,cpu/event=0xaf,umask=0x20/,4393868541,100.00,,
+0,,cpu/event=0xaf,umask=0x40/,4393868541,100.00,,
+0,,cpu/event=0xaf,umask=0x80/,4393868541,100.00,,
+## mode 1 event 0xae bits 0-3
+814507999,,cycles,257060189,100.00,,
+3744805,,cpu/event=0xae,umask=0x01/,257060189,100.00,,
+55704,,cpu/event=0xae,umask=0x02/,257060189,100.00,,
+24160045,,cpu/event=0xae,umask=0x04/,257060189,100.00,,
+29268,,cpu/event=0xae,umask=0x08/,257060189,100.00,,
+## mode 1 event 0xae bits 4-7
+814146883,,cycles,256973666,100.00,,
+100930,,cpu/event=0xae,umask=0x10/,256973666,100.00,,
+0,,cpu/event=0xae,umask=0x20/,256973666,100.00,,
+0,,cpu/event=0xae,umask=0x40/,256973666,100.00,,
+280,,cpu/event=0xae,umask=0x80/,256973666,100.00,,
+## mode 1 event 0xaf bits 0-3
+814773949,,cycles,257145448,100.00,,
+2042793,,cpu/event=0xaf,umask=0x01/,257145448,100.00,,
+50447274,,cpu/event=0xaf,umask=0x02/,257145448,100.00,,
+152778351,,cpu/event=0xaf,umask=0x04/,257145448,100.00,,
+53227,,cpu/event=0xaf,umask=0x08/,257145448,100.00,,
+## mode 1 event 0xaf bits 4-7
+814244856,,cycles,256986702,100.00,,
+47573,,cpu/event=0xaf,umask=0x10/,256986702,100.00,,
+512453021,,cpu/event=0xaf,umask=0x20/,256986702,100.00,,
+0,,cpu/event=0xaf,umask=0x40/,256986702,100.00,,
+0,,cpu/event=0xaf,umask=0x80/,256986702,100.00,,

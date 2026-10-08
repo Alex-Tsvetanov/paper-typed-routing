@@ -1,0 +1,25 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 25, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "san-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_C_COMPILER": "clang"
+      }
+    },
+    { "name": "asan", "inherits": "san-base", "cacheVariables": { "T1_SANITIZER": "address+undefined" } },
+    { "name": "tsan", "inherits": "san-base", "cacheVariables": { "T1_SANITIZER": "thread" } },
+    { "name": "msan", "inherits": "san-base", "cacheVariables": { "T1_SANITIZER": "memory" } },
+    {
+      "name": "release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    }
+  ]
+}
