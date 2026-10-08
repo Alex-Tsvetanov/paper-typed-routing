@@ -11,6 +11,7 @@ build-*/
 __pycache__/
 results/raw/
 paper/*.pdf
+!paper/main.pdf
 target/
 bench/build-*.inputs.json
 paper/Definitions/*-eps-converted-to.pdf

@@ -29,7 +29,10 @@ is published in its own repository, https://github.com/cpp-for-everything/RegexM
               its README lists the runs, their archives and the commands
 - `results/`  files of round 1 (below)
 - `design/round2/` the design notes of round 2, with their revision logs
-- `paper/`    LaTeX source, figures and the text check (`check_text.py`)
+- `paper/`    LaTeX source, figures and the text check (`check_text.py`). `paper/main.pdf` is the
+              manuscript's PDF, the submission build (`\submissiontrue` in `paper/main.tex`; the
+              notes for the author are not printed in it), rebuilt from the sources with
+              `cd paper && latexmk -pdf main.tex` and committed with them.
 - `hypotheses-round2.md` the pre-specification, frozen on 2026-09-30 before the run, with its
               revision log
 
