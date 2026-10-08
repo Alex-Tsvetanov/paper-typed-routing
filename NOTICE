@@ -9,8 +9,8 @@ of section 2. That includes:
   in paper/ (paper/check_text.py);
   the data and notes: results/ (the tables, the JSON files and the generated macros.tex and
   macros-paper.tex; the .tex files in results/ are generated data and are covered), design/,
-  hypotheses-round2.md, the README files, paper/TEMPLATE.md, paper/related-work-notes.md and
-  paper/venues.md.
+  hypotheses-round2.md, PROVENANCE.md, the README files, paper/TEMPLATE.md,
+  paper/related-work-notes.md and paper/venues.md.
 
 Section 3 names the code in covered files that comes from other projects, with its licence.
 Section 4 concerns the copy of RegexMatcher code in bench/arms/ablation/route_r1.hpp.

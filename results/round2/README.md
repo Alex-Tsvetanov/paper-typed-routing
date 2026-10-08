@@ -4,6 +4,11 @@ The files here are written by `analysis/analyse.py` (and `macros.tex` by `analys
 the publication runs of round 2, as `hypotheses-round2.md` (frozen at 9d7e8fe) pre-specifies them.
 Nothing here is edited by hand. The paper's numbers come from `macros.tex` only.
 
+The commits that the files here name (9d7e8fe, the head the runs were built at; 90beca488 and
+4cc42bf11, the code of the harness and of the server; 35554b3, the heap-block arm) are in the
+repository's earlier history, which is archived privately. `../PROVENANCE.md` maps them to this
+history's root commit, f626955, and shows that the files the builds compiled are the same.
+
 ## Inputs
 
 | Run | Archive (`D:\Archive\p2-raw\` and `~/lab` on L) | sha256 |

@@ -37,7 +37,8 @@ files that name the other code base are archived privately and are not in this r
 Comments in some sources and notes still refer to those files. The other files of round 1 in
 `results/` are kept as they were.
 
-The repository's earlier history is archived privately.
+The repository's earlier history is archived privately; `PROVENANCE.md` maps the commits that
+the paper, the results and the sanitizer records cite to this history.
 
 ## Licence
 
