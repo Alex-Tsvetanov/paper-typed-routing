@@ -1,7 +1,7 @@
 # Manuscript revision log
 
-The frozen hypotheses (`hypotheses-round2.md`) and the frozen design notes are not edited here.
-This note records manuscript changes after those files were frozen.
+The hypothesis text in `hypotheses-round2.md` is not edited. The schedule note records the
+venue change in its revision log only. This note records the manuscript.
 
 ## 2026-10-22. Journal of Systems and Software
 
