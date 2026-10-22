@@ -288,7 +288,8 @@ answers with a fixed body of \HSixBodyBytes{} bytes. HEAD and the Allow field li
 so every router arm runs the same code for them. One binary holds three router arms behind one
 function pointer: v1 behind its wrapper, v2, and a null router that answers without reading the path.
 The server is not a full framework. It parses requests, routes them and writes fixed responses,
-and nothing else.
+and nothing else. Section~\ref{sec:e2e-gap} records the absent end-to-end comparison with the
+external routers.
 
 H6 has nine cells: the seven shapes at $m=\SizeTen$, and \shape{rest} and \shape{param-last} at
 $m=\SizeTenThousand$. Each serves the routes of table seed \HSixTableSeed. Its targets are one per

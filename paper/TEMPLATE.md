@@ -1,3 +1,10 @@
+# The MDPI LaTeX template kept for a later fallback
+
+`paper/main.tex` no longer uses this class. The live manuscript targets the Journal of Systems
+and Software on Elsevier's `elsarticle` class, which the TeX distribution supplies. Future
+Internet is allowed only after that journal and Software: Practice and Experience both reject
+the paper. These files stay so that fallback can be built without downloading the class again.
+
 # The MDPI LaTeX template of this paper
 
 ## Source

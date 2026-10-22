@@ -131,3 +131,9 @@ targets; each depends on the step before it and on Alex's replies.
   needed. On W meanwhile: the minimal server (HTTP layer, epoll loop, three router arms, the
   binary, its tests and the arms' agreement on the nine H6 cells) and RegexMatcher's sanitizer
   records script. Next: the t1 scripts and the records gates, then the freeze.
+- 2026-10-22, the manuscript venue (no change to the frozen bullet in section 1, and no decision
+  change). That bullet records the venue as it stood when this note was written. The manuscript
+  now targets the Journal of Systems and Software, which is the first venue of the Cursor brief.
+  Future Internet remains a fallback only after that journal and Software: Practice and
+  Experience both reject the paper. The external-router end-to-end block is still unmeasured.
+  The manuscript states the gap. See `paper/revision-log.md`.

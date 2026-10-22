@@ -2,9 +2,10 @@
 
 \subsection{What the Results Support}
 
-In the setting of Section~\ref{sec:host}, v2 is the fastest of the route matchers measured here in
-\HOneSuperior{} of \HOneCells{} cells, and not slower in one more. ``Fastest'' is said of a cell only
-against the competitors that take part in it. The competitors left out are named with their reasons
+The results name which choices matter in the setting of Section~\ref{sec:host}, and where they lose.
+v2 was faster than the fastest competitor in \HOneSuperior{} of \HOneCells{} cells, and not slower in
+one more. A cell's fastest competitor is one that takes part in that cell.
+The competitors left out are named with their reasons
 in Section~\ref{sec:run}, and the paper does not claim that they are slower.
 
 The advantage grows with the table. v2's work per lookup barely depends on $m$. On \shape{static} it
@@ -63,44 +64,11 @@ search. A compile-time table is cheap at \SizeTen{} and \SizeHundred{} routes an
 
 \subsection{End to End}
 
+H6 compares v2 with v1 inside this paper's server.
+That comparison says nothing about gin, matchit or any other external router.
+Section~\ref{sec:e2e-gap} records that the external comparison is absent.
 The lookup difference against v1 reached the client in every cell of H6. In the minimal server the
 null router's time per request was about \HSixNullUsMin~$\mu$s, so routing is a visible share of a
 request in a server this lean. The measured ratio stayed within \HSixPredMin{} to \HSixPredMax{} of
 the ratio that the lookup times predict. The share would be smaller in a full framework with more
 work per request.
-
-\subsection{Threats to Validity}\label{sec:threats}
-
-\begin{itemize}
-\item \textbf{One processor model and one core.} Every time comes from one core of one \HostLArch{}
-processor. Another microarchitecture may rank close cells differently, above all the cells at
-$m=\SizeTen$ against gin.
-\item \textbf{One compiler per language.} C and C++ were compiled by clang only, Rust by rustc and Go by
-its own toolchain. GCC and MSVC builds were not timed. MSVC appears only in the costs of compile-time
-tables.
-\item \textbf{The native instruction set.} Every arm was built for L's own processor. A generic build
-would give other code and other times, which may matter most for the small tables against gin.
-\item \textbf{Loopback for H6.} The end-to-end run used loopback, one server core and one request in
-flight per connection. A network, more cores or pipelining would change the share of routing.
-\item \textbf{The minimal server.} It parses, routes and answers a fixed body. A full framework adds
-work per request, which dilutes the difference between routers.
-\item \textbf{Development on the same host.} The engineering of v2 ran on L, on other seeds. The run's
-seeds were held out, but the design choices may still suit L's microarchitecture better than others.
-\item \textbf{The Drogon transcription.} Drogon's router needs a running application, so its lookup was
-transcribed into the harness from its source. The file's hash and line ranges are pinned. A
-transcription can still differ from the router as Drogon runs it.
-\item \textbf{The gin shim.} gin's tree is vendored unchanged, but the parts of gin's engine that a
-lookup uses are reproduced in a small shim. They are the reset of the context, the method's tree and
-the search in gin's default configuration. chi's arm uses a similar shim of its multiplexer. A shim
-can differ from the engine it stands for.
-\item \textbf{The repeated ring.} Every timed pass repeats the same \RingSize{} queries. Predictors and
-caches learn the ring, and a large table's hot part is at most the ring's routes. Real traffic, with
-more distinct paths, may favour other structures. The Zipf and miss-heavy rings explore two departures
-only.
-\item \textbf{Foreign-function boundaries.} The Rust arms are called through one C function per lookup,
-and the Go arms run their timed loops inside Go, entered through cgo. Their nulls remove the loops, not
-every cost of the boundary.
-\item \textbf{The cut for slow arms.} A competitor whose passes ran on a prefix of the ring has
-optimistic times and counters. None was the fastest competitor of an H1 cell, but the cut competitors
-enter the median of H2's branch misses, which Table~\ref{tab:htwo} gives with and without them.
-\end{itemize}

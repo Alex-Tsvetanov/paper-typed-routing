@@ -1,0 +1,44 @@
+\section{Threats to Validity}\label{sec:threats}
+
+The threats below are the limits of the design in Section~\ref{sec:methods} and of the calls in
+Appendix~\ref{app:lookup}. They use no result beyond the runs already reported.
+
+\begin{itemize}
+\item \textbf{One processor model and one core.} Every time comes from one core of one \HostLArch{}
+processor. Another microarchitecture may rank close cells differently, above all the cells at
+$m=\SizeTen$ against gin.
+\item \textbf{One compiler per language.} C and C++ were compiled by clang only, Rust by rustc and Go by
+its own toolchain. GCC and MSVC builds were not timed. MSVC appears only in the costs of compile-time
+tables.
+\item \textbf{The native instruction set.} Every arm was built for L's own processor. A generic build
+would give other code and other times, which may matter most for the small tables against gin.
+\item \textbf{Loopback for H6.} The end-to-end run used loopback, one server core and one request in
+flight per connection. A network, more cores or pipelining would change the share of routing.
+\item \textbf{The minimal server.} It parses, routes and answers a fixed body. A full framework adds
+work per request, which dilutes the difference between routers.
+\item \textbf{External routers end to end.} The archived end-to-end run compares v2 with v1 in this
+paper's server. It records no request rate for gin, matchit or any other external router.
+Section~\ref{sec:e2e-gap} leaves that block out. A lookup result stays a statement about lookups.
+\item \textbf{Development on the same host.} The engineering of v2 ran on L, on other seeds. The run's
+seeds were held out, but the design choices may still suit L's microarchitecture better than others.
+\item \textbf{The Drogon transcription.} Drogon's router needs a running application, so its lookup was
+transcribed into the harness from its source. The file's hash and line ranges are pinned. A
+transcription can still differ from the router as Drogon runs it.
+\item \textbf{The gin shim.} gin's tree is vendored unchanged, but the parts of gin's engine that a
+lookup uses are reproduced in a small shim. They are the reset of the context, the method's tree and
+the search in gin's default configuration. chi's arm uses a similar shim of its multiplexer. A shim
+can differ from the engine it stands for.
+\item \textbf{The repeated ring.} Every timed pass repeats the same \RingSize{} queries. Predictors and
+caches learn the ring, and a large table's hot part is at most the ring's routes. Real traffic, with
+more distinct paths, may favour other structures. The Zipf and miss-heavy rings explore two departures
+only.
+\item \textbf{Different measurement boundaries.} C and C++ arms are called in process.
+The Rust arms are called through one C function per lookup.
+The Go arms run their timed loops inside Go, entered through cgo.
+Their nulls remove the loops, and other costs of the boundary remain.
+A ratio of a C++ time to a Go time crosses that boundary.
+Appendix~\ref{app:lookup} lists the calls.
+\item \textbf{The cut for slow arms.} A competitor whose passes ran on a prefix of the ring has
+optimistic times and counters. None was the fastest competitor of an H1 cell, but the cut competitors
+enter the median of H2's branch misses, which Table~\ref{tab:htwo} gives with and without them.
+\end{itemize}

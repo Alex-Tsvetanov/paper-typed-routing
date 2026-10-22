@@ -1,27 +1,27 @@
-% P2: RegexMatcher v2, a route matcher, measured against the routers of C, C++, Rust and Go
-% frameworks; for MDPI Future Internet, on MDPI's class (paper/TEMPLATE.md).
+% P2: which design choices in HTTP route matching matter, and when.
+% Journal of Systems and Software, on Elsevier's elsarticle class (installed with the TeX distribution).
+% Future Internet is a fallback only after JSS and Software: Practice and Experience both reject
+% the paper. The MDPI class remains in paper/Definitions for that fallback (paper/TEMPLATE.md).
 % Every number in the text comes from ../results/round2/macros.tex (analysis/macros.py, the frozen
 % analysis) or ../results/round2/macros-paper.tex (analysis/paper_macros.py).
-\documentclass[futureinternet,article,submit,oneauthor]{Definitions/mdpi}
+\documentclass[preprint,12pt,authoryear]{elsarticle}
 
-% MDPI internal commands, as template.tex sets them for a submission.
-\firstpage{1}
-\makeatletter
-\setcounter{page}{\@firstpage}
-\makeatother
-\pubvolume{1}
-\issuenum{1}
-\articlenumber{0}
-\pubyear{2026}
-\copyrightyear{2026}
-\datereceived{ }
-\daterevised{ }
-\dateaccepted{ }
-\datepublished{ }
-
-% The class loads hyperref, geometry, caption, tabularx, booktabs, tikz, seqsplit, xcolor, url,
-% amssymb and enumitem; the paper adds these.
+% The class loads fontenc, graphicx and natbib. Preprint does not set a page geometry.
+% The result tables were set for a measure of about 18 cm. A text block of 570 pt on A4
+% keeps that ink on the page, with a small margin, in one column.
+\usepackage{geometry}
+\geometry{a4paper, textwidth=570pt, textheight=700pt, centering,
+  headheight=16pt, headsep=8pt, footskip=16pt}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
 \usepackage{listings}
+\usepackage{xcolor}
+\usepackage{seqsplit}
+\usepackage{url}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{hyperref}
 
 \input{../results/round2/macros}
 \input{../results/round2/macros-paper}
@@ -50,8 +50,7 @@
 \newcommand{\DataReleaseURL}{\url{https://github.com/Alex-Tsvetanov/paper-typed-routing/releases/tag/data-2026-10}}
 \newcommand{\PreSpecFile}{\texttt{hypotheses-round2.md}}
 
-% A run-in heading at the start of a paragraph; MDPI's \paragraph sets its heading on a line of
-% its own.
+% A run-in heading at the start of a paragraph.
 \newcommand{\runin}[1]{\textit{#1}\enspace}
 \newcommand{\arm}[1]{\texttt{#1}}
 \newcommand{\shape}[1]{\texttt{#1}}
@@ -74,62 +73,75 @@
 \newcommand{\FindVtwo}{\texttt{find\_v2}}
 % A long hexadecimal string in typewriter type that may break anywhere.
 \newcommand{\hex}[1]{\texttt{\expandafter\seqsplit\expandafter{#1}}}
-% The hyphen of a page range in refs.bib: BibTeX sees the comma of its argument and prints
-% "pp.", LaTeX prints a hyphen, and mdpi.bst's dashify never sees one (paper/TEMPLATE.md).
+% The hyphen of a page range in refs.bib. BibTeX sees the comma inside the argument, so a page
+% range is treated as multiple pages, and elsarticle-harv's dashify never sees a hyphen.
+% LaTeX prints the hyphen (paper/TEMPLATE.md).
 \newcommand{\bibhyph}[1]{-}
-% natbib, which the class loads with sort&compress, joins a range of citations such as [3, 4, 5]
-% with a range dash. Alex's rule allows no range dash, so the range takes a hyphen: [3-5].
-% The pattern is built from two \string- so that this file holds no double hyphen.
-\makeatletter
-\begingroup
-\edef\x{\endgroup
-  \noexpand\patchcmd{\noexpand\NAT@citexnum}%
-    {\noexpand\def@NAT@last@yr{\string-\string-\noexpand\NAT@penalty}}%
-    {\noexpand\def@NAT@last@yr{-\noexpand\NAT@penalty}}{}%
-    {\noexpand\PackageError{main}{natbib's citation range could not be patched}{}}}
-\x
-\let\@citex\NAT@citexnum
-\makeatother
+
+% Wide tables used MDPI's extralength. The preprint text block is the full measure.
+\newlength{\extralength}
+\setlength{\extralength}{0pt}
+\newlength{\fulllength}
+% Geometry sets the measure at \begin{document}. Capture it then, not in the preamble.
+\AtBeginDocument{\setlength{\fulllength}{\textwidth}}
+\newenvironment{adjustwidth}[2]{}{}
+
+% check_text.py starts its digit check at the first line that begins with \Title.
+\newcommand{\Title}[1]{\title{#1}}
 
 \emergencystretch=3em
 \lstset{basicstyle=\ttfamily\small,columns=fullflexible,keepspaces=true,frame=single,
   breaklines=true,showstringspaces=false}
+\hypersetup{hidelinks}
 
-\Title{A Fast HTTP Route Matcher with Compile-Time Checks: RegexMatcher~v2 Measured Against
-Sixteen Routers in C, C++, Rust and Go}
+\journal{Journal of Systems and Software}
+\myfooter[C]{Submitted to the Journal of Systems and Software}
 
 \newcommand{\orcidauthorA}{0009-0001-8369-150X}
 
-\Author{Alex I. Tsvetanov \orcidA{}}
-
-\AuthorNames{Alex I. Tsvetanov}
-
-\address[1]{Faculty of Computer Systems and Technologies, Technical University of Sofia,
-ul.~Professor Georgi Bradistilov 11, Sofia, Bulgaria; atsvetanov@tu-sofia.bg}
-
-% With the class option oneauthor, mdpi.cls prints no correspondence line, so the e-mail is in
-% the address above as well.
-\corres{Correspondence: atsvetanov@tu-sofia.bg}
-
-\abstract{Every HTTP request passes through a route matcher, which maps its method and path to a
-handler and captured values. We survey the route matchers of sixteen routers in C, C++, Rust and Go,
-and rework the author's RegexMatcher library into a route matcher, RegexMatcher~v2. Literal-only
-methods get an exact-match table, other methods a trie of path segments, and a lookup allocates
-nothing. A compile-time front end rejects malformed patterns, mismatched handlers and duplicate
-routes. Pre-specified hypotheses compare v2 with the fastest competitor in each of \HOneCells{}
-cells. The setting is one core of an \HostLCpu, \RunCompiler, and every arm built for that
-processor's own instruction set. v2 was not slower in \HOnePassed{} cells, and faster in
-\HOneSuperior, taking \HOneSupRatioMin{} to \HOneSupRatioMax{} of the fastest competitor's time. At
-the wild shape with \SizeTen{} routes, neither claim holds against gin. v2 ran more instructions than
-gin in \HTwoLost{} cells, and built large tables more slowly than the median competitor in
-\HFourLostBuild. A minimal HTTP/1.1 server answered more requests per second with v2 than with v1 in
-all \HSixCells{} cells. A compile-time table passed its per-cell test in \HSevenHeld{} of
-\HSevenCells{} cells, so that hypothesis does not hold.}
-
-\keyword{HTTP routing; route matching; URL routing; trie; C++; compile-time checking; constant
-evaluation; web frameworks; benchmarking; non-inferiority test}
-
 \begin{document}
+\begin{frontmatter}
+\Title{Which Design Choices in HTTP Route Matching Matter, and When}
+
+\author{Alex I. Tsvetanov\corref{cor}\fnref{orcid}}
+\ead{atsvetanov@tu-sofia.bg}
+\cortext[cor]{Corresponding author.}
+\fntext[orcid]{ORCID \orcidauthorA.}
+\affiliation{organization={Faculty of Computer Systems and Technologies, Technical University of Sofia},
+            addressline={ul. Professor Georgi Bradistilov 11},
+            city={Sofia},
+            country={Bulgaria}}
+
+\begin{abstract}
+Routing cost depends on table size, the working set that is queried, and whether routes capture parameters.
+This paper asks which design choices in route matching matter, and when, and it reports the losses.
+It measures the public RegexMatcher after its DFA construction, with the route target included.
+The arms are a radix trie, a sequential scan, a static-path hash, and pinned routers in C, C++, Rust and Go.
+Each external router runs in the best configuration its own documentation states.
+The setting is one core of an \HostLCpu, with \RunCompiler, and every arm built for that processor.
+v2 was not slower than the fastest competitor in \HOnePassed{} of \HOneCells{} cells, and faster in \HOneSuperior.
+In those faster cells it took \HOneSupRatioMin{} to \HOneSupRatioMax{} of that competitor's time.
+At the wild shape with \SizeTen{} routes, neither claim holds against gin.
+v2 ran more instructions than gin in \HTwoLost{} cells.
+It built large tables more slowly than the median competitor in \HFourLostBuild{} cells.
+A minimal server answered more requests per second with v2 than with v1 in all \HSixCells{} cells.
+That comparison is inside this paper's server and says nothing about the external routers.
+End-to-end latency against those routers is absent from this manuscript.
+A compile-time table passed its per-cell test in \HSevenHeld{} of \HSevenCells{} cells, so that hypothesis does not hold.
+\end{abstract}
+
+\begin{highlights}
+\item Route cost depends on table size, working set and parameters.
+\item Literal methods use a hash; other methods use a segment trie.
+\item The matcher loses to gin on a small wild table.
+\item Compile-time checks reject malformed routes at compilation.
+\item End-to-end latency against external routers is unmeasured.
+\end{highlights}
+
+\begin{keyword}
+HTTP routing \sep route matching \sep trie \sep compile-time checking \sep benchmarking \sep C++ \sep non-inferiority
+\end{keyword}
+\end{frontmatter}
 
 \input{sec-introduction}
 \input{sec-related}
@@ -137,33 +149,42 @@ evaluation; web frameworks; benchmarking; non-inferiority test}
 \input{sec-methods}
 \input{sec-results}
 \input{sec-discussion}
+\input{sec-threats}
 \input{sec-conclusions}
 
-\vspace{6pt}
+\appendix
+\input{sec-appendix}
 
-\supplementary{The following supporting information can be downloaded at
+\section*{Supplementary material}
+
+The following supporting information can be downloaded at
 \PaperRepoURL: Table S1, every arm in every cell of
 the main grid. Table S1 gives each value as the median over the arm's processes. It is the file
 \texttt{results/round2/all\_arms.csv} of the paper's repository. Its columns are the arm's role, its processes and their statuses, and whether it takes part in the
 cell, with the reason when it does not. They also hold the time per lookup, the raw and net
 instructions, the branch misses, the cycles, and the L1d, L2 and DTLB misses. The allocations per
 lookup, the build time, the bytes allocated by the build and the heap bytes of the table follow.
-The latency percentiles and, for the Go arms, the cost of an empty call across cgo complete them.}
+The latency percentiles and, for the Go arms, the cost of an empty call across cgo complete them.
 
-\authorcontributions{Conceptualization, A.I.T.; methodology, A.I.T.; software, A.I.T.;
-validation, A.I.T.; formal analysis, A.I.T.; investigation, A.I.T.; resources, A.I.T.; data
-curation, A.I.T.; writing, original draft preparation, A.I.T.; writing, review and editing,
-A.I.T.; visualization, A.I.T.; supervision, A.I.T.; project administration, A.I.T.; funding
-acquisition, A.I.T. The author has read and agreed to the published version of the manuscript.}
+\section*{CRediT authorship contribution statement}
 
-\funding{The publication of this paper was financially supported by the scientific research
-sector of the Technical University of Sofia.}
+Alex I. Tsvetanov: conceptualization, methodology, software, validation, formal analysis, investigation and resources.
+The same author did the data curation, the writing of the original draft, the review and editing, and the visualization.
+The same author did the supervision, the project administration and the funding acquisition.
 
-\institutionalreview{Not applicable.}
+\section*{Funding}
 
-\informedconsent{Not applicable.}
+The publication of this paper was financially supported by the scientific research sector of the Technical University of Sofia.
 
-\dataavailability{The paper's repository, \PaperRepoURL, holds the harness and the minimal server at
+\section*{Declaration of competing interest}
+
+The author declares no conflicts of interest.
+The funder had no role in the design of the study or in the collection, analysis or interpretation of data.
+The funder had no role in the writing of the manuscript or in the decision to publish the results.
+
+\section*{Data availability}
+
+The paper's repository, \PaperRepoURL, holds the harness and the minimal server at
 commit \hex{\RbenchPublicCommitFull}, with the analysis, the pre-specification and the derived
 tables. It also holds the sources of the T1 tools that ran H6 (\texttt{lab/t1/}). The raw runs are
 the assets of its release \DataRelease{} (\DataReleaseURL), and \texttt{results/round2/archives.sha256}
@@ -180,22 +201,22 @@ records that gated the harness and the server, those made later for the publishe
 behind H5(a) and H5(c) are in \RecordsDir{} of the repository. Each record names the SHA-256 of an archive of its logs, which are not published.
 RegexMatcher~v2 is commit \hex{\RegexMatcherCommitFull}. It is available at \RegexMatcherURL{} in
 release \RegexMatcherRelease. \ForAlex{the DOIs of the paper's repository and of its release
-\DataRelease, which need Alex's account (for example a Zenodo archive of the release).}}
+\DataRelease, which need Alex's account (for example a Zenodo archive of the release).}
 
-\acknowledgments{The author would like to thank the scientific research sector of the Technical University of Sofia for financial support for publishing the present paper.}
+\section*{Declaration of generative AI and AI-assisted technologies in the manuscript preparation process}
 
-\conflictsofinterest{The author declares no conflicts of interest. The funder had no role in the
-design of the study; in the collection, analyses, or interpretation of data; in the writing of
-the manuscript; or in the decision to publish the results.}
+During the preparation of this work the author used Cursor agents to draft and revise the manuscript.
+After using these tools, the author reviewed and edited the content as needed and takes full responsibility for the content of the article.
 
-\appendixtitles{yes}
-\appendixstart
-\appendix
-\input{sec-appendix}
+\section*{Vitae}
 
-\begin{adjustwidth}{-\extralength}{0cm}
-\reftitle{References}
+Alex I. Tsvetanov is with the Faculty of Computer Systems and Technologies at the Technical University of Sofia.
+He wrote this measurement of the public RegexMatcher library.
+
+\section*{Acknowledgments}
+
+The author would like to thank the scientific research sector of the Technical University of Sofia for financial support for publishing the present paper.
+
+\bibliographystyle{elsarticle-harv}
 \bibliography{refs}
-\PublishersNote{}
-\end{adjustwidth}
 \end{document}

@@ -1,5 +1,6 @@
 \section{Conclusions}\label{sec:conclusions}
 
+The question is which design choices in route matching matter, and when.
 We surveyed the route matchers of sixteen routers in C, C++, Rust and Go, and reworked the author's
 RegexMatcher library into a route matcher, RegexMatcher~v2. Its lookup walks a trie of path segments
 stored in flat arrays, answers literal-only methods from an exact-match table, and never allocates.
@@ -15,8 +16,9 @@ lookup of v2 allocated, every probe of the path rules passed, and the compile-ti
 every malformed case. In a minimal server, the lookup difference against v1 reached the client in
 every cell.
 
-Three questions remain open. The first is whether the results hold on other processors and with other
+Four questions remain open. The first is whether the results hold on other processors and with other
 compilers, above all for small tables. The second is why the compile-time table was slower at
 \HSevenLostCell. The pre-specified run with a heap copy did not tie the slow pairs to the table's
 place in memory, and it cannot rule out the placement of code. The third is what remains of the build
-time for large literal tables.
+time for large literal tables. The fourth is the end-to-end latency against the external routers.
+This manuscript leaves that comparison unmeasured.

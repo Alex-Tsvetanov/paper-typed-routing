@@ -108,7 +108,8 @@ def drop_command(text: str, name: str) -> str:
 def prose(path: Path) -> str:
     text = "\n".join(uncomment(l) for l in path.read_text(encoding="utf-8").splitlines())
     if path.name == "main.tex":
-        text = text[text.find("\\abstract{"):]
+        starts = [i for i in (text.find("\\begin{abstract}"), text.find("\\abstract{")) if i >= 0]
+        text = text[min(starts):] if starts else text
     captions = []
     for env in ("table", "figure", "lstlisting", "tikzpicture"):
         pat = r"\\begin\{" + env + r"\}.*?\\end\{" + env + r"\}"
