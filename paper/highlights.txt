@@ -1,0 +1,5 @@
+Route cost depends on table size, working set and parameters.
+Literal methods use a hash; other methods use a segment trie.
+The matcher loses to gin on a small wild table.
+Compile-time checks reject malformed routes at compilation.
+End-to-end latency against external routers is unmeasured.

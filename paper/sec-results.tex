@@ -246,7 +246,7 @@ The lower bounds of the carry-over ranged from \HSixCarryLowMin{} to \HSixCarryL
 ratio was \HSixPredMin{} to \HSixPredMax{} times the ratio that the lookup times predict. In every
 cell every pair favoured v2 and carried at least \CarryBound, so each sign test gives \HSixSignMinP.
 H6 compares v2 with v1 in the paper's own server. It says nothing about the competitors, nor about a
-full framework.
+full framework. Section~\ref{sec:e2e-gap} records the comparison that is still missing.
 
 \begin{table}[htbp]
 \caption{H6 per cell, over loopback with the minimal server. Rates are the medians over pairs, in
@@ -267,6 +267,16 @@ $D_{T0}$ & $D_{\mathrm{meas}}$ & $D_{\mathrm{meas}}/D_{T0}$ & \textbf{Low} & \te
 \end{tabular}
 \end{adjustwidth}
 \end{table}
+
+\subsection{End to End Against the External Routers}\label{sec:e2e-gap}
+
+The measurement plan asks for end-to-end latency against the external routers, at the same table
+sizes as the lookup grid.
+The archives of this paper record no such run for gin, matchit or any other external router.
+H6, above, compares v2 with v1 inside this paper's server, and that comparison says nothing about
+the competitors.
+This manuscript leaves the block out.
+No request rate against those routers is reported here.
 
 \subsection{H7: A Table Built at Compile Time}\label{sec:hseven}
 

@@ -8,6 +8,7 @@ build-*/
 *.fls
 *.out
 *.synctex.gz
+*.spl
 __pycache__/
 results/raw/
 paper/*.pdf
