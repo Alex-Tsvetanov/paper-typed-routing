@@ -6,13 +6,18 @@
 // library libp2v2_c.a (v2_cgo.go, behind the build tag p2v2cgo). On Windows it is a call into the
 // DLL p2v2.dll through syscall.SyscallN, without cgo (v2_windows.go). Each costs what its mechanism
 // costs per request, and that cost is v2's. A build for any other system, or a Linux build without
-// the tag, has no library: v2_none.go, and --router v2 exits 2.
+// the tag, has no library: v2_none.go, and --router v2 exits 2. When the library is there, the
+// program prints at start where it came from and how it was built (p2v2_build_info).
 //
-// The patterns go to p2v2_build as the routes file has them (rbench's syntax, no conversion), route
-// i being line i. A lookup passes the request's path, r.URL.Path, and gets the route id and the
-// captured values as (offset, length) pairs into that path, which are sliced into strings here. The
-// table holds GET routes only, so a request of any other method is a miss. GET / and HEAD / are
-// answered before the router (handler.go).
+// newV2 gives p2v2_build the patterns of the routes file, route i being line i. It writes each
+// parsed route back with rbenchPattern (rbench's syntax: "{p0}", "{*p0}"). For every pattern the
+// parser accepts that is the identity, so the library gets the file's own text, with no
+// conversion. A lookup passes the request's path, r.URL.Path, and gets the route id and the
+// captured values as (offset, length) pairs into that path, which are sliced into strings here.
+//
+// The table holds GET routes only. This arm answers HEAD and every other method that is not GET
+// with 404 (the other routers answer by their libraries' defaults, see their files). GET / and
+// HEAD / are answered before the router (handler.go).
 package main
 
 import (
@@ -29,14 +34,16 @@ const v2NoRoute = 0xFFFFFFFF
 // usage error (exit 2), not a refusal of the table (exit 3).
 var errV2Unavailable = errors.New("router v2 is unavailable")
 
-// A platform file defines v2Table and these two functions:
+// A platform file defines v2Table and these:
 //
 //	newV2Table(patterns []string) (*v2Table, error)
 //	(*v2Table).find(path string, vals *[maxCaptures]string) (id uint32, n int)
+//	(*v2Table).describe() string
 //
 // find looks the path up as method 0 (GET), writes the n captured values into vals and returns the
-// route id, or v2NoRoute. newV2Table returns an error wrapping errV2Unavailable when the library
-// is missing, and the library's own message when p2v2_build returns NULL.
+// route id, or v2NoRoute. describe returns "v2 library <path or linked>: <build info>". newV2Table
+// returns an error wrapping errV2Unavailable when the library is missing or lacks an entry point,
+// and the library's own message when p2v2_build returns NULL.
 
 type v2Router struct {
 	table *v2Table
@@ -54,6 +61,9 @@ func newV2(routes []route, rep replier) (http.Handler, error) {
 	}
 	return &v2Router{table: t, rep: rep}, nil
 }
+
+// describe is what main prints at start, after the table is built.
+func (v *v2Router) describe() string { return v.table.describe() }
 
 func (v *v2Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -106,4 +116,9 @@ func sliceCaptures(path string, caps *[2 * maxCaptures]uint32, n uint32, vals *[
 // v2Failure is the error for a NULL from p2v2_build, with the library's message.
 func v2Failure(message string) error {
 	return fmt.Errorf("p2v2_build: %s", message)
+}
+
+// v2Description is the line main prints for the library: where it came from, and p2v2_build_info.
+func v2Description(source, info string) string {
+	return fmt.Sprintf("v2 library %s: %s", source, info)
 }

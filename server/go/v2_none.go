@@ -16,3 +16,5 @@ func newV2Table([]string) (*v2Table, error) {
 func (*v2Table) find(string, *[maxCaptures]string) (uint32, int) {
 	return v2NoRoute, 0
 }
+
+func (*v2Table) describe() string { return "" }

@@ -93,6 +93,9 @@ func run(args []string, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "mserver-go: %s refuses the table: %v\n", *name, err)
 		return 3
 	}
+	if d, ok := handler.(interface{ describe() string }); ok {
+		fmt.Fprintf(stderr, "mserver-go: %s\n", d.describe())
+	}
 	if !hasRoot(routes) {
 		handler = probe{next: handler, rep: rep, id: len(routes)}
 	}
