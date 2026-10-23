@@ -48,7 +48,8 @@ records=${2:?$usage}
 sets=${3:?$usage}
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/.." && pwd)
-ih=${INPUTS_HASH_PY:?INPUTS_HASH_PY is required (the Papers repo's lab/bin/inputs_hash.py)}
+ih=${INPUTS_HASH_PY:-}
+[ -n "$ih" ] || { echo "sanitize.sh: INPUTS_HASH_PY is required (lab/bin/inputs_hash.py of the Papers repo)" >&2; exit 2; }
 [ -f "$ih" ] || { echo "sanitize.sh: no $ih" >&2; exit 2; }
 [ -f "$sets/manifest.tsv" ] || { echo "sanitize.sh: no request sets at $sets (the bring-up job makes them)" >&2; exit 2; }
 mkdir -p "$records"
