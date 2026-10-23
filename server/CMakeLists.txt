@@ -90,6 +90,13 @@ endif()
 # Each arm is fetched and configured by its own bench/cmake/arm-<name>.cmake, which calls rb_arm.
 set(RB_SANITIZER "${P2_SANITIZER}")
 set(_externals_all crow drogon oatpp pistache boost-url r3 uwebsockets glaze cpp-httplib)
+# Windows: P2_BOOST_ROOT names a Boost 1.92.0 header tree with no CMake package (the laptop's
+# boost-1.92.0-b2-nodocs.zip, Alex 2026-10-23); cmake/boost-headers/ gives find_package(Boost CONFIG)
+# its Boost::headers there. Empty, as on Linux, the system's Boost package is found.
+set(P2_BOOST_ROOT "" CACHE PATH "A Boost 1.92.0 header tree with no CMake package (Windows)")
+if(P2_BOOST_ROOT)
+    set(Boost_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cmake/boost-headers" CACHE PATH "Boost's CMake package" FORCE)
+endif()
 find_package(Boost 1.92.0 EXACT QUIET CONFIG)
 set(_externals_default ${_externals_all})
 if(WIN32)

@@ -7,6 +7,7 @@ t3/source_hash.py, on synthetic work directories and records. Untimed.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -249,6 +250,42 @@ class GateTests(unittest.TestCase):
         write(out / "build-info.json", json.dumps({"go": {"sanitizer": "asan", "source": {"inputs_hash": GO_HASH}}}))
         with self.assertRaises(check_records.GateError):
             check_records.build_of(out)
+
+
+class LabstepsTests(unittest.TestCase):
+    def test_keep_logs_packs_once_and_refuses_again(self) -> None:
+        import labsteps
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write(root / "work" / "a.log", "one\n")
+            write(root / "work" / "sub" / "b.log", "two\n")
+            old = os.environ.get("RECORDS_LOGS")
+            os.environ["RECORDS_LOGS"] = str(root / "logs")
+            try:
+                tar, sha = labsteps.keep_logs("p2r3-x-L-asan", [root / "work" / "a.log", root / "work" / "sub"])
+                self.assertTrue(Path(tar).is_file())
+                self.assertEqual(len(sha), 64)
+                sums = (root / "logs" / "p2r3-x-L-asan" / "SHA256SUMS").read_text(encoding="utf-8")
+                self.assertIn("./a.log", sums)
+                self.assertIn("./sub/b.log", sums)
+                with self.assertRaises(labsteps.StepError):
+                    labsteps.keep_logs("p2r3-x-L-asan", [root / "work" / "a.log"])
+            finally:
+                if old is None:
+                    os.environ.pop("RECORDS_LOGS", None)
+                else:
+                    os.environ["RECORDS_LOGS"] = old
+
+    def test_the_count_plan_parses_as_a_runner_plan(self) -> None:
+        import labsteps
+        import p2run
+        with tempfile.TemporaryDirectory() as tmp:
+            plan = Path(tmp) / "plan.json"
+            labsteps.load_plan(plan, Path("p2gen"), Path("sets"),
+                               [("mserver", Path("mserver"), ["v2", "null"], None),
+                                ("mserver-go", Path("mserver-go"), ["v2"], {"P2V2_DLL": "x"})], [1000], "test")
+            parsed, _ = p2run.load_plan(plan)
+            self.assertEqual([p.name for p in parsed.programs], ["mserver", "mserver-go"])
 
 
 class SourceHashTests(unittest.TestCase):

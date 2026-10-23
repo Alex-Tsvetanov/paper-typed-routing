@@ -155,7 +155,8 @@ def main() -> int:
     rc, args = L.configure(build, san, work / "build.log", env, jobs)
     steps.add("build", rc, external_arms(work / "build.log"))
     if rc == 0:
-        steps.add("ctest", L.run([L.ctest_exe(), "-V"], work / "ctest.log", env, cwd=build))
+        rc = L.run([L.ctest_exe(), "-V"], work / "ctest.log", env, cwd=build)
+        steps.add("ctest", rc, next((l for l in reversed(read(work / "ctest.log").splitlines()) if "tests passed" in l), ""))
         arms: list = []
         try:
             arms = [x for x in L.mserver_arms(build, env) if x != "v1"]
