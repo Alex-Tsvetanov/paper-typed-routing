@@ -13,7 +13,8 @@ Design: `design/round3/end-to-end.md` (draft). Router list and its re-check:
 
 Requests per second of HTTP/1.1 servers over loopback on one laptop (AMD Ryzen 7 5800H), on its
 Arch Linux and on its Windows 11, one system at a time. Each server serves the routes of one
-round-2 table, mixed-disjoint, at m = 10, 100, 1,000, 10,000 and 100,000, and the load generator
+round-2 table, mixed-disjoint or static, at m = 10, 100, 1,000, 10,000 and 100,000, and P2's own
+load generator
 sends the round-2 T0 ring of the same seed pair (4,096 paths, all hits). Every found route
 answers 200 with a fixed 13-byte body; the handler folds the route id and every captured value
 into a sink, as round 2's timed loops do.
@@ -40,14 +41,21 @@ system, one mirrored round per program, a fresh server per window, a 1 s warm-up
 
 ## 4. Hypotheses (proposed)
 
-H8. In the C++ server, v2 is not slower than each C and C++ competitor.
-    - Family: every cell of a C or C++ competitor that builds on the system: at most 9 x 5 on
-      Arch and 7 x 5 on Windows, 80 cells.
+H8. In the same server, v2 is not slower than each competitor.
+    - Same server: the C++ server for the C and C++ competitors; the Go program, with v2 behind its
+      C interface (through cgo), for the Go competitors; the Rust program, likewise, for the Rust
+      competitors. The language boundary counts against v2.
+    - Family: every competitor that builds on the system, x 5 sizes x 2 shapes: at most 16 x 10 on
+      Arch and 15 x 10 on Windows, 310 cells.
     - Per pair, the ratio X_v2 / X_competitor of the two arms' mean req/s over their two windows.
     - A cell holds if the lower bound of the 95% BCa interval of the median ratio is above
       1 / delta and the exact one-sided sign test passes at alpha = 0.025 after Holm over the
-      family. With R = 16, 2^-16 = 1.53e-5 is below 0.025 / 80 = 3.13e-4 (D9).
-    - delta comes from the A/A pilot by a rule fixed before the pilot runs (open, section 6).
+      family. With R = 16, 2^-16 = 1.53e-5 is below 0.025 / 310 = 8.06e-5 (D9).
+    - delta is the larger of 1.02 and the A/A pilot's 97.5th percentile of the ratio of v2 to
+      itself (or its inverse), fixed in this file before the pilot runs (Alex, 2026-10-23).
+    - A competitor whose windows in a cell are invalid only by the error-share rule, because it
+      cannot sustain the load, is reported as "does not sustain the load", with its completed
+      requests and req/s, and leaves the family (Alex, 2026-10-23).
     - Superiority is reported beside it with the same machinery and bound 1.00.
 
 H9. v2's faster lookup carries over to the client in the C++ server.
@@ -56,9 +64,14 @@ H9. v2's faster lookup carries over to the client in the C++ server.
     - A cell holds if the lower bound of the 95% BCa interval of D_meas / D_T0 is at least 0.5,
       round 2's H6(b) bound. A cell whose T0 difference is not positive does not hold.
 
+H10. v2's routing costs a request no more than each Go and Rust router's costs it, each in its
+    own server (Alex, 2026-10-23, to be worded at the freeze).
+    - Per pair, the increments I_v2 = 1/X_v2 - 1/X_null of the C++ server and I_r = 1/X_r - 1/X_null
+      of router r's own program. The ratio I_v2 / I_r, at the margin delta of H8.
+    - Family: 7 routers x 5 sizes x 2 shapes x 2 systems = 140 cells; 0.025 / 140 = 1.79e-4.
+    - The boundary is stated with every result: the servers and runtimes differ.
+
 Reported, not tested:
-- Each Go and Rust router's routing increment, 1/X_router - 1/X_null of its own program, beside
-  v2's in the C++ server, with the boundary stated (`end-to-end.md`, section 1).
 - Raw req/s of every arm, per program.
 - The null arm's time per request on each system: the same-hardware contrast of the two systems'
   network paths.
@@ -71,13 +84,10 @@ reported as they come out.
 
 ## 6. Open before the freeze
 
-1. The rule that sets delta from the A/A pilot.
-2. Whether H8 and H9 cover the Go and Rust routers through v2 behind its C interface in their
-   programs (`end-to-end.md`, section 10, item 1).
-3. The Windows C++ compiler (MSVC or clang-cl).
-4. The rule for linear-scan cells at large m (`end-to-end.md`, section 9).
-5. The load generator and runner on Windows.
-6. The laptop hours, from a timing probe.
+Alex answered the design questions on 2026-10-23 (`design/round3/decisions-for-alex.md`). Open:
+1. P2's load generator and runner, built and A/A-checked against `t1gen` on Linux.
+2. The wording of H10.
+3. The laptop hours, from a timing probe.
 
 ## Revision log
 

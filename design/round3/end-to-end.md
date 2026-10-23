@@ -12,13 +12,16 @@ server, load over loopback (T1), on both systems of one laptop.
 
 The C and C++ routers run inside the paper's own server, one binary, the router chosen at start.
 The Rust and Go routers run in separate programs, one per language, each in its language's
-standard server (brief, section "Repository"). So two kinds of contrast exist.
+standard server (brief, section "Repository"). v2 also runs inside the Go and the Rust program,
+behind its C interface (Alex, 2026-10-23). So these contrasts exist.
 
 1. **Same server (tested).** In the C++ server, v2 against each C and C++ external router. The
    HTTP and I/O code is compiled once. The router sits behind one function pointer (round 2's
    `server/src/route.hpp`). A difference in req/s is a difference in routing, plus the router's
-   effect on caches and branch predictors around it.
-2. **Routing increment across servers (reported, not tested by default).** Each program also has
+   effect on caches and branch predictors around it. In the Go and the Rust program, v2 behind its
+   C interface against each of that program's routers: the language boundary (cgo for Go, a plain
+   C call for Rust; round 2 measured the cgo call alone, `ffi_call_ns`) counts against v2.
+2. **Routing increment across servers (tested, Alex 2026-10-23).** Each program also has
    a null router, which answers route 0 without reading the path. The time a router adds per
    request is `1/X_router - 1/X_null` of its own program. v2's is the same difference in the C++
    server. The two increments come from different servers and runtimes (Go's scheduler and
@@ -27,19 +30,14 @@ standard server (brief, section "Repository"). So two kinds of contrast exist.
 3. **Raw req/s across programs (reported only).** It measures server, runtime and language as
    much as routing. It is shown with the boundary stated and never tested.
 
-Optional, for Alex (section 10, item 1): v2 behind its C interface inside the Go and the Rust
-program. That gives a same-server contrast against the fastest Go and Rust routers. The cost of
-the language boundary (cgo for Go, a plain C call for Rust) counts against v2, which is the
-honest direction. Round 2 measured the cgo call alone (`ffi_call_ns`).
-
 Not done: Go and Rust routers inside the C++ server through round 2's FFI libraries. The brief
 asks for separate programs, and a cgo call from a C thread is not Go's documented use.
 
 ## 2. Cells
 
-- Shape: mixed-disjoint. In round 2's grid all sixteen competitors take part in it at all five
-  sizes (`results/round2/all_arms.csv`). It mixes literal and parameter routes. The other shapes
-  where all sixteen take part (static, param-last, param-first, rest) have one layout each. The
+- Shapes: mixed-disjoint and static (Alex, 2026-10-23). In round 2's grid all sixteen competitors
+  take part in both at all five sizes (`results/round2/all_arms.csv`). Mixed-disjoint mixes
+  literal and parameter routes; static is the case where a hash or a radix tree can lead. The
   choice is made before any end-to-end data exists. Round 2's lookup data are public and were
   read, so the choice is not blind to them.
 - Sizes: m = 10, 100, 1,000, 10,000, 100,000.
@@ -58,9 +56,10 @@ Per pair and size, one mirrored round per program: v2 (C++ only), each router in
 null, then null, the routers in reverse order, v2. A fresh server per window, probed once, then
 a 1 s warm-up and a 5 s window (H6's window, lab/t1). One arm's two windows are averaged.
 
-With R = 16 pairs, the exact one-sided sign test reaches 2^-16 = 1.53e-5. The tested family of
-section 1, item 1 is at most 9 routers x 5 sizes on Arch plus 7 x 5 on Windows (r3 and Pistache
-do not build there; section 6), 80 cells. 0.025/80 = 3.13e-4, so D9 holds.
+With R = 16 pairs, the exact one-sided sign test reaches 2^-16 = 1.53e-5. The same-server family
+of section 1, item 1 is at most 16 routers on Arch (9 C and C++, 4 Go, 3 Rust) and 15 on Windows
+(r3 absent), x 5 sizes x 2 shapes: 310 cells. 0.025/310 = 8.06e-5, so D9 holds. The cross-server
+family (section 1, item 2) is 7 routers x 5 x 2 x 2 = 140 cells, 0.025/140 = 1.79e-4.
 
 ## 4. Request sets
 
@@ -150,25 +149,28 @@ Arms per system, as built on the desktop on 2026-10-23:
 - Linux (clang 22.1.8): v2, null, crow, drogon, oatpp, pistache, r3, uwebsockets, glaze,
   cpp-httplib. boost-url waits for Boost 1.92.0 headers in the image.
 - Windows (MSVC 19.51): v2, null, crow, drogon, oatpp, uwebsockets, glaze, cpp-httplib. r3 includes
-  POSIX headers; Pistache's CMake build passes GCC flags to cl (its Windows build is its meson
-  build, not tried). boost-url as on Linux.
+  POSIX headers. Pistache's CMake build passes GCC flags to cl; Alex chose its meson build with
+  libevent there (not yet built). boost-url as on Linux.
 - Go and Rust: all their routers on both systems (Rust on Linux waits for a toolchain in the
   image).
 
-Pins: round 2's, unchanged (`bench/cmake/pins.cmake`, `bench/arms/rust/Cargo.lock`,
-`bench/arms/go/go.sum`), so T1 runs the code T0 timed. Newer releases since 2026-09-30 are listed
-in `router-survey.md`. A re-pin needs its reason here, and any change of the competitor set goes
-to Alex. The servers' own dependencies (hyper, tokio) are pinned by their own lock file.
+Pins: the latest release of each router (Alex, 2026-10-23), in a round-3 file of the server
+(`server/cmake/pins-round3.cmake`) that overrides round 2's `bench/cmake/pins.cmake`, which stays
+as round 2 measured it. Of the routers with a newer release, the re-check found the lookup code
+unchanged (`router-survey.md`): cpp-httplib v0.63.0 (matchers), chi v5.5.0 (lookup), Drogon 1.9.14
+(the transcribed file is the same blob). Crow's 1.3.5 is a pre-release, so Crow stays at 1.3.4.
+Go is 1.27.3 on the laptop. RegexMatcher stays 2.1.0.0, the measured library. The servers' own
+dependencies (hyper, tokio) are pinned by their own lock file.
 
 ## 7. Windows
 
 - The C++ server gets an IOCP backend beside epoll. Both serve the same HTTP code and the same
   router interface.
 - Go and Rust run natively on Windows.
-- Compiler (Alex decides, section 10, item 2): MSVC 19.51 is the platform's compiler and the one
-  the laptop has. clang on Linux against MSVC on Windows confounds the system with the compiler,
-  which weakens the same-hardware cross-OS argument. clang-cl 22.1.8 on Windows would hold the
-  compiler fixed, but the laptop has no LLVM install today.
+- Compiler: clang-cl 22.1.8 on Windows (Alex, 2026-10-23), so the C++ server's compiler is the
+  same on both systems; MSVC is the fallback for an arm that does not build with it. LLVM is not
+  yet on the desktop or the laptop (Lab and Laptop requests), and `bench/cmake/isa.cmake` needs a
+  clang-cl branch. The desktop's functional checks so far use MSVC.
 - With MSVC every C and C++ target gets `/arch:AVX2` (`bench/cmake/isa.cmake`), the nearest MSVC
   has to Linux's `-march=native`, and `/Zc:__cplusplus /Zc:preprocessor /utf-8 /permissive-`
   (`server/CMakeLists.txt`).
@@ -179,9 +181,9 @@ to Alex. The servers' own dependencies (hyper, tokio) are pinned by their own lo
 
 ## 8. Load generator and runner
 
-lab/t1's `t1gen` and `t1.py` are Linux only (epoll, `taskset`, `/proc`). Windows needs a
-generator and a runner with the same window rules. That is lab tooling (Lab request in
-`STATE.md`). P3 and P4 have their own Windows generators; P2 does not.
+lab/t1's `t1gen` and `t1.py` are Linux only (epoll, `taskset`, `/proc`). Alex chose P2's own
+portable generator and runner (2026-10-23), C++23 with epoll and IOCP, used on both systems with
+lab/t1's window rules, and A/A-checked against `t1gen` on Linux before use (no arm compared).
 
 ## 9. Known risks, from round 2's published laptop data
 
@@ -189,29 +191,29 @@ Mixed-disjoint at m = 100,000 (`results/round2/all_arms.csv`, `ns_median`, `buil
 - Four routers scan linearly. Lookup alone takes 30.1 ms (actix-router), 7.80 ms (Drogon),
   3.95 ms (Oat++) and 0.96 ms (cpp-httplib). On one server core that caps them near 33, 128, 253
   and 1,043 requests per second, before any HTTP cost. A 5 s window then completes few requests,
-  and 64 connections queue behind each one. Rule for such cells: section 10, item 3.
+  and 64 connections queue behind each one. Rule (Alex, 2026-10-23): same windows; a router
+  that cannot sustain the load is reported with its counts and leaves the tested family.
 - Table builds take 4.6 s (Drogon) and 4.2 s (actix-router). A fresh server per window adds
   that start-up. The readiness wait must exceed it, and the time budget must count it.
 
-## 10. Alex decides
+## 10. Alex's answers (2026-10-23)
 
-1. Add v2 behind its C interface to the Go and Rust programs (same-server control for the
-   fastest Go and Rust routers)? Adds about 2 arms x 2 windows per round.
-2. The compiler of the Windows C++ builds: MSVC (installed) or clang-cl 22.1.8 (to install).
-3. Linear-scan cells at large m: measure them like the others and report their counts, or set a
-   minimum of completed requests per window below which a cell is reported, not tested.
-4. Whether the routing increment across servers (section 1, item 2) becomes a tested hypothesis.
+All twelve questions of `decisions-for-alex.md` are answered: v2 in the Go and Rust programs; P2's
+own generator; clang-cl on Windows; overloaded linear-scan routers reported and left out of the
+tested family by a rule fixed in the frozen file; the increment across servers tested; two
+shapes; the margin from the A/A pilot; the latest releases; the Boost headers; Pistache's meson
+build on Windows; library handlers in Go; the push of `round3` at the freeze.
 
 ## 11. Laptop time (estimate, to be replaced by a probe before the freeze)
 
-Arms per round on Arch: C++ 11 (v2, null, 9 externals), Go 5 (4 routers, null), Rust 4 (3
-routers, null): 20 arms, 2 windows each, 40 windows per pair and size. 40 x 16 pairs x 5 sizes =
-3,200 windows. On Windows r3 and Pistache are absent: 18 arms, 36 windows, 2,880 windows. With
-item 1, 4 more windows per pair and size on each system: 3,520 and 3,200.
+Arms per round on Arch: C++ 11 (v2, null, 9 externals), Go 6 (v2, 4 routers, null), Rust 5 (v2,
+3 routers, null): 22 arms, 2 windows each, 44 windows per pair and size. On Windows r3 is absent:
+21 arms, 42 windows. Two shapes x 16 pairs x 5 sizes = 160 pairs and sizes per system: 7,040
+windows on Arch, 6,720 on Windows.
 
 Basis: H6's window on the laptop's Arch, 6.30 s, and plan v2's 6.123 s for Windows (plan v2,
-section 3.2). Arch 3,200 x 6.30 s = 20,160 s = 5.60 h. Windows 2,880 x 6.123 s = 17,634 s =
-4.90 h. With item 1: 3,520 x 6.30 s = 22,176 s = 6.16 h, and 3,200 x 6.123 s = 19,594 s = 5.44 h. Not counted, no measured basis yet: start-up at large m
+section 3.2). Arch 7,040 x 6.30 s = 44,352 s = 12.32 h. Windows 6,720 x 6.123 s = 41,147 s =
+11.43 h. Together 23.75 h, 1.21 calendar days at plan v2's 19.68 measuring hours a day. Not counted, no measured basis yet: start-up at large m
 (section 9), the A/A pilot, the H7 MSVC costs on the laptop (plan v2 uses the desktop's 0.33 h as
 its estimate). A timing probe on the laptop replaces all of these before the freeze.
 
@@ -221,6 +223,7 @@ its estimate). A timing probe on the laptop replaces all of these before the fre
 - 2026-10-23, after the first builds: the probe `/` is answered by every program itself (section
   5); the per-language departures and the arms per system (section 6); MSVC flags and the IOCP
   backend (section 7).
+- 2026-10-23, Alex's answers to the twelve decisions (sections 1, 2, 3, 6 to 8, 10, 11).
 - 2026-10-23, after the code review: the server copies the path once for every arm, v2 and null
   included (section 6); every Go router is hosted as its library's `http.Handler` (section 6);
   instruction sets of the Go and Rust programs; method answers, Windows stop signal and exit codes
