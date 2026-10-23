@@ -1,6 +1,6 @@
 # P2 round 3, state digest
 
-Under 200 lines. Read this first. Updated 2026-10-23, late.
+Under 200 lines. Read this first. Updated 2026-10-24.
 
 ## What round 3 is
 
@@ -108,29 +108,18 @@ m = 1,000, on both shapes; at m = 100,000 the linear-scan arms get the ring only
 Each runs on the laptop between campaigns; the coordinator schedules them.
 0. P2's generator and runner: Release builds, D5 records (L ASan+UBSan, TSan, MSan; W clang-cl
    ASan), and the A/A check of `p2gen` against `t1gen` on L in the pilot. No measured basis.
-1. Toolchains (approved for laptop gaps, 2026-10-23; the operator does the desktop-side checked
-   downloads): on W LLVM 22.1.8 (clang-cl), Go 1.27.3, Rust 1.99.0, meson and libevent
-   (Pistache), Boost 1.92.0 headers; on L Go 1.27.3 and Rust 1.99.0 side by side under `~/opt`
-   (no pacman change until P4's Arch blocks end). All sha256-checked. No measured basis.
-   Pins for Pistache's meson build on W (Pistache v0.4.26 needs meson >= 0.53.2 and
-   `dependency('libevent')`; read 2026-10-24):
-   - meson 1.12.1 (latest, 2026-09-22), the source archive, run as `python meson.py`, no
-     install: https://github.com/mesonbuild/meson/releases/download/1.12.1/meson-1.12.1.tar.gz,
-     sha256 ab0a6ca09f8ef70c564c8241fb5a23957886a0b53fb58412b5e07eaf07dba743. The project signs it
-     (`.asc`); the sha256 is GitHub's asset digest and equals PyPI's for the same file.
-   - libevent 2.1.13-stable (latest stable, 2026-07-01; 2.2.2 is an alpha):
-     https://github.com/libevent/libevent/releases/download/release-2.1.13-stable/libevent-2.1.13-stable.tar.gz,
-     sha256 f7e9383b8c0baa81b687e5b5eecc01beefaf1b19b64151d95ed61647fe7a315c. The project publishes
-     only a GPG signature (`.asc`); the sha256 is GitHub's asset digest. Built with its CMake, static,
-     with clang-cl, OpenSSL, mbedTLS, tests and samples off.
-   - RapidJSON for Pistache's wrap fallback, both pinned by `subprojects/rapidjson.wrap` at the
-     tag, for meson's package cache (no network at build): https://github.com/Tencent/rapidjson/archive/v1.1.0.tar.gz,
-     sha256 bf7ced29704a1e696fbccf2a2b4ea068e7774fa37f6d7dd4039d0787f8bed98e; and
-     https://wrapdb.mesonbuild.com/v2/rapidjson_1.1.0-2/get_patch, sha256
-     c1480d0ecef09dbaa4b4d85d86090205386fb2c7e87f4f158b20dbbda14c9afc. hinnant-date is vendored
-     in Pistache's tree.
-   - Not yet known: whether meson finds libevent through libevent's CMake package or needs
-     pkg-config (pkgconf); the first desktop build will tell, and a pkgconf pin follows if needed.
+1. Toolchains. W: done 2026-10-24, 01:06 to 01:19, four jobs, each exit 0 (Papers
+   `lab/laptop/queues/gap2-w-q2-p2-toolchains.json` at a27b47e; its `gap2-w-p2-toolchains.ps1` holds
+   every pin: file, bytes, sha256). Under `C:\Users\alext\opt`: go-1.27.3, meson-1.12.1 (run as
+   `python meson.py`, not installed), libevent-2.1.13-stable (source only, not yet built),
+   rapidjson-1.1.0 (Pistache's wrap files, packed), boost-1.92.0 (headers in `boost\`), llvm-22.1.8
+   (`bin\clang-cl.exe`, clang 22.1.8, LLD 22.1.8); Rust 1.99.0 is P4's (RUSTUP_HOME and CARGO_HOME
+   `C:\Users\alext\opt\rustup` and `cargo`). Read from the check job's versions.txt in
+   `C:\Users\alext\lab\laptop-archive\gap2-w-q2-p2-toolchains-1384391a\`. meson 1.12.1 and libevent
+   2.1.13-stable were pinned on 2026-10-24 (latest stable; both publish only a GPG signature, so the
+   sha256s are GitHub's asset digests, meson's equal to PyPI's). L: Go 1.27.3 and Rust 1.99.0 under
+   `~/opt` come with the Arch visit (`gap1-a-p2-toolchains.sh`). Open: pkgconf, until Pistache's
+   first Windows build.
 2. Request sets on L and W, generated there or copied, checked with `make_requests.py --verify`.
    No measured basis.
 3. Release builds of the three programs (`build_programs.py --cxx-build ...`) and the functional
@@ -178,7 +167,8 @@ Open with Alex: none. The frozen-text items above go to him with the freeze prop
 1862c01 723a235 354a536 dd5ae0a (first servers), d8b51eb a8c3f8b 4942900 (first review), e8af074
 cfc8d11 6829ed0 b69bde7 9596d62 f40d81a (state, decisions, answers, spec), 9444920 7fc0fed 1ecdeb0
 69557f8 (pins, v2 arms, generator, Crow), 9d7366b 7459902 508f54d (second review), 62ed742
-(runner), and the commit of this update. `bench/` equals round 2's files except `isa.cmake`.
+(runner), 2e93c25 8c95d9d 06adfe5 (final suites), a27b47e (meson and libevent pins), and the
+commit of this update. `bench/` equals round 2's files except `isa.cmake`.
 
 ## Next engineering
 
