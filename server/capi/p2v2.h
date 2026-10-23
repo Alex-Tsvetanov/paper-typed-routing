@@ -39,6 +39,11 @@ P2V2_API p2v2_table* p2v2_build(const char* const* patterns, const size_t* lens,
 
 P2V2_API void p2v2_free(p2v2_table* table);
 
+/* How this library was built: the compiler and its version, the build type, whether NDEBUG was set,
+ * and the instruction set of bench/cmake/isa.cmake. The Go and Rust programs print it at start, so
+ * every run records which build of v2 its v2 arm ran. A static string. */
+P2V2_API const char* p2v2_build_info(void);
+
 /* Looks up one request: method as RegexMatcher v2 numbers them (0 is GET), and the path's len bytes.
  * Returns the route id, or P2V2_NO_ROUTE. Writes the captured values as (offset into path, length)
  * pairs into caps, 2 x max_caps entries at most, and their number into *ncaps. */

@@ -19,10 +19,16 @@ behind its C interface (Alex, 2026-10-23). So these contrasts exist.
    HTTP and I/O code is compiled once. The router sits behind one function pointer (round 2's
    `server/src/route.hpp`). A difference in req/s is a difference in routing, plus the router's
    effect on caches and branch predictors around it. In the Go and the Rust program, v2 behind its
-   C interface against each of that program's routers: the language boundary (cgo for Go, a plain
-   C call for Rust) counts against v2. v2's code there is compiled with the C++ server's compiler and
-   flags (one C-interface library, `server/capi/`). Round 2's `ffi_call_ns` measured a call from
-   C++ into Go, the other direction, so it is not this boundary's cost.
+   C interface against each of that program's routers: the language boundary counts against v2.
+   Go calls it through cgo on Linux and through a DLL call (`syscall.SyscallN`) on Windows, so the
+   Go boundary differs between the systems; Rust makes a plain C call on both. v2's code there is
+   the C++ server's own build of it (one C-interface library, `server/capi/`, from the same CMake
+   tree; `t3/build_programs.py` builds each program as one binary against it and records its path
+   and sha256, and each program prints the library's `p2v2_build_info` at start). On Linux that
+   library is compiled with `-fPIC` and the server's arms are not; the linker relaxes the calls in
+   an executable, so the difference is expected to be negligible, and it is stated. Round 2's
+   `ffi_call_ns` measured a call from C++ into Go, the other direction, so it is not this
+   boundary's cost.
 2. **Routing increment across servers (tested, Alex 2026-10-23).** Each program also has
    a null router, which answers route 0 without reading the path. The time a router adds per
    request is `1/X_router - 1/X_null` of its own program. v2's is the same difference in the C++
@@ -54,7 +60,7 @@ Round 2's sixteen seed pairs: table seeds 111 to 126 with ring seeds 211 to 226
 table and its own ring, and the T0 to T1 carry-over is defined per pair. H6 of round 2 used one
 pair only; that does not carry over to sixteen.
 
-Per pair and size, one mirrored round per program: v2 (C++ only), each router in a fixed order,
+Per pair and size, one mirrored round per program: v2, each router in a fixed order,
 null, then null, the routers in reverse order, v2. A fresh server per window, probed once, then
 a 1 s warm-up and a 5 s window (H6's window, lab/t1). One arm's two windows are averaged.
 
@@ -120,13 +126,13 @@ file of H6 needs no new form.
   request's path once into one reused string and hands that string to every arm, v2 and null
   included (`server/src/route.hpp`, `http1.cpp`). No arm pays a copy that another does not. The
   harness's 405 rule of round 2 is applied to arms without their own.
-- **Go** (`server/go/`, binary `mserver-go`): `--router httprouter|gin|nethttp|chi|null`. Go's
+- **Go** (`server/go/`, binary `mserver-go`): `--router v2|httprouter|gin|nethttp|chi|null`. Go's
   `net/http` server, with each router as the `http.Handler` its library documents, so each request
   pays the library's own steps around the lookup: gin's `Engine` (`gin.New()` in release mode, the
-  real v1.12.0 module, whose `tree.go` is the one round 2 vendored), chi's `Mux` (round 2's vendored
-  v5.3.2 package), httprouter's `Router`, net/http's `ServeMux`. The lookup code is round 2's, at
-  the same versions; T0 timed it without those steps.
-- **Rust** (`server/rust/`, binary `mserver-rs`): `--router matchit|path-tree|actix-router|null`.
+  real v1.12.0 module, whose `tree.go` is the one round 2 vendored), chi's `Mux` (the real v5.5.0
+  module; its lookup path is the same code as round 2's vendored v5.3.2), httprouter's `Router`,
+  net/http's `ServeMux`. The lookup code is round 2's; T0 timed it without those steps.
+- **Rust** (`server/rust/`, binary `mserver-rs`): `--router v2|matchit|path-tree|actix-router|null`.
   hyper's HTTP/1 server on tokio's current-thread runtime. Each router called as round 2's crate
   calls it (`bench/arms/rust/*.rs`).
 
@@ -160,8 +166,9 @@ Pins: the latest release of each router (Alex, 2026-10-23), in a round-3 file of
 (`server/cmake/pins-round3.cmake`) that overrides round 2's `bench/cmake/pins.cmake`, which stays
 as round 2 measured it. Of the routers with a newer release, the re-check found the lookup code
 unchanged (`router-survey.md`): cpp-httplib v0.63.0 (matchers), chi v5.5.0 (lookup), Drogon 1.9.14
-(the transcribed file is the same blob). Crow's 1.3.5 is a pre-release, so Crow stays at 1.3.4.
-Go is 1.27.3 on the laptop. RegexMatcher stays 2.1.0.0, the measured library. The servers' own
+(the transcribed file is the same blob), and Crow 1.3.5, a pre-release Alex chose on 2026-10-23
+(its `Trie` is the same text). Go is 1.27.3 on both systems (Alex, the same day), installed outside
+the package snapshot. RegexMatcher stays 2.1.0.0, the measured library. The servers' own
 dependencies (hyper, tokio) are pinned by their own lock file.
 
 ## 7. Windows
@@ -260,7 +267,11 @@ its estimate). A timing probe on the laptop replaces all of these before the fre
 - 2026-10-23, after the first builds: the probe `/` is answered by every program itself (section
   5); the per-language departures and the arms per system (section 6); MSVC flags and the IOCP
   backend (section 7).
-- 2026-10-23, Alex's answers to the twelve decisions (sections 1, 2, 3, 6 to 8, 10, 11).
+- 2026-10-23, Alex's answers to the twelve decisions (sections 1, 2, 3, 6 to 8, 10, 11), and to two
+  more (Crow's 1.3.5 pre-release, Go 1.27.3).
+- 2026-10-23, after the review of the generator and the v2 arms: one binary per program built
+  against the C++ server's v2 library, with its build recorded (section 1); the Go boundary per
+  system; chi v5.5.0; v2 listed in every program.
 - 2026-10-23, after the code review: the server copies the path once for every arm, v2 and null
   included (section 6); every Go router is hosted as its library's `http.Handler` (section 6);
   instruction sets of the Go and Rust programs; method answers, Windows stop signal and exit codes

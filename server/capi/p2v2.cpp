@@ -10,7 +10,29 @@
 
 #include <matcher/route.hpp>
 
+#include "rb_isa.h"
+
 namespace R = matcher::route;
+
+#ifndef P2V2_BUILD_TYPE
+#define P2V2_BUILD_TYPE "unknown"
+#endif
+#if defined(__clang__)
+#define P2V2_COMPILER "clang " __clang_version__
+#elif defined(_MSC_VER)
+#define P2V2_STR2(x) #x
+#define P2V2_STR(x) P2V2_STR2(x)
+#define P2V2_COMPILER "MSVC " P2V2_STR(_MSC_FULL_VER)
+#elif defined(__GNUC__)
+#define P2V2_COMPILER "gcc " __VERSION__
+#else
+#define P2V2_COMPILER "unknown"
+#endif
+#ifdef NDEBUG
+#define P2V2_NDEBUG "NDEBUG"
+#else
+#define P2V2_NDEBUG "no NDEBUG"
+#endif
 
 struct p2v2_table {
     R::RuntimeTable table;
@@ -19,16 +41,22 @@ struct p2v2_table {
 
 namespace {
 
-void message(char* err, std::size_t errcap, const std::string& text) {
+// Copies a message without allocating, so no exception can leave the C interface from here.
+void message(char* err, std::size_t errcap, const char* text) noexcept {
     if (err == nullptr || errcap == 0) {
         return;
     }
-    const std::size_t n = text.size() < errcap - 1 ? text.size() : errcap - 1;
-    std::memcpy(err, text.data(), n);
+    const std::size_t len = std::strlen(text);
+    const std::size_t n = len < errcap - 1 ? len : errcap - 1;
+    std::memcpy(err, text, n);
     err[n] = '\0';
 }
 
 }  // namespace
+
+extern "C" const char* p2v2_build_info(void) {
+    return P2V2_COMPILER ", " P2V2_BUILD_TYPE ", " P2V2_NDEBUG ", isa " RB_ISA_TARGET_CPU;
+}
 
 extern "C" p2v2_table* p2v2_build(const char* const* patterns, const size_t* lens, size_t n, char* err,
                                   size_t errcap) {
@@ -40,7 +68,9 @@ extern "C" p2v2_table* p2v2_build(const char* const* patterns, const size_t* len
         }
         auto* t = new p2v2_table{R::make_runtime_table(specs), {}};
         if (t->table.error != R::BuildError::None) {
-            message(err, errcap, "the routes do not build a table (route " + std::to_string(t->table.error_route) + ")");
+            const std::string text =
+                "the routes do not build a table (route " + std::to_string(t->table.error_route) + ")";
+            message(err, errcap, text.c_str());
             delete t;
             return nullptr;
         }
@@ -59,6 +89,10 @@ extern "C" void p2v2_free(p2v2_table* table) { delete table; }
 
 extern "C" uint32_t p2v2_find(const p2v2_table* table, unsigned method, const char* path, size_t len, uint32_t* caps,
                               uint32_t max_caps, uint32_t* ncaps) {
+    if (len > UINT32_MAX) {  // offsets go back as uint32; no HTTP path comes near it
+        *ncaps = 0;
+        return P2V2_NO_ROUTE;
+    }
     R::Match m;
     R::find_into(table->view, method, std::string_view(path, len), m);
     if (m.status != R::Status::Found) {

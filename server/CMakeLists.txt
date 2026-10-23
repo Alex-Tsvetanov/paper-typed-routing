@@ -184,13 +184,15 @@ endif()
 # RegexMatcher v2 behind a C interface (capi/p2v2.h), for the v2 arms of the Go and Rust programs
 # (design/round3/end-to-end.md, section 1), compiled with this project's compiler and flags: a
 # static library (Linux cgo, Rust) and a shared one (the Windows DLL the Go program calls).
+set(_p2v2_type "${CMAKE_BUILD_TYPE}")
 add_library(p2v2_c STATIC capi/p2v2.cpp)
+target_compile_definitions(p2v2_c PRIVATE "P2V2_BUILD_TYPE=\"${_p2v2_type}\"")
 target_include_directories(p2v2_c PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/capi")
 target_link_libraries(p2v2_c PRIVATE RegexMatcher::route)
 target_compile_options(p2v2_c PRIVATE ${_warn})
 set_target_properties(p2v2_c PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_library(p2v2 SHARED capi/p2v2.cpp)
 target_include_directories(p2v2 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/capi")
-target_compile_definitions(p2v2 PUBLIC P2V2_SHARED PRIVATE P2V2_BUILD)
+target_compile_definitions(p2v2 PUBLIC P2V2_SHARED PRIVATE P2V2_BUILD "P2V2_BUILD_TYPE=\"${_p2v2_type}\"")
 target_link_libraries(p2v2 PRIVATE RegexMatcher::route)
 target_compile_options(p2v2 PRIVATE ${_warn})
