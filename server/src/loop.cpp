@@ -45,8 +45,8 @@ constexpr std::uint64_t kStopTag = 2;
 
 class Server {
 public:
-    Server(int listen_fd, int stop_fd, const Router& router)
-        : listen_fd_(listen_fd), stop_fd_(stop_fd), router_(router) {
+    Server(int listen_fd, int stop_fd, const Router& router, bool check)
+        : listen_fd_(listen_fd), stop_fd_(stop_fd), router_(router), responses_(check) {
         ep_ = epoll_create1(EPOLL_CLOEXEC);
         if (ep_ < 0) {
             fail("epoll_create1");
@@ -191,24 +191,8 @@ private:
 
     // Answers every complete request in the connection's buffer, in order.
     void process(Conn& c) {
-        std::size_t off = 0;
-        while (!c.closing && off < c.in_len) {
-            const Parsed p = parse_request(std::string_view(c.in.data() + off, c.in_len - off));
-            if (p.state == Parse::Complete) {
-                responses_.answer(p.request, router_, scratch_, c.out);
-                off += p.consumed;
-                c.closing = !p.request.keep_alive;
-            } else if (p.state == Parse::Refused) {
-                responses_.refuse(p.refusal, c.out);
-                c.closing = true;
-            } else {
-                if (off == 0 && c.in_len == kConnBuffer) {
-                    responses_.refuse(413, c.out);  // a request larger than the buffer
-                    c.closing = true;
-                }
-                break;
-            }
-        }
+        const std::size_t off = answer_all(std::string_view(c.in.data(), c.in_len), c.in_len == kConnBuffer,
+                                           responses_, router_, scratch_, c.out, c.closing);
         if (off != 0) {
             std::memmove(c.in.data(), c.in.data() + off, c.in_len - off);
             c.in_len -= off;
@@ -284,8 +268,8 @@ Listener listen_loopback(std::uint16_t port) {
     return {fd, ntohs(a.sin_port)};
 }
 
-void serve(int listen_fd, int stop_fd, const Router& router) {
-    Server s(listen_fd, stop_fd, router);
+void serve(int listen_fd, int stop_fd, const Router& router, bool check) {
+    Server s(listen_fd, stop_fd, router, check);
     s.run();
 }
 

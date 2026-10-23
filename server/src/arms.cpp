@@ -6,7 +6,10 @@
 
 #include <matcher/route.hpp>
 
+#include "external.hpp"
+#if MSERVER_WITH_V1
 #include "arm_v1.hpp"
+#endif
 
 namespace mserver {
 
@@ -23,6 +26,7 @@ void find_v2(const void* data, unsigned method, std::string_view path, RouteResu
     R::find_into(static_cast<const V2*>(data)->view, method, path, out);
 }
 
+#if MSERVER_WITH_V1
 struct V1 {
     std::shared_ptr<v1::Router> router;
     v1::Lookup scratch;
@@ -55,6 +59,7 @@ void find_v1(const void* data, unsigned method, std::string_view path, RouteResu
     }
     out.status = out.allowed != 0 ? RouteStatus::MethodNotAllowed : RouteStatus::NotFound;
 }
+#endif
 
 void find_null(const void*, unsigned, std::string_view, RouteResult& out) {
     out.status = RouteStatus::Found;
@@ -87,22 +92,42 @@ std::vector<RouteLine> read_routes(const std::string& path) {
     return routes;
 }
 
-Arm make_arm(std::string_view name, const std::vector<RouteLine>& routes) {
+namespace {
+
+// GET / is lab/t1's readiness probe. Unless the file has a route for it, the server answers it
+// as the route after the file's (Router::probe), and no router holds it: every arm's table is
+// exactly the file's routes (design/round3/end-to-end.md, section 5).
+std::uint32_t probe_of(const std::vector<RouteLine>& routes) {
+    for (const RouteLine& r : routes) {
+        if (r.method == kGet && r.pattern == "/") {
+            return kNoProbe;
+        }
+    }
+    return static_cast<std::uint32_t>(routes.size());
+}
+
+Arm build_arm(std::string_view name, const std::vector<RouteLine>& routes) {
     if (name == "null") {
         return {Router{find_null, nullptr}, nullptr};
     }
+    for (const ExternalArm& e : external_arms()) {
+        if (e.name == name) {
+            return e.make(routes);
+        }
+    }
+#if !MSERVER_WITH_V1
+    if (name == "v1") {
+        throw std::runtime_error("this build has no v1 arm");
+    }
+#endif
     if (name != "v2" && name != "v1") {
         throw std::runtime_error("unknown router arm: " + std::string(name));
     }
     std::vector<R::RouteSpec> specs;
-    bool has_root = false;
     for (std::size_t i = 0; i < routes.size(); ++i) {
         specs.push_back({routes[i].method, routes[i].pattern, static_cast<std::uint32_t>(i)});
-        has_root = has_root || (routes[i].method == kGet && routes[i].pattern == "/");
     }
-    if (!has_root) {
-        specs.push_back({kGet, "/", static_cast<std::uint32_t>(routes.size())});
-    }
+#if MSERVER_WITH_V1
     if (name == "v1") {
         std::vector<std::pair<unsigned, std::string>> v1_routes;
         for (const R::RouteSpec& spec : specs) {
@@ -112,6 +137,7 @@ Arm make_arm(std::string_view name, const std::vector<RouteLine>& routes) {
         a->router = v1::make(v1_routes);
         return {Router{find_v1, a.get()}, a};
     }
+#endif
     auto v2 = std::make_shared<V2>();
     v2->table = R::make_runtime_table(specs);
     if (v2->table.error != R::BuildError::None) {
@@ -119,6 +145,14 @@ Arm make_arm(std::string_view name, const std::vector<RouteLine>& routes) {
     }
     v2->view = v2->table.view();
     return {Router{find_v2, v2.get()}, v2};
+}
+
+}  // namespace
+
+Arm make_arm(std::string_view name, const std::vector<RouteLine>& routes) {
+    Arm arm = build_arm(name, routes);
+    arm.router.probe = probe_of(routes);
+    return arm;
 }
 
 }  // namespace mserver

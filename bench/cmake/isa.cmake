@@ -20,7 +20,16 @@ set(RB_GOAMD64 "" CACHE STRING "GOAMD64 of the Go arms (empty: the highest level
 
 set(RB_ISA_TARGET_CPU "")
 set(RB_ISA_FEATURES "")
-if(RB_MARCH)
+if(MSVC)
+    # MSVC has no -march (round 3's Windows builds, design/round3/end-to-end.md, section 7). Its
+    # nearest option is /arch, whose highest level the laptop's Ryzen 7 5800H runs is AVX2.
+    set(RB_MSVC_ARCH "AVX2" CACHE STRING "/arch of every C and C++ target with MSVC (empty: none)")
+    set(RB_MARCH "")
+    if(RB_MSVC_ARCH)
+        add_compile_options(/arch:${RB_MSVC_ARCH})
+    endif()
+    set(RB_ISA_TARGET_CPU "msvc /arch:${RB_MSVC_ARCH}")
+elseif(RB_MARCH)
     add_compile_options(-march=${RB_MARCH})
     execute_process(COMMAND "${CMAKE_CXX_COMPILER}" -march=${RB_MARCH} "-###" -c -x c++ /dev/null -o /dev/null
                     ERROR_VARIABLE _isa_driver OUTPUT_QUIET RESULT_VARIABLE _isa_rc)

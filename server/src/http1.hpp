@@ -44,7 +44,13 @@ Parsed parse_request(std::string_view buf) noexcept;
 // patched in place (set_date), once a second.
 class Responses {
 public:
-    Responses();
+    // check: a found route answers with its id and captured values (the check mode of
+    // design/round3/end-to-end.md, section 5); otherwise with the fixed 13-byte body.
+    explicit Responses(bool check = false);
+
+    // Every found route's id, and every captured value's length and first byte, added up (round
+    // 2's fold, bench/core/runner.hpp), so that no router's capture work can be dropped.
+    std::uint64_t sink() const noexcept { return sink_; }
 
     // An IMF-fixdate of 29 bytes ("Sun, 06 Nov 1994 08:49:37 GMT").
     void set_date(std::string_view date) noexcept;
@@ -69,9 +75,19 @@ private:
     std::array<std::array<Fixed, kConns>, kKinds> fixed_;
     std::array<Fixed, 4> refusals_;  // 400, 413, 431, 501
     std::string date_;
+    bool check_ = false;
+    mutable std::uint64_t sink_ = 0;
 
     static Conn conn_of(const Request& req) noexcept;
     void method_not_allowed(const Request& req, std::uint16_t allowed, std::string& out) const;
+    void found_check(const Request& req, const RouteResult& found, std::string& out) const;
 };
+
+// Answers every complete request at the start of `in`, in order, appending the responses to out.
+// Returns the bytes consumed. Sets closing when the connection closes once `out` is sent: after a
+// refusal, after a request without keep-alive, or with 413 when `in` fills the whole buffer
+// (`full`) and holds no complete request. Both I/O backends call it.
+std::size_t answer_all(std::string_view in, bool full, const Responses& responses, const Router& router,
+                       RouteResult& scratch, std::string& out, bool& closing);
 
 }  // namespace mserver

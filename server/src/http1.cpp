@@ -169,7 +169,7 @@ Parsed parse_request(std::string_view buf) noexcept {
     return p;
 }
 
-Responses::Responses() : date_(kInitialDate) {
+Responses::Responses(bool check) : date_(kInitialDate), check_(check) {
     const std::string_view conn_line[kConns] = {"", "Connection: close\r\n", "Connection: keep-alive\r\n"};
     for (std::size_t c = 0; c < kConns; ++c) {
         Fixed& ok = fixed_[kOk][c];
@@ -232,6 +232,16 @@ void Responses::answer(const Request& req, const Router& router, RouteResult& sc
     }
     switch (scratch.status) {
         case RouteStatus::Found: {
+            if (check_) {
+                found_check(req, scratch, out);
+                return;
+            }
+            std::uint64_t s = scratch.route;
+            for (std::uint8_t i = 0; i < scratch.count; ++i) {
+                const std::size_t n = scratch.params[i].size();
+                s += n + (n == 0 ? 0u : static_cast<unsigned char>(scratch.params[i].data()[0]));
+            }
+            sink_ += s;
             const Fixed& f = fixed_[kOk][c];
             out.append(f.bytes, 0, head ? f.head_end : f.bytes.size());
             return;
@@ -274,6 +284,49 @@ void Responses::method_not_allowed(const Request& req, std::uint16_t allowed, st
 void Responses::refuse(unsigned status, std::string& out) const {
     const std::size_t i = status == 413 ? 1 : status == 431 ? 2 : status == 501 ? 3 : 0;
     out.append(refusals_[i].bytes);
+}
+
+void Responses::found_check(const Request& req, const RouteResult& found, std::string& out) const {
+    std::string body = std::to_string(found.route);
+    for (std::uint8_t i = 0; i < found.count; ++i) {
+        body += '\t';
+        body.append(found.params[i].data(), found.params[i].size());
+    }
+    body += '\n';
+    out.append("HTTP/1.1 200 OK\r\nDate: ").append(date_).append("\r\nContent-Type: text/plain\r\nContent-Length: ");
+    out.append(std::to_string(body.size())).append("\r\n");
+    switch (conn_of(req)) {
+        case kClose: out.append("Connection: close\r\n"); break;
+        case kKeep10: out.append("Connection: keep-alive\r\n"); break;
+        default: break;
+    }
+    out.append("\r\n");
+    if (req.method != kHead) {
+        out.append(body);
+    }
+}
+
+std::size_t answer_all(std::string_view in, bool full, const Responses& responses, const Router& router,
+                       RouteResult& scratch, std::string& out, bool& closing) {
+    std::size_t off = 0;
+    while (!closing && off < in.size()) {
+        const Parsed p = parse_request(in.substr(off));
+        if (p.state == Parse::Complete) {
+            responses.answer(p.request, router, scratch, out);
+            off += p.consumed;
+            closing = !p.request.keep_alive;
+        } else if (p.state == Parse::Refused) {
+            responses.refuse(p.refusal, out);
+            closing = true;
+        } else {
+            if (off == 0 && full) {
+                responses.refuse(413, out);  // a request larger than the buffer
+                closing = true;
+            }
+            break;
+        }
+    }
+    return off;
 }
 
 }  // namespace mserver

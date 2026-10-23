@@ -34,11 +34,27 @@ using RouteStatus = matcher::route::Status;
 
 using FindFn = void (*)(const void* router, unsigned method, std::string_view path, RouteResult& out);
 
+// The route id of lab/t1's readiness probe, GET /, which the server answers itself without asking
+// the router (design/round3/end-to-end.md, section 5), so that every router holds exactly the routes
+// of its table; kNoProbe when the routes file has a route for "/" (the router answers it then).
+inline constexpr std::uint32_t kNoProbe = 0xFFFF'FFFFu;
+
 struct Router {
     FindFn find = nullptr;
     const void* data = nullptr;
+    std::uint32_t probe = kNoProbe;
 
-    void operator()(unsigned method, std::string_view path, RouteResult& out) const { find(data, method, path, out); }
+    void operator()(unsigned method, std::string_view path, RouteResult& out) const {
+        if (probe != kNoProbe && path.size() == 1 && path[0] == '/') {
+            const bool get = method == kGet || method == kHead;
+            out.status = get ? RouteStatus::Found : RouteStatus::MethodNotAllowed;
+            out.allowed = get ? 0 : static_cast<std::uint16_t>(1u << kGet);
+            out.route = probe;
+            out.count = 0;
+            return;
+        }
+        find(data, method, path, out);
+    }
 };
 
 }  // namespace mserver
