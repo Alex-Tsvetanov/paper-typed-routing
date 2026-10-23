@@ -28,7 +28,20 @@ if(P2_SANITIZER AND MSVC)
     endif()
     add_compile_options(/fsanitize=address /Zi)
     add_link_options(/INCREMENTAL:NO /DEBUG)
-    message(STATUS "h6: sanitizer ${P2_SANITIZER} (MSVC)")
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        # clang-cl: CMake links with lld-link itself, which does not add the ASan runtime that the
+        # clang-cl driver adds when it links; these are the driver's own arguments for /MD
+        # (clang-cl -### /fsanitize=address), for executables and DLLs alike.
+        execute_process(COMMAND "${CMAKE_CXX_COMPILER}" /clang:-print-resource-dir
+                        OUTPUT_VARIABLE _res OUTPUT_STRIP_TRAILING_WHITESPACE)
+        file(TO_CMAKE_PATH "${_res}/lib/windows" _asan_rt)
+        if(NOT EXISTS "${_asan_rt}/clang_rt.asan_dynamic-x86_64.lib")
+            message(FATAL_ERROR "no clang_rt.asan_dynamic-x86_64.lib in ${_asan_rt}")
+        endif()
+        add_link_options("${_asan_rt}/clang_rt.asan_dynamic-x86_64.lib" "/INCLUDE:__asan_seh_interceptor"
+                         "/WHOLEARCHIVE:${_asan_rt}/clang_rt.asan_dynamic_runtime_thunk-x86_64.lib")
+    endif()
+    message(STATUS "h6: sanitizer ${P2_SANITIZER} (MSVC-like: ${CMAKE_CXX_COMPILER_ID})")
 elseif(P2_SANITIZER)
     string(REPLACE "+" "," _san "${P2_SANITIZER}")
     add_compile_options(-fsanitize=${_san} -fno-omit-frame-pointer -fno-sanitize-recover=all -g)

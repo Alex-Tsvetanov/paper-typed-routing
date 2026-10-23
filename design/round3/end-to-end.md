@@ -229,6 +229,21 @@ round 3. `--count` mode on the desktop runs the same sequence with `p2gen --coun
 
 Both are measured first-party inputs, so they need their own D5 records (Laptop requests).
 
+**D5 records and gate.** One record per host and sanitizer (`t3/sanitize.py`; L: ASan+UBSan, TSan,
+MSan with round 2's instrumented libc++; W: clang-cl's ASan): the root project built under the
+sanitizer (the server with every external arm, v2's C interface, p2gen, e2e_requests), its CTest
+suite (with `test_p2v2`, v2's C interface on four cells, against the static library and, on
+Windows, the DLL), the functional suite over every program built, p2gen in count mode against every
+arm, and twelve request-set cells from the sanitized e2e_requests checked against the manifest.
+The Go and Rust programs are built under the sanitizer where their toolchains allow (Go `-asan`
+and `-race`, Rust `-Zsanitizer=address`); the rest are declared gaps in `t3/coverage.json`, not in
+round 2's `bench/coverage.json`. What each target compiled is hashed as round 2 hashes it
+(`lab/bin/inputs_hash.py`, project mode, RegexMatcher as a dependency root), and the Go and Rust
+programs by their tracked files (`t3/source_hash.py`). The gate, `t3/check_records.py`, matches a
+measured build's hashes with green records of the same host, compiler, configuration and pins, and
+refuses any desktop run. The bring-up (`t3/jobs/bringup.py`) builds the measured programs, makes and
+checks the request sets, and runs the suite and the runner in count mode first.
+
 ## 9. Known risks, from round 2's published laptop data
 
 Mixed-disjoint at m = 100,000 (`results/round2/all_arms.csv`, `ns_median`, `build_s_median`):
@@ -276,3 +291,4 @@ its estimate). A timing probe on the laptop replaces all of these before the fre
   included (section 6); every Go router is hosted as its library's `http.Handler` (section 6);
   instruction sets of the Go and Rust programs; method answers, Windows stop signal and exit codes
   (section 5).
+- 2026-10-24: the D5 records, their declared gaps and the gate; the bring-up job (section 8).
