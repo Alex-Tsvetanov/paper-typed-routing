@@ -1,0 +1,41 @@
+{
+  "_comment": "Example run plan for p2run.py: the laptop's Arch (L), the campaign grid of design/round3/end-to-end.md (two shapes, five sizes, sixteen seed pairs) with the arms built so far: 21 arms, 6,720 windows. boost-url (section 11 counts it, 22 arms, 7,040 windows) joins mserver's arms once it is built. The paths are placeholders. On the laptop's Windows the arms of mserver lose r3 (and gain pistache only once its meson build exists), and the programs are .exe files. Placement: lab/laptop/README.md, one server core (CPU 14), generator on CPUs 2 to 13. Dry run: p2run.py example.json --dry-run. Count mode (the desktop, no timing): p2run.py PLAN --out FILE.jsonl --count 20000 with a plan whose CPUs exist on that host.",
+  "p2gen": "/home/alex/lab/p2r3/build/t3/gen/p2gen",
+  "data_root": "/home/alex/lab/p2r3/sets",
+  "shapes": ["mixed-disjoint", "static"],
+  "sizes": [10, 100, 1000, 10000, 100000],
+  "pairs": [
+    [111, 211], [112, 212], [113, 213], [114, 214], [115, 215], [116, 216], [117, 217], [118, 218],
+    [119, 219], [120, 220], [121, 221], [122, 222], [123, 223], [124, 224], [125, 225], [126, 226]
+  ],
+  "cpus": {"server": 14, "generator": "2-13"},
+  "housekeeping_cpus": "0-1",
+  "connections": 64,
+  "warmup_s": 1.0,
+  "window_s": 5.0,
+  "timeout_ms": 1000,
+  "ready_timeout_s": 60,
+  "stop_timeout_s": 20,
+  "error_share_max": 0.001,
+  "generator_busy_max_pct": 90,
+  "clock_drift_max": 0.02,
+  "verify_sets": true,
+  "abort_after_consecutive": 8,
+  "programs": [
+    {
+      "name": "mserver",
+      "path": "/home/alex/lab/p2r3/build/server/mserver",
+      "arms": ["v2", "crow", "drogon", "oatpp", "pistache", "r3", "uwebsockets", "glaze", "cpp-httplib", "null"]
+    },
+    {
+      "name": "mserver-go",
+      "path": "/home/alex/lab/p2r3/build/go/mserver-go",
+      "arms": ["v2", "httprouter", "gin", "nethttp", "chi", "null"]
+    },
+    {
+      "name": "mserver-rs",
+      "path": "/home/alex/lab/p2r3/build/rust/release/mserver-rs",
+      "arms": ["v2", "matchit", "path-tree", "actix-router", "null"]
+    }
+  ]
+}
