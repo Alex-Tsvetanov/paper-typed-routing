@@ -112,6 +112,25 @@ Each runs on the laptop between campaigns; the coordinator schedules them.
    downloads): on W LLVM 22.1.8 (clang-cl), Go 1.27.3, Rust 1.99.0, meson and libevent
    (Pistache), Boost 1.92.0 headers; on L Go 1.27.3 and Rust 1.99.0 side by side under `~/opt`
    (no pacman change until P4's Arch blocks end). All sha256-checked. No measured basis.
+   Pins for Pistache's meson build on W (Pistache v0.4.26 needs meson >= 0.53.2 and
+   `dependency('libevent')`; read 2026-10-24):
+   - meson 1.12.1 (latest, 2026-09-22), the source archive, run as `python meson.py`, no
+     install: https://github.com/mesonbuild/meson/releases/download/1.12.1/meson-1.12.1.tar.gz,
+     sha256 ab0a6ca09f8ef70c564c8241fb5a23957886a0b53fb58412b5e07eaf07dba743. The project signs it
+     (`.asc`); the sha256 is GitHub's asset digest and equals PyPI's for the same file.
+   - libevent 2.1.13-stable (latest stable, 2026-07-01; 2.2.2 is an alpha):
+     https://github.com/libevent/libevent/releases/download/release-2.1.13-stable/libevent-2.1.13-stable.tar.gz,
+     sha256 f7e9383b8c0baa81b687e5b5eecc01beefaf1b19b64151d95ed61647fe7a315c. The project publishes
+     only a GPG signature (`.asc`); the sha256 is GitHub's asset digest. Built with its CMake, static,
+     with clang-cl, OpenSSL, mbedTLS, tests and samples off.
+   - RapidJSON for Pistache's wrap fallback, both pinned by `subprojects/rapidjson.wrap` at the
+     tag, for meson's package cache (no network at build): https://github.com/Tencent/rapidjson/archive/v1.1.0.tar.gz,
+     sha256 bf7ced29704a1e696fbccf2a2b4ea068e7774fa37f6d7dd4039d0787f8bed98e; and
+     https://wrapdb.mesonbuild.com/v2/rapidjson_1.1.0-2/get_patch, sha256
+     c1480d0ecef09dbaa4b4d85d86090205386fb2c7e87f4f158b20dbbda14c9afc. hinnant-date is vendored
+     in Pistache's tree.
+   - Not yet known: whether meson finds libevent through libevent's CMake package or needs
+     pkg-config (pkgconf); the first desktop build will tell, and a pkgconf pin follows if needed.
 2. Request sets on L and W, generated there or copied, checked with `make_requests.py --verify`.
    No measured basis.
 3. Release builds of the three programs (`build_programs.py --cxx-build ...`) and the functional
