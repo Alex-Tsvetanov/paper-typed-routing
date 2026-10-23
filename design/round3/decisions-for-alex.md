@@ -1,0 +1,205 @@
+# Round 3: decisions for Alex
+
+Written 2026-10-23 by the round-3 session. Each item: what is to decide, the facts, the options with
+their cost, and a recommendation. Hours use the measured basis of `end-to-end.md`, section 11: one
+window is 6.30 s on the laptop's Arch (H6) and 6.123 s on its Windows (plan v2). The base campaign
+is 3,200 windows (5.60 h) on Arch and 2,880 windows (4.90 h) on Windows, before the pilot and
+start-up. Answer by number and letter.
+
+## 1. A same-server contrast against the Go and Rust routers
+
+**What.** Today only the C and C++ routers run in the same server as v2, so only they are tested
+against v2 end to end. The Go and Rust routers run in their own programs (your rule in the brief),
+and against them the paper can only report each router's cost per request over its own server's
+null arm, a cross-server comparison that is not tested.
+
+**Why it matters.** On mixed-disjoint, the fastest competitor in round 2 is gin at every size
+(`results/round2/h1.csv`). At m = 10, v2 was not slower than gin but not faster either (51.8 against
+53.4 ns per lookup). The next fastest are Go and Rust routers too (httprouter, matchit). So without a
+same-server contrast, round 3 tests v2 end to end only against routers it already beat clearly.
+
+**How.** Add v2 behind a C interface to the Go and the Rust program, as one more arm in each. The
+language boundary then counts against v2 (cgo costs tens of ns per call; round 2 measured it as
+`ffi_call_ns`; a Rust call into C is a plain call), which is the honest direction.
+
+**Options.**
+- (a) Both programs. +4 windows per pair and size: +0.56 h on Arch, +0.54 h on Windows. cgo on
+  Windows needs a MinGW gcc on the laptop (Go's cgo does not use MSVC) and v2 built with it for that
+  arm: a toolchain item for the laptop.
+- (b) Rust only. +0.28 h and +0.27 h. Easy on both systems. Covers matchit, path-tree and
+  actix-router, not gin.
+- (c) Neither. The Go and Rust comparison stays reported, not tested.
+
+**Recommendation.** (a). gin is the router a reviewer will compare v2 with.
+
+## 2. The load generator on Windows
+
+**What.** lab/t1's generator `t1gen` and its runner `t1.py` are Linux only (epoll, `taskset`,
+`/proc`). Nothing can time a Windows window today, the timing probe included. This is the first
+blocker of the Windows half.
+
+**Options.**
+- (a) Port lab/t1 to Windows, as lab tooling: `t1gen` on IOCP or WSAPoll, `t1.py` with Windows
+  affinity and counters. Other papers could use it. It is lab work, through the coordinator.
+- (b) P2's own portable generator and runner in P2's repository, C++23, epoll and IOCP, with t1's
+  window rules, used on both systems. Your brief says "C++23 for this paper's server and generator",
+  and P3 and P4 have their own. One generator on both systems makes the cross-system contrast
+  cleaner. Before use, an A/A check on Linux against `t1gen` (no arm comparison).
+- (c) Reuse P3's or P4's Windows generator. Quickest, but it ties P2 to another paper's code, which
+  the component model avoids.
+
+**Recommendation.** (b).
+
+## 3. The C++ compiler on Windows
+
+**What.** The C++ server is built with clang 22.1.8 on Arch and MSVC 19.51 on Windows. Then a
+difference between the systems is the system plus the compiler, which weakens the point of
+measuring both systems on one laptop. The Go and Rust programs use the same compiler on both.
+
+**Options.**
+- (a) MSVC only. Installed on the laptop; Windows' own compiler. The paper states the compiler
+  confound.
+- (b) clang-cl 22.1.8 only. Same compiler on both systems. Needs LLVM 22.1.8 installed on the
+  laptop's Windows (download with sha256), a clang-cl branch in `bench/cmake/isa.cmake` (today a
+  clang-cl build would get `/arch:AVX2`, not `-march=native`), and the Windows records made with
+  clang-cl's ASan (rule D5 allows it). Not yet tried with the six Windows arms.
+- (c) clang-cl for the tested cells, and MSVC reported beside them. The C++ server's windows on
+  Windows measured twice: 16 of 36 windows per round, +1,280 windows, +2.18 h.
+
+**Recommendation.** (b), with (a) as the fallback if an arm does not build with clang-cl.
+
+## 4. Routers that scan linearly at m = 100,000
+
+**What.** Four routers scan their routes one by one. In round 2, one lookup at m = 100,000 took
+30.1 ms (actix-router), 7.80 ms (Drogon), 3.95 ms (Oat++) and 0.96 ms (cpp-httplib). On one server
+core that allows at most about 33, 128, 253 and 1,043 requests per second, before any HTTP cost. In
+a 5 s window with 64 connections, actix-router completes about 165 requests, and each request
+waits behind the others. Such a window may fail lab/t1's validity rules (an error share above 0.1%
+if the generator times out), and then the cell fails for want of valid pairs, although v2 is far
+faster there.
+
+**Options.**
+- (a) Measure them like every other cell, same rules. If their windows are invalid, the cell is
+  reported as failed.
+- (b) Same windows, plus a rule fixed now: a competitor whose windows are invalid only by the error
+  rule, because it cannot keep up with the load, is reported as "does not sustain the load", with
+  its completed count and req/s, and leaves the tested family.
+- (c) Longer windows for these cells (for example 30 s). More completions, more hours.
+- (d) Leave these four routers out at m = 100,000, as round 2's time budget did at the lookup level.
+
+**Recommendation.** (b): every cell is measured and shown, and the rule is set before any data.
+
+## 5. Whether the routing cost across servers is a tested hypothesis
+
+**What.** For the Go and Rust routers, the paper can report each router's time per request over
+its own program's null arm, beside v2's over the C++ server's null arm. The two come from different
+servers and runtimes: subtraction removes most of the server's own cost, not its interaction with
+the router (Go's scheduler and collector, tokio).
+
+**Options.**
+- (a) Report it with intervals and the boundary stated, not tested.
+- (b) Test it as its own hypothesis, with its own Holm family.
+
+**Recommendation.** (a) if you choose 1(a); then the tested comparison against gin and matchit is
+the same-server one, and the cross-server numbers are context. (b) only if you choose 1(c).
+
+## 6. Which table shapes
+
+**What.** The design uses one shape, mixed-disjoint, at the five sizes: plan v2's 80 cells. All
+sixteen competitors take part in it in round 2, and it mixes literal and parameter routes. Static
+(the case where a hash or a radix tree can lead) and the other one-layout shapes are not run end to
+end.
+
+**Options.**
+- (a) Mixed-disjoint only. Base hours.
+- (b) Add static at all five sizes. +5.60 h on Arch, +4.90 h on Windows.
+- (c) Add static at m = 10 and m = 100,000 only. +2.24 h and +1.96 h.
+
+**Recommendation.** (a). Round 2 already shows where v2 wins and loses per shape at the lookup
+level; the end-to-end question is whether that reaches the client, and one mixed shape answers it.
+
+## 7. The margin of "not slower" (H8)
+
+**What.** H8 says v2 is not slower than each C and C++ router in the same server, at a margin
+delta. Plan v2 says margins come from the new A/A pilot by a rule fixed before it. Round 2 used
+1.02 for H1 and H7.
+
+**Options.**
+- (a) delta = 1.02, as round 2.
+- (b) delta = the larger of 1.02 and the A/A pilot's 97.5th percentile of the v2-against-v2 ratio
+  (or its inverse), fixed in the frozen file before the pilot runs.
+- (c) Superiority only (bound 1.00), no margin.
+
+**Recommendation.** (b). End to end, the run-to-run noise may be wider than 2%, and the pilot
+measures it.
+
+## 8. Pins
+
+**What.** Round 3 uses round 2's pins, so the servers run the code round 2 timed. Newer releases
+exist since 2026-09-30, checked again (`router-survey.md`, re-check):
+- cpp-httplib: six releases, v0.59.0 to v0.63.0; its matchers are unchanged.
+- chi: v5.4.0 and v5.5.0; its lookup is unchanged.
+- Drogon: v1.9.14; the transcribed router file is byte for byte the same.
+- Crow: 1.3.5, a pre-release.
+- Go: 1.27.2 and 1.27.3; round 2 used 1.27.1.
+
+**Options.**
+- (a) Keep round 2's pins, including Go 1.27.1 on both systems; list the newer releases.
+- (b) Move every arm to its latest release.
+
+**Recommendation.** (a). Where a newer release exists, its lookup code is the same, so (b) changes
+nothing measured and breaks the link to round 2's lookup data.
+
+## 9. The Boost.URL arm
+
+**What.** The boost-url arm needs the Boost 1.92.0 headers. The dev image has Boost's libraries
+but not its headers, and the laptop's Windows has none. Boost.URL's example router has not been
+built with MSVC by anyone that the survey found.
+
+**Options.**
+- (a) Add the headers to the image and to the laptop's Windows (Boost's release archive, checked
+  by sha256); keep boost-url on Arch, and on Windows if it builds.
+- (b) Arch only.
+- (c) Drop boost-url from round 3, with the reason.
+
+**Recommendation.** (a).
+
+## 10. Pistache on Windows
+
+**What.** Pistache v0.4.26's CMake build passes GCC flags to MSVC. Its Windows build goes through
+meson and libevent instead, which the survey found in its CI and which is not tried here.
+
+**Options.**
+- (a) Bring up its meson build with libevent on the laptop's Windows: a new pinned dependency and
+  engineering time with no measured basis.
+- (b) Absent on Windows, with the reason. Windows loses 5 of its cells.
+
+**Recommendation.** (b).
+
+## 11. How the Go routers are hosted (confirm)
+
+**What.** After the review, each Go router runs as the `http.Handler` its library documents: gin's
+Engine (`gin.New()` in release mode), chi's Mux, httprouter's Router, net/http's ServeMux. So each
+request pays the library's own steps around the lookup (gin's pooled Context, chi's route context).
+Round 2 timed the lookup alone. The C and C++ routers run in the paper's server as bare lookups,
+because they have no handler layer apart from their own full servers.
+
+**Options.**
+- (a) Keep it: each router as a server would use it.
+- (b) Bare lookups in the Go program too, as round 2 timed them (needs per-request state that the
+  vendored shims do not have; the review found the earlier attempt charged gin a lock).
+
+**Recommendation.** (a).
+
+## 12. The public timestamp of the pre-registration
+
+**What.** `hypotheses-round3.md` must be frozen and publicly timestamped before the first
+confirmatory window. P2's repository is public. Nothing of round 3 is pushed.
+
+**Options.**
+- (a) Push the `round3` branch, with the frozen file, at the freeze and before any confirmatory
+  window. The engineering commits become public with it.
+- (b) Push only the frozen file's commit (a branch cut at the freeze), and the engineering later.
+- (c) A Zenodo record of the frozen file at the freeze, the push later.
+
+**Recommendation.** (a).
