@@ -1,0 +1,30 @@
+[package]
+name = "mserver-rs"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Round 3 server program: hyper on a current-thread tokio runtime hosting matchit, path-tree or actix-router"
+
+[[bin]]
+name = "mserver-rs"
+path = "src/main.rs"
+
+[dependencies]
+# The routers: round 2's pins (bench/arms/rust/Cargo.toml). Cargo.lock starts from round 2's lock,
+# so their own dependencies resolve to the versions round 2 locked.
+actix-router = "=0.5.4"
+matchit = "=0.9.2"
+path-tree = "=0.8.3"
+
+# The server: the latest releases crates.io listed on 2026-10-23.
+bytes = "=1.12.1"
+http-body-util = { version = "=0.1.5", default-features = false }
+hyper = { version = "=1.12.0", default-features = false, features = ["server", "http1"] }
+hyper-util = { version = "=0.1.21", default-features = false, features = ["tokio"] }
+tokio = { version = "=1.54.1", default-features = false, features = ["rt", "net", "macros", "signal", "io-util"] }
+
+[profile.release]
+opt-level = 3
+panic = "abort"
+lto = true
+codegen-units = 1
