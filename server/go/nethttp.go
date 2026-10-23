@@ -10,7 +10,9 @@
 //
 // A path that is not canonical ("/a//b"), or that names a subtree without its trailing slash
 // ("/f" when "/f/{p0...}" is registered), gets the mux's own redirect, not a 404. Round 2 counted
-// those as misses. No request set holds such a path.
+// those as misses. A "GET" pattern also routes HEAD. Any other method reaches the catch-all "/",
+// an empty 404, where a mux without it would answer 405 for a path some GET pattern matches. No
+// request set holds such a path or method.
 package main
 
 import (

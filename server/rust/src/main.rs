@@ -4,8 +4,9 @@
 //!
 //! hyper's HTTP/1 server on tokio's current-thread runtime, one listener on 127.0.0.1:P, one
 //! worker. It is ready when the socket accepts. SIGTERM and SIGINT (Unix) or Ctrl-C and Ctrl-Break
-//! (Windows) stop it with exit code 0. Exit code 2 is a refused command line, routes file or
-//! route; 1 is a failure at run time.
+//! (Windows) stop it with exit code 0. Exit code 2 is a refused command line or routes file, 3 is
+//! a routes file a router refuses (a conflict, a pattern it cannot take), 1 is a failure at run
+//! time. The first line on stderr names the instruction set the program was built for.
 //!
 //! Routes: the file's `GET <pattern>` lines, route i being line i. The routers hold exactly these
 //! routes, never a `/` of their own. The service answers `GET /` (and `HEAD /`) itself, before it
@@ -13,15 +14,18 @@
 //! captured values. That is the readiness probe of lab/t1. If the file has a `GET /` route, `/` is
 //! routed like any other path and there is no probe case.
 //!
-//! Answers (GET and HEAD; any other method gets 405):
+//! Answers (GET and HEAD):
 //! - a route found (or the probe), measured mode: 200, `content-type: text/plain`, the body `Hello, World!`. The
 //!   route id and every captured value (its length and first byte) are folded into a value
 //!   `black_box` keeps, as round 2's timed loops do (bench/core/runner.hpp, `fold`);
 //! - a route found (or the probe), `--check`: the same status and type, the body being the route id in decimal,
 //!   then a tab and each captured value, then a newline;
 //! - no route: 404 with an empty body.
+//! Another method looks the path up as GET: a route found gives 405 with `allow: GET, HEAD`, none
+//! gives 404, both with an empty body (the C++ server's rule).
 //!
-//! Nothing is logged per request. The router is built once, leaked and shared read-only; the
+//! Nothing is logged per request. The runtime has an I/O driver and no time driver, and hyper is
+//! given no timeout, so no timer exists. The router is built once, leaked and shared read-only; the
 //! only mutable state is a scratch value each connection owns (`Lookup::Scratch`).
 
 mod actix_router_arm;
@@ -135,11 +139,6 @@ struct Config {
 
 /// The whole service: answers the probe, or looks the path up, and builds the answer.
 fn answer<R: Lookup>(router: &R, scratch: &mut R::Scratch, cfg: Config, req: &Request<Incoming>) -> Response<Full<Bytes>> {
-    if req.method() != Method::GET && req.method() != Method::HEAD {
-        let mut res = reply(StatusCode::METHOD_NOT_ALLOWED, Bytes::new());
-        res.headers_mut().insert(ALLOW, ALLOWED);
-        return res;
-    }
     let mut caps = Captures::new();
     let path = req.uri().path();
     let found = match cfg.probe {
@@ -149,6 +148,11 @@ fn answer<R: Lookup>(router: &R, scratch: &mut R::Scratch, cfg: Config, req: &Re
     let Some(id) = found else {
         return reply(StatusCode::NOT_FOUND, Bytes::new());
     };
+    if req.method() != Method::GET && req.method() != Method::HEAD {
+        let mut res = reply(StatusCode::METHOD_NOT_ALLOWED, Bytes::new());
+        res.headers_mut().insert(ALLOW, ALLOWED);
+        return res;
+    }
     let body = if cfg.check {
         check_body(id, &caps)
     } else {
@@ -176,11 +180,13 @@ async fn connection<R: Lookup>(stream: TcpStream, http: &'static http1::Builder,
 fn serve<R: Lookup>(router: R, port: u16, cfg: Config) -> ExitCode {
     let router: &'static R = Box::leak(Box::new(router));
     let mut builder = http1::Builder::new();
-    // Keep-alive, and no timer anywhere: the runtime has no time driver of its own to charge.
+    // Keep-alive. hyper's default header-read timeout (30 s) needs a timer; with None it makes none.
     builder.keep_alive(true).header_read_timeout(None);
     let http: &'static http1::Builder = Box::leak(Box::new(builder));
 
-    let runtime = match tokio::runtime::Builder::new_current_thread().enable_all().build() {
+    // hyper-util's `tokio` feature turns tokio's `time` feature on, but only enable_io() is asked
+    // for here: the runtime has no time driver, and a timer call would panic. hyper makes none.
+    let runtime = match tokio::runtime::Builder::new_current_thread().enable_io().build() {
         Ok(rt) => rt,
         Err(e) => {
             eprintln!("mserver-rs: cannot start the runtime: {e}");
@@ -250,7 +256,18 @@ fn refuse(why: &str) -> ExitCode {
     ExitCode::from(2)
 }
 
+/// A router refused the routes file (the C++ and Go programs use 3 for this).
+fn refused_by_router(why: &str) -> ExitCode {
+    eprintln!("mserver-rs: {why}");
+    ExitCode::from(3)
+}
+
 fn main() -> ExitCode {
+    eprintln!(
+        "mserver-rs: target-cpu {}, avx2 {}",
+        env!("MSERVER_TARGET_CPU"),
+        if cfg!(target_feature = "avx2") { "yes" } else { "no" }
+    );
     let args = match parse_args(std::env::args().skip(1)) {
         Ok(a) => a,
         Err(why) => return refuse(&why),
@@ -265,15 +282,15 @@ fn main() -> ExitCode {
     match args.router.as_str() {
         "matchit" => match MatchitArm::build(&routes) {
             Ok(r) => serve(r, args.port, cfg),
-            Err(why) => refuse(&why),
+            Err(why) => refused_by_router(&why),
         },
         "path-tree" => match PathTreeArm::build(&routes) {
             Ok(r) => serve(r, args.port, cfg),
-            Err(why) => refuse(&why),
+            Err(why) => refused_by_router(&why),
         },
         "actix-router" => match ActixRouterArm::build(&routes) {
             Ok(r) => serve(r, args.port, cfg),
-            Err(why) => refuse(&why),
+            Err(why) => refused_by_router(&why),
         },
         "null" => serve(NullArm, args.port, cfg),
         other => refuse(&format!("an unknown router: {other}")),

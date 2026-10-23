@@ -1,0 +1,6 @@
+# Round 2 built its Rust arms with -C target-cpu=native (bench/cmake/ffi-rust.cmake). Cargo reads this
+# file from the directory it is run in, so run cargo from server/rust. The binary is for the CPU that
+# built it: build on the machine that measures. build.rs records the target-cpu the compiler got and
+# the program prints it at start.
+[build]
+rustflags = ["-C", "target-cpu=native"]

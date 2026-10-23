@@ -14,10 +14,12 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync/atomic"
 )
 
-// sink keeps the measured mode's fold alive. It is written by every request. With GOMAXPROCS(1)
-// the only interleaving is preemption, and a lost update would not matter: the value is never read.
+// sink keeps the measured mode's fold alive. Every request adds to it with an atomic add, in
+// every arm, the null arm included, so a -race build is clean and no arm pays more than another.
+// The value is never read.
 var sink uint64
 
 var (
@@ -35,14 +37,14 @@ type replier struct {
 func (p replier) hit(w http.ResponseWriter, id int, vals []string) {
 	w.Header()["Content-Type"] = textPlain
 	if !p.check {
-		s := sink + uint64(id)
+		s := uint64(id)
 		for _, v := range vals {
 			s += uint64(len(v))
 			if len(v) > 0 {
 				s += uint64(v[0])
 			}
 		}
-		sink = s
+		atomic.AddUint64(&sink, s)
 		_, _ = w.Write(helloBody)
 		return
 	}

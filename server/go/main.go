@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"runtime/debug"
 	"sort"
 	"strings"
 	"syscall"
@@ -72,6 +73,7 @@ func run(args []string, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "mserver-go: --router %q: want %s\n", *name, strings.Join(routerNames(), "|"))
 		return 2
 	}
+	fmt.Fprintf(stderr, "mserver-go: %s\n", buildLine())
 	runtime.GOMAXPROCS(1)
 
 	routes, err := readRoutes(*routesFile)
@@ -119,6 +121,21 @@ func run(args []string, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "mserver-go: %v\n", err)
 		return 1
 	}
+}
+
+// buildLine names the Go version and the GOAMD64 level this binary was built with, so a log shows
+// which build ran.
+func buildLine() string {
+	version, level := runtime.Version(), "n/a"
+	if info, ok := debug.ReadBuildInfo(); ok {
+		version = info.GoVersion
+		for _, s := range info.Settings {
+			if s.Key == "GOAMD64" {
+				level = s.Value
+			}
+		}
+	}
+	return fmt.Sprintf("%s GOAMD64=%s", version, level)
 }
 
 func routerNames() []string {

@@ -1,8 +1,19 @@
-// julienschmidt/httprouter v1.3.0 in a server, called as round 2 calls it (bench/arms/go/
-// httprouter.go, rb_hr_lookup): one Router holds the routes and Router.Lookup finds one. Each
-// route's own Handle, which closes over the route's id, answers the request with the values in
-// the Params the lookup returned. Round 2's Handle wrote the id into a shared field instead,
-// which two connections' goroutines could interleave.
+// julienschmidt/httprouter v1.3.0 in a server, used as its documentation shows: httprouter.New()
+// with its defaults, router.GET(pattern, handle) for each route, and the Router itself as the
+// server's http.Handler, so a request pays Router.ServeHTTP's own steps. Each route's Handle
+// closes over the route's id and answers the request with the values in the Params it was given.
+// Round 2's adapter called Router.Lookup and a Handle that wrote the id into a shared field.
+//
+// Router.NotFound is an empty 404. The defaults stay on, and they decide the other answers:
+//   - a path that differs from a route only by a trailing slash, or by case, gets a 301
+//     (RedirectTrailingSlash, RedirectFixedPath);
+//   - a method other than GET (HEAD included) on a path some GET route matches gets 405 with an
+//     Allow header and a text body (HandleMethodNotAllowed), except OPTIONS, which gets 200 with
+//     an Allow header and no body (HandleOPTIONS);
+//   - any other method on a path no route matches reaches NotFound, an empty 404.
+//
+// No request set holds such a path or method. GET / and HEAD / are answered before the router
+// (handler.go).
 package main
 
 import (
@@ -12,22 +23,18 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-type httpRouter struct {
-	rt  *httprouter.Router
-	rep replier
-}
-
 func newHTTPRouter(routes []route, rep replier) (http.Handler, error) {
 	rt := httprouter.New()
+	rt.NotFound = http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { rep.miss(w) })
 	err := guard(func() {
 		for id, r := range routes {
-			rt.Handle(http.MethodGet, colonPattern(r), httpRouterHandle(id, rep))
+			rt.GET(colonPattern(r), httpRouterHandle(id, rep))
 		}
 	})
 	if err != nil {
 		return nil, err
 	}
-	return &httpRouter{rt: rt, rep: rep}, nil
+	return rt, nil
 }
 
 func httpRouterHandle(id int, rep replier) httprouter.Handle {
@@ -38,17 +45,6 @@ func httpRouterHandle(id int, rep replier) httprouter.Handle {
 		}
 		rep.hit(w, id, vals[:len(ps)])
 	}
-}
-
-func (h *httpRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// The path is r.URL.Path, as Router.ServeHTTP reads it. A miss, a trailing-slash hint (the
-	// third result) and a method with no routes are all a 404 here, as in round 2.
-	handle, ps, _ := h.rt.Lookup(r.Method, r.URL.Path)
-	if handle == nil {
-		h.rep.miss(w)
-		return
-	}
-	handle(w, r, ps)
 }
 
 // colonPattern converts a route to the syntax of httprouter and gin: ":name" for a parameter

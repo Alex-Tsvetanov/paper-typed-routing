@@ -1,65 +1,41 @@
-// go-chi/chi v5.3.2's router in a server, called as round 2 calls it (bench/arms/go/chi.go,
-// chiArm.lookup, and bench/arms/go/chi/rbshim.go): one Mux holds the routes, and Mux.RbFind
-// resets a route context, searches the tree and returns the endpoint's handler. The values are in
-// the context's URLParams.
+// go-chi/chi v5.3.2 in a server, used as its documentation shows: chi.NewRouter(),
+// mux.Get(pattern, handler) for each route, and the Mux itself as the server's http.Handler, so a
+// request pays Mux.ServeHTTP's own steps: a pooled route context put into the request's context,
+// the tree search, then the handler. Each handler closes over the route's id and reads the values
+// with chi.RouteContext(r.Context()).URLParams.Values, in pattern order. The package is the full
+// chi v5.3.2 that round 2 vendored (bench/arms/go/chi). Round 2's adapter called its RbFind shim.
 //
-// Round 2 used one context and one shared id. A server runs a goroutine per connection, so each
-// request takes a context from a pool, as chi's own Mux.ServeHTTP does. The endpoint handler is
-// not called: it carries the route's id, and the adapter reads the id from the handler RbFind
-// returned. Round 2 called the handler to record the id in a shared field.
+// mux.NotFound is an empty 404. The defaults stay on, and they decide the other answers: a method
+// other than GET (HEAD and OPTIONS included) on a path some GET route matches gets 405 with an
+// Allow header and no body, and any other method on a path no route matches reaches NotFound, an
+// empty 404. chi does not redirect a trailing slash. No request set holds such a path or method.
+// GET / and HEAD / are answered before the mux (handler.go).
 package main
 
 import (
 	"net/http"
-	"sync"
 
 	"github.com/go-chi/chi/v5"
 )
 
-// chiRoute is the endpoint handler of one route. chi's Mux.Method needs an http.Handler. Nothing
-// calls it.
-type chiRoute struct {
-	id int
-}
-
-func (*chiRoute) ServeHTTP(http.ResponseWriter, *http.Request) {}
-
-type chiRouter struct {
-	mux  *chi.Mux
-	pool sync.Pool // of *chi.Context
-	rep  replier
-}
-
 func newChi(routes []route, rep replier) (http.Handler, error) {
-	c := &chiRouter{mux: chi.NewRouter(), rep: rep}
-	c.pool.New = func() any { return chi.NewRouteContext() }
+	mux := chi.NewRouter()
 	err := guard(func() {
 		for id, r := range routes {
-			c.mux.Method(http.MethodGet, chiPattern(r), &chiRoute{id: id})
+			mux.Get(chiPattern(r), chiHandle(id, rep))
 		}
+		mux.NotFound(func(w http.ResponseWriter, _ *http.Request) { rep.miss(w) })
 	})
 	if err != nil {
 		return nil, err
 	}
-	return c, nil
+	return mux, nil
 }
 
-func (c *chiRouter) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// The path is RawPath when set, else Path, as Mux.routeHTTP reads it. A method with no
-	// routes finds no handler. A miss (chi would answer 404 or 405 itself) is a 404 here.
-	path := r.URL.RawPath
-	if path == "" {
-		path = r.URL.Path
+func chiHandle(id int, rep replier) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		rep.hit(w, id, chi.RouteContext(r.Context()).URLParams.Values)
 	}
-	rctx := c.pool.Get().(*chi.Context)
-	route, ok := c.mux.RbFind(rctx, r.Method, path).(*chiRoute)
-	if !ok {
-		c.pool.Put(rctx)
-		c.rep.miss(w)
-		return
-	}
-	c.rep.hit(w, route.id, rctx.URLParams.Values)
-	c.pool.Put(rctx)
 }
 
 // chiPattern converts a route to chi's syntax: "{name}" for a parameter and "*" for a catch-all,
