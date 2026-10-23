@@ -120,20 +120,8 @@ if [ "$build_rc" -eq 0 ]; then
     step ctest $? "$(grep -Eo '[0-9]+% tests passed.*' "$work/ctest.log" | tail -1)"
 
     arms=$("$mserver" --router '?' 2>&1 | sed -n 's/^router arms://p')
-    targets=(mserver mserver_arms mserver_http1 mserver_loop mserver_external p2v2_c p2v2 p2gen p2gen_core p2gen_net
-             e2e_requests)
-    [[ " $arms " == *" v1 "* ]] && targets+=(mserver_v1)
-    for a in $arms; do
-        case $a in v2 | v1 | null) ;; *) targets+=("arm_${a//-/_}") ;; esac
-    done
-    targs=()
-    for t in "${targets[@]}"; do targs+=(--target "$t"); done
-    python3 "$ih" --build "p2r3=$work/build" "${targs[@]}" --root-label project --config-key CMAKE_BUILD_TYPE \
-        --dep-root regexmatcher=RegexMatcher_SOURCE_DIR --out "$work/build.inputs.json" > /dev/null 2> "$work/inputs.err" &&
-    python3 "$ih" --build "p2r3=$work/build" --target mserver_arms --target p2v2_c --root-label project \
-        --config-key CMAKE_BUILD_TYPE --dep-root regexmatcher=RegexMatcher_SOURCE_DIR \
-        --label-hash regexmatcher/include/ --out "$work/build.v2-include.json" > /dev/null 2>> "$work/inputs.err"
-    step inputs $? "${#targets[@]} targets"
+    n=$(INPUTS_HASH_PY=$ih bash "$here/inputs.sh" "$work/build" "$work/build" 2> "$work/inputs.err")
+    step inputs $? "$n targets"
 fi
 
 go_bin=""
