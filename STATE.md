@@ -190,14 +190,9 @@ request sets (6), Pistache's meson build on Windows (10), the Boost headers (9).
 
 ## Commits on `round3` (local, not pushed)
 
-- 1862c01 docs: state digest, design draft, router survey and re-check, hypotheses draft
-- 723a235 t3: request sets, per-arm HTTP check, functional suite
-- 354a536 server: C and C++ adapters as runtime-selected arms, check mode, probe, IOCP, MSVC build
-- dd5ae0a server: the Go and Rust programs
-- d8b51eb fix: review fixes in the C++ server (also removes `bench/arms/go/gin/rbserve.go`)
-- a8c3f8b fix: review fixes in the Go and Rust programs, build script
-- 4942900 docs: the review in the digest and the design draft
-- plus the commit of this update
+1862c01 723a235 354a536 dd5ae0a (round-3 docs, request sets, servers), d8b51eb a8c3f8b 4942900
+(review fixes; d8b51eb also removes `bench/arms/go/gin/rbserve.go`), e8af074 cfc8d11 6829ed0
+(state, decisions, Alex's answers), and the commit of this update.
 
 Side effects outside this worktree: the relative-path repair also rewrote the `.git` link of
 `D:\Dev\GitHub\paper-arms-e` (still resolves). `bench/` equals round 2's files except the MSVC
