@@ -20,7 +20,9 @@ behind its C interface (Alex, 2026-10-23). So these contrasts exist.
    `server/src/route.hpp`). A difference in req/s is a difference in routing, plus the router's
    effect on caches and branch predictors around it. In the Go and the Rust program, v2 behind its
    C interface against each of that program's routers: the language boundary (cgo for Go, a plain
-   C call for Rust; round 2 measured the cgo call alone, `ffi_call_ns`) counts against v2.
+   C call for Rust) counts against v2. v2's code there is compiled with the C++ server's compiler and
+   flags (one C-interface library, `server/capi/`). Round 2's `ffi_call_ns` measured a call from
+   C++ into Go, the other direction, so it is not this boundary's cost.
 2. **Routing increment across servers (tested, Alex 2026-10-23).** Each program also has
    a null router, which answers route 0 without reading the path. The time a router adds per
    request is `1/X_router - 1/X_null` of its own program. v2's is the same difference in the C++
@@ -182,8 +184,43 @@ dependencies (hyper, tokio) are pinned by their own lock file.
 ## 8. Load generator and runner
 
 lab/t1's `t1gen` and `t1.py` are Linux only (epoll, `taskset`, `/proc`). Alex chose P2's own
-portable generator and runner (2026-10-23), C++23 with epoll and IOCP, used on both systems with
-lab/t1's window rules, and A/A-checked against `t1gen` on Linux before use (no arm compared).
+portable generator and runner (2026-10-23), used on both systems with lab/t1's window rules, and
+A/A-checked against `t1gen` on Linux before use (no arm compared).
+
+**Generator `p2gen`** (`t3/gen/`, C++23; epoll on Linux, an I/O completion port per thread on
+Windows). It does what `t1gen` does in its closed loop at depth 1 (`lab/t1/gen/t1gen.c`, header),
+and no more:
+- C keep-alive connections over T threads, each thread pinned to one CPU of `--cpus`; one request
+  in flight per connection.
+- Targets from a file, one per line; connection i of C starts at target i x N / C and walks the
+  file cyclically, so every target is requested equally often.
+- Framing that every program's answers pass: the status line, then a `Content-Length` header
+  matched without regard to case (hyper writes it in lower case). In measured mode every answer
+  must be 200 with the 13-byte body `Hello, World!`; anything else is counted as an error.
+- A warm-up, then a measured window between two instants the main thread marks
+  (`MEASURE_START`, `MEASURE_END` on stdout, as `t1gen`). Counted in the window only: completed
+  answers, errors, timeouts (a connection with a request in flight and no progress for
+  `--timeout-ms` is closed, counted, and reconnected), and the window's wall time. Latency per
+  request from its send to the last byte of its answer, in a log-bucketed histogram, reported as
+  percentiles.
+- One JSON line at the end. No rate is computed inside it beyond completed answers over wall time.
+- `--count N`: the desktop's functional mode. Exactly N requests over the connections, every
+  answer checked, then counts only. It prints no time, rate or latency, so a desktop log never
+  holds a number D7 forbids.
+
+**Runner `t3/p2run.py`.** The frozen design only, not all of `t1.py`: per system, for each shape,
+size and seed pair, one mirrored round per program; per window a fresh server pinned to the server
+CPU, its start-up time recorded (readiness wait configurable, longer than lab/t1's 15 s, since
+round 2's table builds alone reach 4.6 s at m = 100,000), one probe of `GET /`, then `p2gen` pinned
+to the generator CPUs with a 1 s warm-up and a 5 s window. lab/t1's validity rules: the server
+started and answered the probe; at least one completed answer; errors at most 0.1% of answers;
+generator CPUs at most 90% busy; mean CPU clock within 2% of the session's. Plus the overload rule
+of section 9. On Linux the samples come from `/proc`, as lab/t1's; on Windows from the per-CPU
+counters and PDH's `% Processor Performance` that `lab/laptop/README.md` names, with affinity set
+through `SetProcessAffinityMask`. One JSON line per window. H6's adaptive stop is not part of
+round 3. `--count` mode on the desktop runs the same sequence with `p2gen --count`.
+
+Both are measured first-party inputs, so they need their own D5 records (Laptop requests).
 
 ## 9. Known risks, from round 2's published laptop data
 

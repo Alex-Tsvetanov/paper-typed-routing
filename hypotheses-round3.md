@@ -63,11 +63,17 @@ H9. v2's faster lookup carries over to the client in the C++ server.
       two arms' round-2 T0 lookup times at the same pair (round 2's raw grid has all sixteen).
     - A cell holds if the lower bound of the 95% BCa interval of D_meas / D_T0 is at least 0.5,
       round 2's H6(b) bound. A cell whose T0 difference is not positive does not hold.
+    - Where D_T0 is small the ratio is unstable (for example uWebSockets against v2 at m = 10, about
+      18 ns in round 2). A cell whose D_T0 is below a minimum, to be fixed before the freeze from
+      the A/A pilot's noise in time per request, is reported and not tested.
 
 H10. v2's routing costs a request no more than each Go and Rust router's costs it, each in its
     own server (Alex, 2026-10-23, to be worded at the freeze).
     - Per pair, the increments I_v2 = 1/X_v2 - 1/X_null of the C++ server and I_r = 1/X_r - 1/X_null
-      of router r's own program. The ratio I_v2 / I_r, at the margin delta of H8.
+      of router r's own program, in ns per request. The difference I_v2 - I_r, tested against a
+      margin in ns taken from the A/A pilot's noise in time per request. Not a ratio: the increments
+      are sub-microsecond differences of noisy per-request times near 10 us, and their ratio is
+      unstable and can change sign.
     - Family: 7 routers x 5 sizes x 2 shapes x 2 systems = 140 cells; 0.025 / 140 = 1.79e-4.
     - The boundary is stated with every result: the servers and runtimes differ.
 

@@ -130,9 +130,11 @@ Each job runs on the laptop between campaigns; the coordinator schedules them.
    generate them there with `t3/make_requests.py` and `e2e_requests` (every-route set at m =
    100,000 for pair 111 only), or copy them; either way check them with `make_requests.py --verify`
    against `t3/requests-manifest.tsv`. Length: no measured basis (the desktop's time is not one).
-2. **Toolchains on W and L.** Go 1.27.1 (round 2's) and the Rust toolchain on W; confirm both on
-   L and add them to `lab/laptop/versions.md`. Shares P4's planned Go and Rust bring-up on W.
-   Length: no measured basis.
+2. **Toolchains on W and L.** Go 1.27.3 (Alex: the latest releases) and the Rust toolchain on W;
+   confirm both on L and add them to `lab/laptop/versions.md`. Shares P4's planned Go and Rust
+   bring-up on W. Length: no measured basis.
+2b. **P2's generator and runner**: Release builds, their own D5 records (L ASan+UBSan, TSan, MSan;
+   W clang-cl ASan), and the A/A check against `t1gen` on L. Length: no measured basis.
 3. **Release builds** of `mserver`, `mserver-go`, `mserver-rs` on L and W, and the functional suite
    (`t3/run_checks.py`) on each. Length: no measured basis for these builds; the desktop suite is
    not a basis (other hardware).
@@ -154,13 +156,14 @@ Each job runs on the laptop between campaigns; the coordinator schedules them.
 
 ## Lab requests
 
-1. `papers-dev`: add Go 1.27.1, the Rust toolchain matching the laptop, and the `boost` headers
+1. `papers-dev`: add Go 1.27.3, the Rust toolchain matching the laptop, and the `boost` headers
    (the snapshot has `boost-libs` 1.92.0 but not the headers). Blocks the Linux checks of
    `mserver-rs` and the boost-url arm.
 2. A Windows load generator and runner with lab/t1's window rules, if the coordinator chooses
    lab tooling over P2's own generator (Laptop request 0).
 3. Boost 1.92.0 headers on the laptop's Windows, for boost-url there (or Alex drops it on W).
-4. lab/t1's readiness wait (15 s) may be short for m = 100,000 start-ups; the probe will tell.
+4. LLVM 22.1.8 (clang-cl) on the desktop too: it has 22.1.0 at `C:\Program Files\LLVM`, so its
+   clang-cl checks are development checks of another patch release until then.
 
 ## Alex decides
 
