@@ -68,7 +68,8 @@ void put_counters(Json& j, const Counters& c) {
         .num("connect_errors", c.connect_errors)
         .num("resets", c.resets)
         .num("peer_closes", c.peer_closes)
-        .num("reconnects", c.reconnects);
+        .num("reconnects", c.reconnects)
+        .num("reconnected", c.reconnected);
 }
 
 std::string counters_object(const Counters& c) {

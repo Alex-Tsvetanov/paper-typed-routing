@@ -6,7 +6,8 @@
 //! worker. It is ready when the socket accepts. SIGTERM and SIGINT (Unix) or Ctrl-C and Ctrl-Break
 //! (Windows) stop it with exit code 0. Exit code 2 is a refused command line or routes file, 3 is
 //! a routes file a router refuses (a conflict, a pattern it cannot take), 1 is a failure at run
-//! time. The first line on stderr names the instruction set the program was built for.
+//! time. The first line on stderr names the instruction set the program was built for; with the
+//! feature `v2` a second names the v2 library and its build information.
 //!
 //! Router `v2` (cargo feature `v2`) is RegexMatcher v2 behind its C interface, server/capi/p2v2.h.
 //!
@@ -274,6 +275,8 @@ fn main() -> ExitCode {
         env!("MSERVER_TARGET_CPU"),
         if cfg!(target_feature = "avx2") { "yes" } else { "no" }
     );
+    #[cfg(feature = "v2")]
+    eprintln!("mserver-rs: {}", v2_arm::describe());
     let args = match parse_args(std::env::args().skip(1)) {
         Ok(a) => a,
         Err(why) => return refuse(&why),

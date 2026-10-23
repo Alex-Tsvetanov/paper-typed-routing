@@ -80,6 +80,7 @@ void Net::connect(NetConn& c) {
     }
     std::memset(&c.connect_io.ov, 0, sizeof c.connect_io.ov);
     c.wleft = 0;
+    c.nleft = 0;
     DWORD sent = 0;
     if (!connect_ex_(c.s, reinterpret_cast<const sockaddr*>(&addr_), static_cast<int>(sizeof addr_), nullptr, 0,
                      &sent, &c.connect_io.ov) &&
@@ -124,8 +125,16 @@ void Net::post_send(NetConn& c) {
 }
 
 void Net::send(NetConn& c, const char* p, std::size_t n) {
-    if (c.s == INVALID_SOCKET || c.connecting || c.send_pending) {
-        release(c, Cause::Reset);  // not a connection to send on: cannot happen at depth 1
+    if (c.s == INVALID_SOCKET || c.connecting || c.nleft != 0) {
+        release(c, Cause::Reset);  // not a connection to send on, or a second request would wait
+        return;
+    }
+    if (c.send_pending) {
+        // The completion of the send before this one is not taken yet, though the answer to it
+        // already is: they are separate packets, and the answer's can come out of the queue first.
+        // This request goes out when that completion is taken.
+        c.nptr = p;
+        c.nleft = n;
         return;
     }
     c.wptr = p;
@@ -147,6 +156,7 @@ void Net::release(NetConn& c, Cause why) {
         c.s = INVALID_SOCKET;
     }
     c.wleft = 0;
+    c.nleft = 0;
     if (!c.queued) {
         c.queued = true;
         c.cause = why;
@@ -220,8 +230,14 @@ void Net::complete(const OVERLAPPED_ENTRY& e, bool deliver) {
             }
             c.wptr += bytes;
             c.wleft -= bytes;
+            if (c.wleft == 0 && c.nleft != 0) {
+                c.wptr = c.nptr;  // the request that waited
+                c.wleft = c.nleft;
+                c.nptr = nullptr;
+                c.nleft = 0;
+            }
             if (c.wleft > 0) {
-                post_send(c);  // a partial send: the rest
+                post_send(c);  // a partial send: the rest; or the request that waited
             }
             return;
     }

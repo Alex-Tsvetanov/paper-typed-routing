@@ -3,7 +3,10 @@
 // handler's callbacks (net_common.hpp).
 //
 //   - Each connection has one WSARecv posted whenever it is open, so a close or a reset shows at
-//     once, and at most one WSASend in flight (the generator has one request in flight).
+//     once, and at most one WSASend in flight. The generator has one request in flight, but the
+//     completion of a send and the receive of its answer are different packets, and the answer's
+//     may be taken first. The next request then waits in the connection and is posted by the
+//     completion of the send before it.
 //   - Sockets do not use FILE_SKIP_COMPLETION_PORT_ON_SUCCESS: every operation, one that finishes
 //     at once too, delivers a packet. One path, so every completion is handled the same way.
 //   - A connection the handler closes, or that fails, has its socket closed at once; its operations
@@ -66,6 +69,8 @@ struct NetConn {
     Cause cause = Cause::Requested;
     const char* wptr = nullptr;  // the part of the request not yet sent
     std::size_t wleft = 0;
+    const char* nptr = nullptr;  // a request waiting for the send in flight to complete
+    std::size_t nleft = 0;
     std::array<char, kRecvBuffer> rbuf{};
 };
 

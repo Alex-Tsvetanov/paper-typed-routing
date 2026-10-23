@@ -19,7 +19,8 @@ struct Options {
     double duration_s = 5.0;
     int timeout_ms = 1000;
     std::string cpus_text;           // as given
-    std::vector<int> cpus;           // thread k is pinned to cpus[k % size]
+    std::vector<int> cpus;           // thread k is pinned to cpus[k % size]; a timed run needs
+                                     // at least `threads` distinct entries
     std::string out;                 // the file that also gets the JSON line
     std::uint64_t count = 0;         // > 0: count mode, exactly this many requests
     bool help = false;

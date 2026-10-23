@@ -369,12 +369,16 @@ ParsedOptions parse(std::vector<std::string> args) {
 }
 
 void test_options() {
-    ParsedOptions p = parse({"--port", "8080", "--paths", "ring.txt"});
+    ParsedOptions p = parse({"--port", "8080", "--paths", "ring.txt", "--cpus", "2"});
     CHECK(p.error.empty());
     CHECK(p.opts.host == "127.0.0.1" && p.opts.port == 8080 && p.opts.paths == "ring.txt");
     CHECK(p.opts.threads == 1 && p.opts.connections == 16);
     CHECK(p.opts.warmup_s == 1.0 && p.opts.duration_s == 5.0 && p.opts.timeout_ms == 1000);
-    CHECK(p.opts.count == 0 && !p.opts.counting() && p.opts.cpus.empty() && p.opts.out.empty());
+    CHECK(p.opts.count == 0 && !p.opts.counting() && p.opts.cpus == std::vector<int>{2} && p.opts.out.empty());
+
+    // Count mode needs no CPUs.
+    p = parse({"--port", "8080", "--paths", "ring.txt", "--count", "5"});
+    CHECK(p.error.empty() && p.opts.cpus.empty());
 
     p = parse({"--host", "10.1.2.3", "--port", "9", "--paths", "p", "--connections", "64", "--threads", "4", "--cpus",
                "2,4,6,8", "--warmup", "0.5", "--duration", "2.25", "--timeout-ms", "250", "--out", "r.json"});
@@ -388,11 +392,38 @@ void test_options() {
     CHECK(p.error.empty() && p.opts.counting() && p.opts.count == 100000);
 
     // A thread without a connection has nothing to do.
-    p = parse({"--port", "9", "--paths", "p", "--connections", "3", "--threads", "8"});
+    p = parse({"--port", "9", "--paths", "p", "--connections", "3", "--threads", "8", "--count", "5"});
     CHECK(p.error.empty() && p.opts.threads == 3);
 
     p = parse({"--help"});
     CHECK(p.error.empty() && p.opts.help);
+}
+
+// A timed run needs --cpus with at least --threads distinct entries. Count mode does not.
+void test_options_cpus_rule() {
+    const std::vector<std::string> timed = {"--port", "9", "--paths", "p"};
+    const auto with = [&](std::vector<std::string> more) {
+        std::vector<std::string> args = timed;
+        args.insert(args.end(), more.begin(), more.end());
+        return parse_options(args);
+    };
+    CHECK(!with({}).error.empty());                                // one thread, no CPU
+    CHECK(with({"--cpus", "3"}).error.empty());
+    CHECK(!with({"--threads", "2", "--connections", "4"}).error.empty());
+    CHECK(!with({"--threads", "2", "--connections", "4", "--cpus", "1"}).error.empty());
+    CHECK(!with({"--threads", "2", "--connections", "4", "--cpus", "1,1"}).error.empty());  // not distinct
+    CHECK(with({"--threads", "2", "--connections", "4", "--cpus", "1,2"}).error.empty());
+    CHECK(with({"--threads", "2", "--connections", "4", "--cpus", "1,2,3"}).error.empty());
+    CHECK(with({"--threads", "2", "--connections", "4", "--cpus", "3,3,4"}).error.empty());  // two distinct
+    CHECK(!with({"--threads", "3", "--connections", "4", "--cpus", "3,3,4"}).error.empty());
+    CHECK(!with({"--threads", "4", "--connections", "4", "--cpus", "1,2,3,1"}).error.empty());
+    // The threads are capped at the connections first: one thread, one CPU.
+    CHECK(with({"--threads", "8", "--connections", "1", "--cpus", "5"}).error.empty());
+    CHECK(!with({"--threads", "8", "--connections", "3", "--cpus", "5,6"}).error.empty());
+    // Count mode: no CPUs, or too few, is fine.
+    CHECK(with({"--count", "5"}).error.empty());
+    CHECK(with({"--count", "5", "--threads", "4", "--connections", "8", "--cpus", "0"}).error.empty());
+    CHECK(parse_options({"--help"}).error.empty());
 }
 
 void test_options_bad() {
@@ -425,7 +456,10 @@ void test_options_bad() {
         {"--port", "80", "--paths", "p", "--cpus", "-1"},
         {"--port", "80", "--paths", "p", "--cpus", "9999"},
     };
-    for (const auto& args : bad) {
+    for (const auto& base : bad) {
+        // In count mode, so that a missing --cpus is not what is wrong with them.
+        std::vector<std::string> args = {"--count", "5"};
+        args.insert(args.end(), base.begin(), base.end());
         const ParsedOptions p = parse(args);
         if (p.error.empty()) {
             std::string joined;
@@ -479,6 +513,8 @@ Totals sample_totals() {
     t.measure.lost = 1;
     t.measure.timeouts = 3;
     t.measure.reconnects = 5;
+    t.measure.reconnected = 4;
+    t.measure.peer_closes = 2;
     t.warmup.completed = 7;
     t.latency.add(1500);
     t.latency.add(2500);
@@ -538,6 +574,15 @@ void test_report_timed() {
     CHECK(contains(line, "\"errors_total\":10"));  // 3 + 2 + 1 + 1 + 0 + 3
     CHECK(contains(line, "\"thread_failed\":0"));
     CHECK(!contains(line, "rate"));
+    // The window's object holds the two counts the runner requires to be 0, and both reconnect
+    // counts: t1gen's (attempts) and the connections that came up.
+    const std::size_t from = line.find("\"measure\":{");
+    const std::size_t to = line.find("\"warmup\":{");
+    CHECK(from != std::string::npos && to != std::string::npos && from < to);
+    const std::string window = line.substr(from, to - from);
+    CHECK(contains(window, "\"peer_closes\":2"));
+    CHECK(contains(window, "\"reconnects\":5"));
+    CHECK(contains(window, "\"reconnected\":4"));
 }
 
 void test_totals_and_exit_rules() {
@@ -587,6 +632,7 @@ void test_totals_and_exit_rules() {
     Totals only_connects = ok;  // refused connections and reconnects alone are not request errors
     only_connects.measure.connect_errors = 12;
     only_connects.measure.reconnects = 12;
+    only_connects.measure.reconnected = 12;
     CHECK(count_ok(o, only_connects));
 }
 
@@ -603,6 +649,7 @@ int main() {
     test_framer_connection_header();
     test_framer_limits();
     test_options();
+    test_options_cpus_rule();
     test_options_bad();
     test_requests();
     test_report_count_has_no_time();

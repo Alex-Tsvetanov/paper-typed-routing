@@ -2,8 +2,8 @@
 // section 8). It does what lab/t1's t1gen does in its closed loop at depth 1, on Linux and on
 // Windows, and no more:
 //
-//   - C keep-alive connections over T threads, each thread pinned to one CPU of --cpus, and one
-//     request in flight on each connection. Connection i of C starts at target i * n / C of the n
+//   - C keep-alive connections over T threads, each thread pinned to one CPU of --cpus (a timed run
+//     needs at least T distinct CPUs there), and one request in flight on each connection. Connection i of C starts at target i * n / C of the n
 //     targets of --paths and walks them cyclically, so every target is requested equally often.
 //   - An answer completes a request only if it is 200 with the 13-byte body "Hello, World!";
 //     anything else is an error, by kind (framing.hpp, report.hpp).

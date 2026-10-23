@@ -88,7 +88,7 @@ def flat(js):
     return {"completed": js["completed"], "status": e["status"], "body": e["body"], "framing": e["framing"],
             "lost": e["lost"], "unsolicited": e["unsolicited"], "timeouts": js["timeouts"],
             "connect_errors": js["connect_errors"], "resets": js["resets"], "peer_closes": js["peer_closes"],
-            "reconnects": js["reconnects"], "resolved": js["resolved"]}
+            "reconnects": js["reconnects"], "reconnected": js["reconnected"], "resolved": js["resolved"]}
 
 
 def counts_line(name, js, rc, failures):
@@ -309,7 +309,7 @@ def run_scenario(p2gen, tmp, name, behavior, count, conns, threads, timeout_ms, 
     if js is not None:
         got = flat(js)
         for key, value in got.items():
-            if key in ("reconnects", "connect_errors", "resolved", "resets", "peer_closes"):
+            if key in ("reconnects", "reconnected", "connect_errors", "resolved", "resets", "peer_closes"):
                 continue
             if value != want.get(key, 0):
                 failures.append(f"{key} is {value}, want {want.get(key, 0)}")
@@ -320,16 +320,19 @@ def run_scenario(p2gen, tmp, name, behavior, count, conns, threads, timeout_ms, 
             failures.append(f"resolved is {got['resolved']}, want {count}")
         if js["count"] != count:
             failures.append(f"count is {js['count']}")
-        if name == "connection_close" and not (count - conns <= got["reconnects"] <= count):
-            failures.append(f"reconnects {got['reconnects']} is not within [{count - conns}, {count}]")
-        if name in ("reset", "close_without_answer", "hung_request") and got["reconnects"] < 1:
+        # reconnects counts attempts, as t1gen does; reconnected, the ones that came up.
+        if got["reconnects"] < got["reconnected"]:
+            failures.append(f"reconnects {got['reconnects']} is below reconnected {got['reconnected']}")
+        if name == "connection_close" and not (count - conns <= got["reconnected"] <= count):
+            failures.append(f"reconnected {got['reconnected']} is not within [{count - conns}, {count}]")
+        if name in ("reset", "close_without_answer", "hung_request") and got["reconnected"] < 1:
             failures.append("a lost connection was never made again")
         # Every connection p2gen made, the first C and each reconnection, reached the server. A
         # thread that has no request left stops with its last reconnections unfinished: the server
         # may have accepted up to C more than p2gen counted.
         accepted = len(fake.conns)
-        if not (conns + got["reconnects"] <= accepted <= 2 * conns + got["reconnects"]):
-            failures.append(f"the server accepted {accepted} connections, want {conns} + {got['reconnects']}"
+        if not (conns + got["reconnected"] <= accepted <= 2 * conns + got["reconnected"]):
+            failures.append(f"the server accepted {accepted} connections, want {conns} + {got['reconnected']}"
                             f" up to {conns} more")
     return counts_line(name, js, rc, failures), failures
 
@@ -360,6 +363,8 @@ def scenario_refused_start(p2gen, tmp):
         c = flat(js)
         if c["completed"] != 20 or c["connect_errors"] < 1:
             failures.append(f"completed {c['completed']}, connect_errors {c['connect_errors']}: want 20 and at least 1")
+        if c["reconnects"] != 0 or c["reconnected"] != 0:
+            failures.append("a connection that was never open is not a reconnection")
     return counts_line("refused_start", js, rc, failures), failures
 
 

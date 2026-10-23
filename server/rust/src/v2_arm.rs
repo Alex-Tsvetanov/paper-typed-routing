@@ -26,9 +26,18 @@ struct Table {
 extern "C" {
     fn p2v2_build(patterns: *const *const c_char, lens: *const usize, n: usize, err: *mut c_char, errcap: usize) -> *mut Table;
     fn p2v2_free(table: *mut Table);
+    fn p2v2_build_info() -> *const c_char;
     fn p2v2_find(
         table: *const Table, method: c_uint, path: *const c_char, len: usize, caps: *mut u32, max_caps: u32, ncaps: *mut u32,
     ) -> u32;
+}
+
+/// The line the program prints at start: the directory the library came from (recorded by
+/// build.rs) and the library's own build information (compiler, build type, NDEBUG, isa).
+pub fn describe() -> String {
+    // SAFETY: p2v2_build_info returns a pointer to a static NUL-terminated string.
+    let info = unsafe { std::ffi::CStr::from_ptr(p2v2_build_info()) }.to_string_lossy();
+    format!("v2 library {}: {info}", env!("MSERVER_V2_LIB_DIR"))
 }
 
 pub struct V2Arm {

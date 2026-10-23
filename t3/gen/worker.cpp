@@ -14,6 +14,9 @@ constexpr int kDrainMs = 5000;                             // the longest the en
 
 }  // namespace
 
+static_assert(alignof(Worker) == kCacheLine && sizeof(Worker) % kCacheLine == 0,
+              "a Worker must fill whole cache lines");
+
 Worker::Worker(int id, int cpu, int first, int n, Shared& shared)
     : id_(id),
       cpu_(cpu),
@@ -23,6 +26,8 @@ Worker::Worker(int id, int cpu, int first, int n, Shared& shared)
       conns_(new Conn[static_cast<std::size_t>(n)]),
       phase_index_(shared.counting ? 1 : 0),
       timeout_ns_(static_cast<std::uint64_t>(shared.opts.timeout_ms) * 1'000'000) {
+    static_assert(alignof(Conn) == kCacheLine && sizeof(Conn) % kCacheLine == 0,
+                  "a Conn must fill whole cache lines");
     // Connection i of C starts at target i * (number of targets) / C and walks them cyclically.
     const std::uint64_t targets = sh_.reqs.size();
     const std::uint64_t total = static_cast<std::uint64_t>(sh_.opts.connections);
@@ -112,6 +117,9 @@ bool Worker::begin_batch() {
 }
 
 void Worker::start(Conn& c, std::uint64_t now) {
+    if (c.ever_open) {
+        ++counters().reconnects;  // as t1gen: every attempt after the first connection was open
+    }
     c.state = State::Connecting;
     c.connect_start = now;
     c.close_after = false;
@@ -124,7 +132,7 @@ void Worker::connected(NetConn& nc) {
     const std::uint64_t now = clock_ns();
     c.state = State::Open;
     if (c.ever_open) {
-        ++counters().reconnects;
+        ++counters().reconnected;
     }
     c.ever_open = true;
     issue(c, now);

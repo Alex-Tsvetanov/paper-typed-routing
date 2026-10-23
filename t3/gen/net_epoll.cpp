@@ -68,6 +68,7 @@ void Net::connect(NetConn& c) {
     c.connecting = true;
     c.want_out = true;
     c.wleft = 0;
+    c.nleft = 0;
     if (::connect(fd, reinterpret_cast<const sockaddr*>(&addr_), sizeof addr_) != 0 && errno != EINPROGRESS) {
         release(c, Cause::ConnectFailed);
         return;
@@ -81,8 +82,13 @@ void Net::connect(NetConn& c) {
 }
 
 void Net::send(NetConn& c, const char* p, std::size_t n) {
-    if (c.fd < 0 || c.connecting || c.wleft != 0) {
-        release(c, Cause::Reset);  // not a connection to send on: cannot happen at depth 1
+    if (c.fd < 0 || c.connecting || c.nleft != 0) {
+        release(c, Cause::Reset);  // not a connection to send on, or a second request would wait
+        return;
+    }
+    if (c.wleft != 0) {
+        c.nptr = p;  // the one before is only partly written: this one follows it
+        c.nleft = n;
         return;
     }
     c.wptr = p;
@@ -106,6 +112,7 @@ void Net::release(NetConn& c, Cause why) {
     c.connecting = false;
     c.want_out = false;
     c.wleft = 0;
+    c.nleft = 0;
     if (!c.queued) {
         c.queued = true;
         c.cause = why;
@@ -201,22 +208,31 @@ void Net::read_ready(NetConn& c) {
 }
 
 void Net::write_out(NetConn& c) {
-    while (c.wleft > 0) {
-        const ssize_t w = ::send(c.fd, c.wptr, c.wleft, MSG_NOSIGNAL);
-        if (w > 0) {
-            c.wptr += w;
-            c.wleft -= static_cast<std::size_t>(w);
-            continue;
-        }
-        if (w < 0 && errno == EINTR) {
-            continue;
-        }
-        if (w < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-            set_out(c, true);
+    for (;;) {
+        while (c.wleft > 0) {
+            const ssize_t w = ::send(c.fd, c.wptr, c.wleft, MSG_NOSIGNAL);
+            if (w > 0) {
+                c.wptr += w;
+                c.wleft -= static_cast<std::size_t>(w);
+                continue;
+            }
+            if (w < 0 && errno == EINTR) {
+                continue;
+            }
+            if (w < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+                set_out(c, true);
+                return;
+            }
+            release(c, Cause::Reset);
             return;
         }
-        release(c, Cause::Reset);
-        return;
+        if (c.nleft == 0) {
+            break;
+        }
+        c.wptr = c.nptr;  // the request that waited
+        c.wleft = c.nleft;
+        c.nptr = nullptr;
+        c.nleft = 0;
     }
     set_out(c, false);
 }

@@ -12,6 +12,8 @@ path = "src/main.rs"
 [features]
 # Router `v2`: RegexMatcher v2 behind its C interface (server/capi/p2v2.h), linked statically from
 # the directory P2V2_LIB_DIR names (build.rs). Off by default, so a build without the library works.
+# The measured binary is always built with `--features v2` (t3/build_programs.py), so that every
+# Rust arm runs from one binary.
 v2 = []
 
 [dependencies]

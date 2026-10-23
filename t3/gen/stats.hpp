@@ -19,7 +19,9 @@ struct Counters {
     std::uint64_t connect_errors = 0;  // connection attempts that were refused or failed
     std::uint64_t resets = 0;          // open connections that failed with a socket error
     std::uint64_t peer_closes = 0;     // open connections the server closed
-    std::uint64_t reconnects = 0;      // connections made again after one was lost or closed
+    std::uint64_t reconnects = 0;      // attempts to connect again, after the connection had once been
+                                       // open: t1gen's count, each attempt, a refused one too
+    std::uint64_t reconnected = 0;     // of those, the connections that came up
 
     // Requests that got an outcome, completed or not. In count mode this must equal --count.
     std::uint64_t resolved() const noexcept { return completed + status + body + framing + lost + timeouts; }
@@ -39,6 +41,7 @@ struct Counters {
         resets += o.resets;
         peer_closes += o.peer_closes;
         reconnects += o.reconnects;
+        reconnected += o.reconnected;
     }
 };
 

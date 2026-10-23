@@ -18,6 +18,7 @@
 #pragma once
 
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 
@@ -31,6 +32,10 @@ namespace p2gen {
 
 enum Phase : int { kWarmup = 0, kMeasure = 1, kStop = 2 };
 
+// A cache line. A fixed 64, not std::hardware_destructive_interference_size, which differs by
+// compiler and warns.
+inline constexpr std::size_t kCacheLine = 64;
+
 // What the threads share. Everything but the atomics is read only.
 struct Shared {
     Shared(const Options& o, const Requests& r, const sockaddr_in& a)
@@ -40,12 +45,16 @@ struct Shared {
     const Requests& reqs;
     sockaddr_in addr;
     bool counting;
-    std::atomic<int> phase;                    // set by main
-    std::atomic<std::uint64_t> claimed{0};     // count mode: requests taken from the --count budget
-    std::atomic<bool> abort{false};            // count mode: a thread could not run, so all stop
+    // Each on a cache line of its own: every thread reads the phase at every wait, and in count
+    // mode every request writes the budget.
+    alignas(kCacheLine) std::atomic<int> phase;                 // set by main
+    alignas(kCacheLine) std::atomic<std::uint64_t> claimed{0};  // count mode: requests taken from --count
+    alignas(kCacheLine) std::atomic<bool> abort{false};         // count mode: a thread could not run
 };
 
-class Worker final : private NetHandler {
+// alignas: two threads' workers, with the counters and the state they write at every request,
+// never share a cache line.
+class alignas(kCacheLine) Worker final : private NetHandler {
 public:
     // Serves connections [first, first + n) of the run's opts.connections.
     Worker(int id, int cpu, int first, int n, Shared& shared);
@@ -62,7 +71,7 @@ private:
     enum class State : std::uint8_t { Closed, Connecting, Open, Closing };
     enum class Outcome : std::uint8_t { Completed, Status, Body, Framing, Lost, Timeout };
 
-    struct Conn : NetConn {
+    struct alignas(kCacheLine) Conn : NetConn {
         State state = State::Closed;
         bool ever_open = false;
         bool inflight = false;

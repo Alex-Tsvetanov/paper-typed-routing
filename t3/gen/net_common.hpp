@@ -9,7 +9,10 @@
 //   - closed() is the only report of a lost connection, and it comes once per connection, after the
 //     socket is released and no operation of it is outstanding. Until then the connection must not
 //     be connected again. The cause is the first one seen: Requested if the handler closed it.
-//   - send() has no result. If it fails, closed() follows with Reset.
+//   - send() has no result. If it fails, closed() follows with Reset. A request sent while the one
+//     before it is still being written is held and goes out when that one is done; the generator
+//     has one request in flight, but an answer can be taken before the completion of the send of
+//     its request. One request may wait; a second one is a misuse and fails the connection.
 #pragma once
 
 #include <chrono>

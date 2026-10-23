@@ -16,7 +16,10 @@
 //   errors_total        status + body + framing + lost + unsolicited + timeouts
 //   connect_errors      connection attempts that were refused or failed
 //   resets, peer_closes open connections that failed, or that the server closed
-//   reconnects          connections made again
+//   reconnects          attempts to connect again after a connection had once been open, each
+//                       attempt counted, a refused one too: what t1gen's reconnects counts
+//   reconnected         of those attempts, the connections that came up
+// The runner requires peer_closes and reconnects to be 0 in the window; both are in measure.
 // No rate is in the line: it is completed over measure_wall_ns, for the reader to compute.
 #pragma once
 

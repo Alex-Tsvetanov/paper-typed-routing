@@ -1,5 +1,6 @@
 #include "options.hpp"
 
+#include <algorithm>
 #include <cerrno>
 #include <charconv>
 #include <cmath>
@@ -78,7 +79,8 @@ const char* usage_text() noexcept {
            "                    target i*n/C of n and walks the file cyclically\n"
            "  --connections C   keep-alive connections, one request in flight on each (default 16)\n"
            "  --threads T       worker threads (default 1; at most C)\n"
-           "  --cpus LIST       comma list of CPUs; thread k is pinned to the k-th (cyclically)\n"
+           "  --cpus LIST       comma list of CPUs; thread k is pinned to the k-th. A timed run needs at\n"
+           "                    least --threads distinct CPUs; count mode does not\n"
            "  --warmup S        seconds before the measured window (default 1)\n"
            "  --duration S      measured window in seconds (default 5)\n"
            "  --timeout-ms N    stall limit of a connection with a request in flight (default 1000)\n"
@@ -148,6 +150,16 @@ ParsedOptions parse_options(const std::vector<std::string>& args) {
         r.error = "--paths is required";
     } else if (o.threads > o.connections) {
         o.threads = o.connections;  // a thread without a connection has nothing to do
+    }
+    if (r.error.empty() && !o.counting()) {
+        // A timed run is only valid with every thread on a CPU of its own: two threads sharing one
+        // would measure the generator's contention, not the server.
+        std::vector<int> distinct = o.cpus;
+        std::sort(distinct.begin(), distinct.end());
+        distinct.erase(std::unique(distinct.begin(), distinct.end()), distinct.end());
+        if (static_cast<int>(distinct.size()) < o.threads) {
+            r.error = "a timed run needs --cpus with at least --threads distinct CPUs";
+        }
     }
     return r;
 }

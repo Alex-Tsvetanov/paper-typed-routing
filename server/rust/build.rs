@@ -61,6 +61,8 @@ fn link_v2() {
     println!("cargo:rerun-if-changed={}", path.display());
     println!("cargo:rustc-link-search=native={}", Path::new(&dir).display());
     println!("cargo:rustc-link-lib=static=p2v2_c");
+    // The program prints this directory at start, with the library's own build information.
+    println!("cargo:rustc-env=MSERVER_V2_LIB_DIR={}", Path::new(&dir).display());
     if target_os == "linux" {
         println!("cargo:rustc-link-lib=stdc++");
     }

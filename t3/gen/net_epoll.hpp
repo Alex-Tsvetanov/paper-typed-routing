@@ -20,6 +20,8 @@ struct NetConn {
     Cause cause = Cause::Requested;
     const char* wptr = nullptr;  // the part of the request not yet written
     std::size_t wleft = 0;
+    const char* nptr = nullptr;  // a request waiting behind it
+    std::size_t nleft = 0;
 };
 
 class Net {
