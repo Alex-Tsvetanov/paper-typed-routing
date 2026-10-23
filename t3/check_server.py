@@ -13,8 +13,11 @@ Then it stops the server (SIGTERM on Linux, Ctrl-Break on Windows) and requires 
 for the first targets. Untimed: it measures nothing.
 
     check_server.py --program BIN --router NAME --cell DIR [--set all|ring|both] [--measured]
+                    [--server-log FILE]
 
-Prints one JSON line and exits 0 only if every check passed.
+--server-log appends the server's standard output and error to FILE (for D5's records, whose
+writer scans them for sanitizer reports); without it they go to a pipe that is read only if the
+server exits early. Prints one JSON line and exits 0 only if every check passed.
 """
 import argparse
 import json
@@ -37,19 +40,24 @@ def free_port() -> int:
         return s.getsockname()[1]
 
 
-def start(program: str, router: str, routes: Path, port: int, check: bool) -> subprocess.Popen:
+def start(program: str, router: str, routes: Path, port: int, check: bool, log=None) -> subprocess.Popen:
+    """LOG: an open binary file for the server's output, or None for a pipe."""
     cmd = [program, "--port", str(port), "--workers", "1", "--routes", str(routes), "--router", router]
     if check:
         cmd.append("--check")
     flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
-    return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, creationflags=flags)
+    if log is not None:
+        log.write(f"== {' '.join(cmd)}\n".encode())
+        log.flush()
+    return subprocess.Popen(cmd, stdout=log if log is not None else subprocess.PIPE, stderr=subprocess.STDOUT,
+                            creationflags=flags)
 
 
 def wait_ready(proc: subprocess.Popen, port: int, timeout: float) -> None:
     end = time.monotonic() + timeout
     while time.monotonic() < end:
         if proc.poll() is not None:
-            out = proc.stdout.read().decode(errors="replace") if proc.stdout else ""
+            out = proc.stdout.read().decode(errors="replace") if proc.stdout else "(see the server log)"
             raise RuntimeError(f"server exited with {proc.returncode} before it was ready: {out.strip()}")
         try:
             with socket.create_connection(("127.0.0.1", port), timeout=0.5):
@@ -138,6 +146,13 @@ def check_set(conn: Conn, cell: Path, name: str, failures: list, null: bool) -> 
 
 
 def run(a) -> dict:
+    if a.server_log:
+        with open(a.server_log, "ab") as log:
+            return checks(a, log)
+    return checks(a, None)
+
+
+def checks(a, log) -> dict:
     cell = Path(a.cell)
     routes = cell / "routes.txt"
     m = len(read_lines(routes))
@@ -146,7 +161,7 @@ def run(a) -> dict:
     failures = []
     checked = 0
     port = free_port()
-    proc = start(a.program, a.router, routes, port, check=True)
+    proc = start(a.program, a.router, routes, port, check=True, log=log)
     try:
         wait_ready(proc, port, a.ready_timeout)
         conn = Conn(port)
@@ -167,7 +182,7 @@ def run(a) -> dict:
         failures.append(f"check mode: exit code {rc} after the stop signal")
     if a.measured:
         port = free_port()
-        proc = start(a.program, a.router, routes, port, check=False)
+        proc = start(a.program, a.router, routes, port, check=False, log=log)
         try:
             wait_ready(proc, port, a.ready_timeout)
             conn = Conn(port)
@@ -193,6 +208,7 @@ def main() -> int:
     ap.add_argument("--set", choices=["all", "ring", "both"], default="both")
     ap.add_argument("--measured", action="store_true")
     ap.add_argument("--ready-timeout", type=float, default=120.0)
+    ap.add_argument("--server-log", help="append the server's output to this file")
     a = ap.parse_args()
     try:
         result = run(a)

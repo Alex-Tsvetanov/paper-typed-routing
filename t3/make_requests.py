@@ -8,10 +8,11 @@ e2e_requests prints.
 
     make_requests.py --bin BUILD/e2e_requests --out DIR [--shapes static] [--sizes 10,100] [--pairs 16]
                      [--all-pairs 1]
-    make_requests.py --verify DIR --manifest t3/requests-manifest.tsv
+    make_requests.py --verify DIR --manifest t3/requests-manifest.tsv [--complete]
 
 The second form compares a generated manifest with the committed one, so every program and run
-reads the same request sets. The files themselves are not committed: at m = 100,000 a cell's
+reads the same request sets: every generated cell must be a committed one, and with --complete
+every committed cell must have been generated too. The files themselves are not committed: at m = 100,000 a cell's
 files hold some 10 MB. The set of every route (all.txt) is made for every pair up to m = 10,000,
 and at m = 100,000 for the first --all-pairs pairs only, as it takes minutes per cell there.
 """
@@ -62,7 +63,7 @@ def generate(binary: Path, out: Path, shapes, sizes, pairs, all_pairs: int) -> i
     return 0
 
 
-def verify(out: Path, manifest: Path) -> int:
+def verify(out: Path, manifest: Path, complete: bool = False) -> int:
     got = (out / "manifest.tsv").read_text().splitlines()
     want = manifest.read_text().splitlines()
     if got[0] != want[0]:
@@ -74,7 +75,13 @@ def verify(out: Path, manifest: Path) -> int:
         for r in missing:
             print(f"make_requests: not in the committed manifest: {r}", file=sys.stderr)
         return 1
-    print(f"make_requests: {len(got) - 1} cells match {manifest}")
+    if complete:
+        absent = sorted(want_rows - set(got[1:]))
+        if absent:
+            for r in absent:
+                print(f"make_requests: committed but not generated: {r}", file=sys.stderr)
+            return 1
+    print(f"make_requests: {len(got) - 1} cells match {manifest}" + (", all of its cells" if complete else ""))
     return 0
 
 
@@ -88,11 +95,12 @@ def main() -> int:
     ap.add_argument("--all-pairs", type=int, default=1, help="at m = 100,000, the every-route set for the first N pairs")
     ap.add_argument("--verify", type=Path)
     ap.add_argument("--manifest", type=Path)
+    ap.add_argument("--complete", action="store_true", help="--verify: every committed cell must be there")
     a = ap.parse_args()
     if a.verify:
         if not a.manifest:
             ap.error("--verify needs --manifest")
-        return verify(a.verify, a.manifest)
+        return verify(a.verify, a.manifest, a.complete)
     if not a.bin or not a.out:
         ap.error("--bin and --out are required")
     sizes = [int(s) for s in a.sizes.split(",")]

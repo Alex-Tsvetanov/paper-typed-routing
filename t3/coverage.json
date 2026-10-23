@@ -1,0 +1,19 @@
+{
+ "about": "Round 3's declared gaps in D5's sanitizer records (t3/record.py; CLAUDE.md, D5): by host (L the laptop's Arch, W its Windows), the programs a record of a sanitizer need not cover, and why. Round 2's bench/coverage.json is round 2's and stays as it is. Every C++ target (the server with every external arm, v2's C interface, p2gen, e2e_requests) has no gap. v2's C interface, which the Go and Rust programs call, is covered by test_p2v2 under every sanitizer of its host.",
+ "L": {
+  "mserver-go": {
+   "not_covered_by": ["msan"],
+   "reason": "MemorySanitizer needs every library in the process instrumented; the Go runtime and the Go routers are compiled by the Go toolchain, which has no MemorySanitizer. Under ASan the Go code is built with go build -asan, and under TSan with go build -race, Go's own ThreadSanitizer, against an uninstrumented v2 library (the race runtime and clang's ThreadSanitizer runtime cannot share a process)."
+  },
+  "mserver-rs": {
+   "not_covered_by": ["tsan", "msan"],
+   "reason": "rustc's ThreadSanitizer and MemorySanitizer need the standard library rebuilt with them (-Zbuild-std and the rust-src component), which the lab's minimal Rust 1.99.0 toolchain does not have; without it their reports on the standard library's own synchronization are not to be trusted. Under ASan the crate is built with -Zsanitizer=address over the prebuilt standard library."
+  }
+ },
+ "W": {
+  "mserver-go": {
+   "not_covered_by": ["asan"],
+   "reason": "Go has no AddressSanitizer on windows/amd64 (go build -asan is for Linux). Its sources are the Linux program's but for v2_windows.go, and the DLL it calls is covered by test_p2v2_dll under clang-cl's AddressSanitizer."
+  }
+ }
+}

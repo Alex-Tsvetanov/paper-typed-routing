@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+"""The inputs hash of round 3's Go and Rust server programs, for D5's records and gate.
+
+The C++ targets are hashed by the Papers repo's lab/bin/inputs_hash.py from what Ninja compiled.
+Go and Rust have no Ninja log, so a program's inputs are every file git tracks under its folder
+(server/go: the .go files, go.mod, go.sum; server/rust: Cargo.toml, Cargo.lock, build.rs,
+.cargo/config.toml, src/), whatever the build tags pick: a change to any of them makes a new hash.
+The third-party code is pinned by go.sum and Cargo.lock, which are among the files. The v2 library
+they link is the C++ target p2v2_c (or p2v2 on Windows), hashed with the C++ targets.
+
+The hash has inputs_hash.py's form: the sha256 of the sorted lines "<path>\\t<sha256 of the file>\\n",
+each path "project/" plus its path in the repository with forward slashes, file contents read with
+CRLF as LF.
+
+    source_hash.py [--root DIR] server/go server/rust     prints one JSON object
+"""
+import argparse
+import hashlib
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+PROGRAMS = {"mserver-go": "server/go", "mserver-rs": "server/rust"}
+
+
+def tracked(root: Path, folder: str) -> list:
+    p = subprocess.run(["git", "-C", str(root), "ls-files", "-z", "--", folder], capture_output=True)
+    if p.returncode != 0:
+        raise RuntimeError(f"git ls-files {folder} in {root}: {p.stderr.decode(errors='replace').strip()}")
+    files = sorted(f for f in p.stdout.decode("utf-8").split("\0") if f)
+    if not files:
+        raise RuntimeError(f"git tracks no file under {folder} in {root}")
+    return files
+
+
+def folder_hash(root: Path, folder: str) -> dict:
+    files = {}
+    for f in tracked(root, folder):
+        data = (root / f).read_bytes().replace(b"\r\n", b"\n")
+        files[f"project/{f}"] = hashlib.sha256(data).hexdigest()
+    text = "".join(f"{p}\t{h}\n" for p, h in sorted(files.items()))
+    return {"folder": folder, "inputs_hash": hashlib.sha256(text.encode()).hexdigest(), "files": len(files)}
+
+
+def program_hash(root: Path, program: str) -> dict:
+    return folder_hash(root, PROGRAMS[program])
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--root", type=Path, default=ROOT)
+    ap.add_argument("folders", nargs="+")
+    a = ap.parse_args()
+    try:
+        print(json.dumps({f: folder_hash(a.root.resolve(), f) for f in a.folders}, indent=1))
+    except (RuntimeError, OSError) as e:
+        print(f"source_hash: {e}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

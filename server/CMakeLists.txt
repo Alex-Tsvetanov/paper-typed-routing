@@ -196,3 +196,21 @@ target_include_directories(p2v2 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/capi")
 target_compile_definitions(p2v2 PUBLIC P2V2_SHARED PRIVATE P2V2_BUILD "P2V2_BUILD_TYPE=\"${_p2v2_type}\"")
 target_link_libraries(p2v2 PRIVATE RegexMatcher::route)
 target_compile_options(p2v2 PRIVATE ${_warn})
+
+# The C interface on four request-set cells (tests/test_p2v2.cpp), against the static library and,
+# on Windows, also against the DLL the Go program loads.
+if(TARGET e2e_requests)
+    set(_p2v2_tests test_p2v2)
+    add_executable(test_p2v2 tests/test_p2v2.cpp)
+    target_link_libraries(test_p2v2 PRIVATE p2v2_c)
+    if(WIN32)
+        list(APPEND _p2v2_tests test_p2v2_dll)
+        add_executable(test_p2v2_dll tests/test_p2v2.cpp)
+        target_link_libraries(test_p2v2_dll PRIVATE p2v2)
+    endif()
+    foreach(_t IN LISTS _p2v2_tests)
+        target_compile_options(${_t} PRIVATE ${_warn})
+        add_test(NAME ${_t} COMMAND "${CMAKE_COMMAND}" "-DE2E=$<TARGET_FILE:e2e_requests>" "-DTEST=$<TARGET_FILE:${_t}>"
+                 "-DOUT=${CMAKE_CURRENT_BINARY_DIR}/${_t}-cells" -P "${CMAKE_CURRENT_SOURCE_DIR}/tests/p2v2_cells.cmake")
+    endforeach()
+endif()

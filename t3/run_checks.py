@@ -2,7 +2,7 @@
 """The functional suite of round 3 (design/round3/end-to-end.md, section 5): every server arm on
 every size, untimed.
 
-    run_checks.py --data DIR [--mserver BIN] [--go BIN] [--rust BIN] --out FILE.jsonl
+    run_checks.py --data DIR [--mserver BIN] [--go BIN] [--rust BIN] --out FILE.jsonl [--logs DIR]
 
 For each program given, each of its arms (the C++ server lists its own with --router '?') and
 each shape under DIR (DIR/<shape>/m<m>/t<seed>, t3/make_requests.py's layout):
@@ -13,7 +13,8 @@ At m = 100,000 the arms that scan their routes linearly get the ring only. In ro
 lookup took them, on mixed-disjoint, 0.96 ms (cpp-httplib), 3.95 ms (Oat++), 7.80 ms (Drogon) and
 30.1 ms (actix-router), and on static 0.64 ms (cpp-httplib), 1.03 ms (actix-router) and 2.49 ms
 (Oat++) (results/round2/all_arms.csv), so every route would take minutes to hours. Each result
-line of check_server.py goes to FILE.jsonl; a table is printed.
+line of check_server.py goes to FILE.jsonl; a table is printed. With --logs, every server's output
+goes to DIR/<program>-<arm>.log (D5's records scan them for sanitizer reports).
 Exits 0 only if every check passed. Measures nothing.
 """
 import argparse
@@ -58,7 +59,10 @@ def main() -> int:
     ap.add_argument("--rust")
     ap.add_argument("--no-v2", action="store_true", help="leave out the Go and Rust programs' v2 arm")
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--logs", type=Path, help="a folder for each server's output, one file per program and arm")
     a = ap.parse_args()
+    if a.logs:
+        a.logs.mkdir(parents=True, exist_ok=True)
     programs = []
     keep = (lambda arms: [x for x in arms if x != "v2"]) if a.no_v2 else list
     if a.mserver:
@@ -78,6 +82,8 @@ def main() -> int:
                        "--cell", str(cell), "--set", sets, "--ready-timeout", "300"]
                 if measured:
                     cmd.append("--measured")
+                if a.logs:
+                    cmd += ["--server-log", str(a.logs / f"{Path(prog).stem}-{arm}.log")]
                 p = subprocess.run(cmd, capture_output=True, text=True)
                 line = p.stdout.strip().splitlines()[-1] if p.stdout.strip() else json.dumps(
                     {"program": Path(prog).name, "router": arm, "cell": str(cell), "ok": False,

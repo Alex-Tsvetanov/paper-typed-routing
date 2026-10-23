@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """p2run: the window runner of P2's end-to-end block (design/round3/end-to-end.md, sections 3, 5, 8, 9).
 
-    p2run.py PLAN.json --out FILE.jsonl [--count N] [--workdir DIR]
+    p2run.py PLAN.json --out FILE.jsonl [--count N] [--workdir DIR] [--keep-logs]
     p2run.py PLAN.json --dry-run
 
 It reimplements, for the frozen design only, what lab/t1/t1.py does for H6: a fresh server per
@@ -1110,8 +1110,13 @@ def tail(path: Path, n: int = 400) -> str:
         return ""
 
 
+KEEP_LOGS = False  # --keep-logs: D5's records keep every server log and p2gen output to scan them
+
+
 def remove(path: Path) -> None:
     """Deletes scratch. A scanner may hold the file on Windows; that must not turn a window into a fault."""
+    if KEEP_LOGS:
+        return
     try:
         path.unlink(missing_ok=True)
     except OSError:
@@ -1566,7 +1571,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap.add_argument("--count", type=int, metavar="N", help="functional mode: p2gen --count N, nothing sampled or timed")
     ap.add_argument("--dry-run", action="store_true", help="print the window sequence and its length")
     ap.add_argument("--workdir", type=Path, help="server logs and p2gen results (default: OUT.work)")
+    ap.add_argument("--keep-logs", action="store_true",
+                    help="keep every server log and p2gen output in the work directory (D5's records)")
     a = ap.parse_args(argv)
+    global KEEP_LOGS
+    KEEP_LOGS = a.keep_logs
     try:
         if a.count is not None and not 1 <= a.count <= 1_000_000_000_000:
             raise PlanError("--count wants a number from 1 to 1000000000000")
