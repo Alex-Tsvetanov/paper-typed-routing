@@ -62,3 +62,4 @@ add_executable(e2e_requests t3/e2e_requests.cpp "${_bench}/core/table.cpp" "${_b
 target_include_directories(e2e_requests PRIVATE "${_bench}")
 
 add_subdirectory(server)
+add_subdirectory(t3/gen)
