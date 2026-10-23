@@ -47,6 +47,10 @@ public:
     // check: a found route answers with its id and captured values (the check mode of
     // design/round3/end-to-end.md, section 5); otherwise with the fixed 13-byte body.
     explicit Responses(bool check = false);
+    // Stores the sink where the compiler must keep it, so the fold of every request stays.
+    ~Responses();
+    Responses(const Responses&) = delete;
+    Responses& operator=(const Responses&) = delete;
 
     // Every found route's id, and every captured value's length and first byte, added up (round
     // 2's fold, bench/core/runner.hpp), so that no router's capture work can be dropped.
@@ -56,7 +60,8 @@ public:
     void set_date(std::string_view date) noexcept;
 
     // The answer to a request, appended to out: the router's result, HEAD answered by a GET
-    // route when no HEAD route matches, 405 with Allow, 404.
+    // route when no HEAD route matches, 405 with Allow, 404. The request's path is copied once
+    // into a reused string and handed to the router (route.hpp), for every arm alike.
     void answer(const Request& req, const Router& router, RouteResult& scratch, std::string& out) const;
 
     // A refusal (400, 413, 431, 501), with Connection: close.
@@ -77,6 +82,7 @@ private:
     std::string date_;
     bool check_ = false;
     mutable std::uint64_t sink_ = 0;
+    mutable std::string path_;  // the current request's path; no allocation once it holds the longest
 
     static Conn conn_of(const Request& req) noexcept;
     void method_not_allowed(const Request& req, std::uint16_t allowed, std::string& out) const;

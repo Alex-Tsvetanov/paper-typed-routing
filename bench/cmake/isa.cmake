@@ -22,7 +22,9 @@ set(RB_ISA_TARGET_CPU "")
 set(RB_ISA_FEATURES "")
 if(MSVC)
     # MSVC has no -march (round 3's Windows builds, design/round3/end-to-end.md, section 7). Its
-    # nearest option is /arch, whose highest level the laptop's Ryzen 7 5800H runs is AVX2.
+    # nearest option is /arch, whose highest level the laptop's Ryzen 7 5800H runs is AVX2. clang-cl
+    # also sets MSVC, so a clang-cl build gets /arch:AVX2 too, not -march=native; holding the
+    # instruction set equal to Linux's with clang-cl needs its own branch here.
     set(RB_MSVC_ARCH "AVX2" CACHE STRING "/arch of every C and C++ target with MSVC (empty: none)")
     set(RB_MARCH "")
     if(RB_MSVC_ARCH)
@@ -60,7 +62,9 @@ elseif(RB_RUST_TARGET_CPU)
 endif()
 
 set(RB_ISA_GOAMD64 "${RB_GOAMD64}")
-if(NOT RB_ISA_GOAMD64)
+if(NOT RB_ISA_GOAMD64 AND WIN32)
+    set(RB_ISA_GOAMD64 "unprobed (Windows)")  # glibc's loader is the probe; the Go program sets its own
+elseif(NOT RB_ISA_GOAMD64)
     execute_process(COMMAND /lib64/ld-linux-x86-64.so.2 --help OUTPUT_VARIABLE _isa_ld ERROR_QUIET)
     foreach(_level 4 3 2)
         if(_isa_ld MATCHES "x86-64-v${_level} \\(supported")

@@ -3,8 +3,10 @@
 //     mserver --port P --workers 1 --routes FILE --router NAME [--check]
 // NAME is v2, v1 (Linux builds), null, or one of the external arms this build has (run with
 // --router '?' for the list). It is ready when its listening socket (127.0.0.1:P) accepts. SIGTERM
-// or SIGINT on Linux, Ctrl-C or Ctrl-Break on Windows, stops it, and it exits with 0. One worker
-// only: any other count is refused at start.
+// or SIGINT on Linux, Ctrl-C or Ctrl-Break on Windows (a child started in its own process group,
+// as check_server.py starts it, gets Ctrl-Break only), stops it, and it exits with 0. Exit codes:
+// 2 a bad command line, 3 the router refuses the routes, 1 any other failure. One worker only: any
+// other count is refused at start.
 #if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -180,6 +182,9 @@ int main(int argc, char** argv) {
         }
         const mserver::Arm arm = mserver::make_arm(router_name, mserver::read_routes(routes_path));
         return run(static_cast<std::uint16_t>(port), arm.router, check);
+    } catch (const mserver::RefusedTable& e) {
+        std::fprintf(stderr, "mserver: %s\n", e.what());
+        return 3;
     } catch (const std::exception& e) {
         std::fprintf(stderr, "mserver: %s\n", e.what());
         return 1;

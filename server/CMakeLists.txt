@@ -155,12 +155,12 @@ target_link_libraries(test_http1 PRIVATE mserver_http1)
 target_compile_options(test_http1 PRIVATE ${_warn})
 add_test(NAME http1 COMMAND test_http1)
 
-if(NOT WIN32)
-    add_executable(test_loopback tests/test_loopback.cpp)
-    target_link_libraries(test_loopback PRIVATE mserver_loop)
-    target_compile_options(test_loopback PRIVATE ${_warn})
-    add_test(NAME loopback COMMAND test_loopback)
+add_executable(test_loopback tests/test_loopback.cpp)
+target_link_libraries(test_loopback PRIVATE mserver_loop)
+target_compile_options(test_loopback PRIVATE ${_warn})
+add_test(NAME loopback COMMAND test_loopback)
 
+if(NOT WIN32)
     # The arms' agreement on H6's tables needs t1/h6_targets, which the paper's root project builds.
     add_executable(test_agreement tests/test_agreement.cpp)
     target_link_libraries(test_agreement PRIVATE mserver_arms)

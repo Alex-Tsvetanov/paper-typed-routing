@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
         RouteResult a, b, n;
         std::size_t differ = 0, missed = 0, null_bad = 0;
         for (const std::string& t : targets) {
-            const std::string_view path = std::string_view(t).substr(0, t.find('?'));
+            const std::string path = t.substr(0, t.find('?'));
             v2.router(kGet, path, a);
             v1.router(kGet, path, b);
             null.router(kGet, path, n);

@@ -22,7 +22,7 @@ struct V2 {
     R::TableView view;
 };
 
-void find_v2(const void* data, unsigned method, std::string_view path, RouteResult& out) {
+void find_v2(const void* data, unsigned method, const std::string& path, RouteResult& out) {
     R::find_into(static_cast<const V2*>(data)->view, method, path, out);
 }
 
@@ -34,7 +34,7 @@ struct V1 {
 
 // v1 finds for one method; 405 by asking the other methods, as rbench's harness does for an arm
 // without one of its own.
-void find_v1(const void* data, unsigned method, std::string_view path, RouteResult& out) {
+void find_v1(const void* data, unsigned method, const std::string& path, RouteResult& out) {
     V1& a = *const_cast<V1*>(static_cast<const V1*>(data));  // the engine keeps its results between calls
     v1::match(*a.router, method, path, a.scratch);
     out.allowed = 0;
@@ -61,7 +61,7 @@ void find_v1(const void* data, unsigned method, std::string_view path, RouteResu
 }
 #endif
 
-void find_null(const void*, unsigned, std::string_view, RouteResult& out) {
+void find_null(const void*, unsigned, const std::string&, RouteResult& out) {
     out.status = RouteStatus::Found;
     out.count = 0;
     out.allowed = 0;
@@ -141,7 +141,7 @@ Arm build_arm(std::string_view name, const std::vector<RouteLine>& routes) {
     auto v2 = std::make_shared<V2>();
     v2->table = R::make_runtime_table(specs);
     if (v2->table.error != R::BuildError::None) {
-        throw std::runtime_error("the routes do not build a table (route " + std::to_string(v2->table.error_route) + ")");
+        throw RefusedTable("the routes do not build a table (route " + std::to_string(v2->table.error_route) + ")");
     }
     v2->view = v2->table.view();
     return {Router{find_v2, v2.get()}, v2};

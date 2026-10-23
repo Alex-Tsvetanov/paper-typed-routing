@@ -51,7 +51,7 @@ struct Fake {
     mutable std::vector<unsigned> calls;
 };
 
-void fake_find(const void* data, unsigned method, std::string_view path, RouteResult& out) {
+void fake_find(const void* data, unsigned method, const std::string& path, RouteResult& out) {
     const Fake& f = *static_cast<const Fake*>(data);
     f.calls.push_back(method);
     out.count = 0;

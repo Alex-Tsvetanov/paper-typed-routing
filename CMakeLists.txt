@@ -4,10 +4,12 @@
 # under the top-level source directory).
 #   h6_targets  the routes of one H6 table and one request target per route (rbench's generator,
 #               bench/core, compiled here unchanged; t1/h6_targets.cpp)
-#   mserver     the paper's minimal HTTP/1.1 server, one binary with three router arms (v2, v1,
-#               null), and its tests (server/; design/round2/minimal-server.md)
-# RegexMatcher v2 comes from REGEXMATCHER_DIR until v2 is public; v1 is fetched, pinned by commit
-# and sha256 (bench/cmake/pins.cmake).
+#   e2e_requests  round 3's request sets (t3/; design/round3/end-to-end.md, section 4)
+#   mserver     the paper's minimal HTTP/1.1 server, one binary with the router chosen at start:
+#               v2, v1 (Linux), null and round 2's C and C++ adapters, and its tests (server/;
+#               design/round2/minimal-server.md, design/round3/end-to-end.md)
+# RegexMatcher v2 is fetched at release 2.1.0.0, v1 at d16f30a8, each pinned by commit and sha256
+# (bench/cmake/pins.cmake); a checkout given as REGEXMATCHER_DIR takes precedence for v2.
 cmake_minimum_required(VERSION 3.25)
 project(p2_h6 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 23)

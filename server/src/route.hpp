@@ -5,6 +5,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 #include <string_view>
 
 #include <matcher/route/lookup.hpp>
@@ -32,7 +33,10 @@ inline constexpr unsigned kOtherMethod = 9;  // a method token the server does n
 using RouteResult = matcher::route::Match;
 using RouteStatus = matcher::route::Status;
 
-using FindFn = void (*)(const void* router, unsigned method, std::string_view path, RouteResult& out);
+// The path comes as one std::string that the server fills once per request, for every arm (v2 and
+// null included): round 2's adapters take the path as const std::string&, so every arm's lookup then
+// starts from the same bytes, and no arm pays a copy the others do not.
+using FindFn = void (*)(const void* router, unsigned method, const std::string& path, RouteResult& out);
 
 // The route id of lab/t1's readiness probe, GET /, which the server answers itself without asking
 // the router (design/round3/end-to-end.md, section 5), so that every router holds exactly the routes
@@ -44,7 +48,7 @@ struct Router {
     const void* data = nullptr;
     std::uint32_t probe = kNoProbe;
 
-    void operator()(unsigned method, std::string_view path, RouteResult& out) const {
+    void operator()(unsigned method, const std::string& path, RouteResult& out) const {
         if (probe != kNoProbe && path.size() == 1 && path[0] == '/') {
             const bool get = method == kGet || method == kHead;
             out.status = get ? RouteStatus::Found : RouteStatus::MethodNotAllowed;

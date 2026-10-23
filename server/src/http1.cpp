@@ -169,6 +169,12 @@ Parsed parse_request(std::string_view buf) noexcept {
     return p;
 }
 
+namespace {
+volatile std::uint64_t g_sink = 0;  // the last server's sink (Responses::~Responses)
+}  // namespace
+
+Responses::~Responses() { g_sink = sink_; }
+
 Responses::Responses(bool check) : date_(kInitialDate), check_(check) {
     const std::string_view conn_line[kConns] = {"", "Connection: close\r\n", "Connection: keep-alive\r\n"};
     for (std::size_t c = 0; c < kConns; ++c) {
@@ -220,11 +226,12 @@ Responses::Conn Responses::conn_of(const Request& req) noexcept {
 void Responses::answer(const Request& req, const Router& router, RouteResult& scratch, std::string& out) const {
     const bool head = req.method == kHead;
     const Conn c = conn_of(req);
-    router(req.method, req.path, scratch);
+    path_.assign(req.path.data(), req.path.size());
+    router(req.method, path_, scratch);
     if (scratch.status == RouteStatus::MethodNotAllowed && head && (scratch.allowed & (1u << kGet)) != 0) {
         // HEAD with no HEAD route: the GET route answers, without content.
         const std::uint16_t allowed = scratch.allowed;
-        router(kGet, req.path, scratch);
+        router(kGet, path_, scratch);
         if (scratch.status != RouteStatus::Found) {
             method_not_allowed(req, allowed, out);
             return;

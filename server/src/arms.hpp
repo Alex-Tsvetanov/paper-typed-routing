@@ -3,6 +3,7 @@
 #pragma once
 
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -28,10 +29,17 @@ struct Arm {
     std::shared_ptr<const void> data;
 };
 
+// Thrown when a router refuses the routes; mserver then exits with 3, as the Go and Rust
+// programs do (design/round3/end-to-end.md, section 5).
+struct RefusedTable : std::runtime_error {
+    using std::runtime_error::runtime_error;
+};
+
 // "v2": RegexMatcher v2's run-time table, looked up with find_into. "v1": RegexMatcher's engine
 // at d16f30a8 behind rbench's wrapper (arm_v1.hpp; Linux builds). "null": route 0 for every
-// request, without reading the path. Any other name: an external arm of this build (external.hpp).
-// Throws std::runtime_error for an unknown name, or when the routes do not build a table.
+// request but the probe, without reading the path. Any other name: an external arm of this build
+// (external.hpp). Throws RefusedTable when the router refuses the routes, std::runtime_error for an
+// unknown name.
 Arm make_arm(std::string_view name, const std::vector<RouteLine>& routes);
 
 }  // namespace mserver

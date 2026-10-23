@@ -4,13 +4,22 @@
 //     one whenever one completes.
 //   - A connection has one overlapped WSARecv posted while it reads, and at most one WSASend in
 //     flight. Its sockets skip the completion packet when an operation completes at once
-//     (FILE_SKIP_COMPLETION_PORT_ON_SUCCESS), so that case is handled where the call returns.
+//     (FILE_SKIP_COMPLETION_PORT_ON_SUCCESS), so that case is handled where the call returns. That
+//     mode is used only when every TCP provider is an IFS provider, as Microsoft's documentation of
+//     SetFileCompletionNotificationModes asks; otherwise every operation waits for its packet.
+//   - An accept slot whose AcceptEx could not be posted is posted again on every pass of the loop.
 //   - Each read is parsed at once and its responses appended to the connection's output buffer
 //     (answer_all, the epoll loop's code); the buffer in flight is a second string, so a response
 //     appended while a send is in flight never moves the bytes WSASend reads.
+//   - A close the server starts (a refusal, Connection: close, HTTP/1.0 without keep-alive) is
+//     graceful: once every answer is sent, shutdown(SD_SEND), then the input is read and dropped
+//     until the peer closes, for at most kDrain. Closing with unread input would reset the
+//     connection, and a Windows client drops data it has received when the reset arrives, the
+//     answer included (server/tests/test_loopback.cpp, the 413 case).
 //   - A connection is freed only after its socket is closed and no operation of it is in flight.
 //   - post_stop() queues a packet with its own key; serve() then closes every socket and waits for
-//     the operations in flight to end.
+//     the operations in flight to end. Whatever still has an operation in flight after 5 s, or
+//     when serving ended with an error, is left allocated, never freed under the kernel.
 #include "loop.hpp"
 
 #ifndef WIN32_LEAN_AND_MEAN
@@ -54,6 +63,7 @@ constexpr ULONG_PTR kConnKey = 2;
 constexpr ULONG_PTR kStopKey = 3;
 constexpr int kAccepts = 16;                          // AcceptEx calls kept posted
 constexpr DWORD kAddrLen = sizeof(sockaddr_in) + 16;  // AcceptEx's room for one address
+constexpr std::chrono::seconds kDrain{2};             // the longest a closing connection is read
 
 enum class Op : std::uint8_t { Accept, Recv, Send };
 
@@ -77,6 +87,8 @@ struct Conn {
     bool send_pending = false;
     bool closing = false;      // close once every response is sent
     bool peer_closed = false;  // the peer sent its last byte
+    bool draining = false;     // closing: the send side is shut down, input is read and dropped
+    std::chrono::steady_clock::time_point drain_until{};
 };
 
 struct Accept {
@@ -90,10 +102,32 @@ bool succeeded(const OVERLAPPED_ENTRY& e) {
     return e.lpOverlapped->Internal == 0;  // the operation's NTSTATUS: STATUS_SUCCESS
 }
 
+// Whether every TCP/IPv4 provider is an IFS provider (XP1_IFS_HANDLES), the condition under which
+// skipping completion packets is safe.
+bool tcp_providers_are_ifs() {
+    int protocols[] = {IPPROTO_TCP, 0};
+    DWORD len = 0;
+    if (WSAEnumProtocolsW(protocols, nullptr, &len) != SOCKET_ERROR || WSAGetLastError() != WSAENOBUFS) {
+        return false;
+    }
+    std::vector<char> buf(len);
+    auto* info = reinterpret_cast<WSAPROTOCOL_INFOW*>(buf.data());
+    const int n = WSAEnumProtocolsW(protocols, info, &len);
+    if (n == SOCKET_ERROR) {
+        return false;
+    }
+    for (int i = 0; i < n; ++i) {
+        if (info[i].iAddressFamily == AF_INET && (info[i].dwServiceFlags1 & XP1_IFS_HANDLES) == 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
 class Server {
 public:
     Server(SOCKET listen_socket, HANDLE port, const Router& router, bool check)
-        : listen_(listen_socket), port_(port), router_(router), responses_(check) {
+        : listen_(listen_socket), port_(port), router_(router), responses_(check), skip_(tcp_providers_are_ifs()) {
         if (CreateIoCompletionPort(reinterpret_cast<HANDLE>(listen_), port_, kListenKey, 0) == nullptr) {
             fail_win("CreateIoCompletionPort (listener)");
         }
@@ -112,18 +146,7 @@ public:
         }
     }
 
-    ~Server() {
-        for (auto& a : accepts_) {
-            if (a->s != INVALID_SOCKET) {
-                closesocket(a->s);
-            }
-        }
-        for (auto& c : conns_) {
-            if (c->s != INVALID_SOCKET) {
-                closesocket(c->s);
-            }
-        }
-    }
+    ~Server() { shut_down(); }
 
     void run() {
         std::array<OVERLAPPED_ENTRY, 64> entries{};
@@ -133,10 +156,10 @@ public:
             ULONG n = 0;
             if (!GetQueuedCompletionStatusEx(port_, entries.data(), static_cast<ULONG>(entries.size()), &n, 1000,
                                              FALSE)) {
-                if (GetLastError() == WAIT_TIMEOUT) {
-                    continue;
+                if (GetLastError() != WAIT_TIMEOUT) {
+                    fail_win("GetQueuedCompletionStatusEx");
                 }
-                fail_win("GetQueuedCompletionStatusEx");
+                n = 0;
             }
             for (ULONG i = 0; i < n; ++i) {
                 if (entries[i].lpCompletionKey == kStopKey) {
@@ -146,6 +169,10 @@ public:
                 }
             }
             reap();
+            if (running) {
+                repost_accepts();
+                end_drains();
+            }
         }
         shut_down();
     }
@@ -161,6 +188,17 @@ private:
     std::vector<std::unique_ptr<Accept>> accepts_;
     std::vector<std::unique_ptr<Conn>> conns_;
     std::size_t pending_ = 0;  // operations in flight, accepts included
+    bool skip_ = false;        // FILE_SKIP_COMPLETION_PORT_ON_SUCCESS is set on connections
+    bool shut_ = false;
+
+    // Posts every accept slot that has no AcceptEx in flight.
+    void repost_accepts() {
+        for (auto& a : accepts_) {
+            if (!a->pending && a->s == INVALID_SOCKET) {
+                post_accept(*a);
+            }
+        }
+    }
 
     void refresh_date() {
         const std::time_t now = std::time(nullptr);
@@ -178,7 +216,7 @@ private:
     void post_accept(Accept& a) {
         a.s = WSASocketW(AF_INET, SOCK_STREAM, IPPROTO_TCP, nullptr, 0, WSA_FLAG_OVERLAPPED);
         if (a.s == INVALID_SOCKET) {
-            return;  // posted again when another accept completes
+            return;  // posted again on the loop's next pass (repost_accepts)
         }
         std::memset(&a.io.ov, 0, sizeof a.io.ov);
         DWORD bytes = 0;
@@ -189,7 +227,7 @@ private:
             return;
         }
         closesocket(a.s);
-        a.s = INVALID_SOCKET;
+        a.s = INVALID_SOCKET;  // posted again on the loop's next pass (repost_accepts)
     }
 
     // One completion. serving: false while shutting down, when nothing new is started.
@@ -229,6 +267,7 @@ private:
             c.sent += e.dwNumberOfBytesTransferred;
             start_send(c);
             maybe_close(c);
+            start_recv(c);  // a connection that began draining reads from here on
         }
     }
 
@@ -237,8 +276,9 @@ private:
         const BOOL one = TRUE;
         setsockopt(s, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char*>(&one), sizeof one);
         if (CreateIoCompletionPort(reinterpret_cast<HANDLE>(s), port_, kConnKey, 0) == nullptr ||
-            !SetFileCompletionNotificationModes(reinterpret_cast<HANDLE>(s),
-                                                FILE_SKIP_COMPLETION_PORT_ON_SUCCESS | FILE_SKIP_SET_EVENT_ON_HANDLE)) {
+            (skip_ && !SetFileCompletionNotificationModes(reinterpret_cast<HANDLE>(s),
+                                                         FILE_SKIP_COMPLETION_PORT_ON_SUCCESS |
+                                                             FILE_SKIP_SET_EVENT_ON_HANDLE))) {
             closesocket(s);
             return;
         }
@@ -258,16 +298,18 @@ private:
     // Posts a read, and handles every read that completes at once, until one is in flight or the
     // connection stops reading.
     void start_recv(Conn& c) {
-        while (c.s != INVALID_SOCKET && !c.recv_pending && !c.closing && !c.peer_closed && c.in_len < kConnBuffer) {
+        while (c.s != INVALID_SOCKET && !c.recv_pending && (!c.closing || c.draining) && !c.peer_closed &&
+               c.in_len < kConnBuffer) {
             WSABUF b{static_cast<ULONG>(kConnBuffer - c.in_len), c.in.data() + c.in_len};
             DWORD n = 0;
             DWORD flags = 0;
             std::memset(&c.recv_io.ov, 0, sizeof c.recv_io.ov);
-            if (WSARecv(c.s, &b, 1, &n, &flags, &c.recv_io.ov, nullptr) == 0) {
+            const int r = WSARecv(c.s, &b, 1, &n, &flags, &c.recv_io.ov, nullptr);
+            if (r == 0 && skip_) {
                 on_received(c, n);  // completed at once: no packet comes
                 continue;
             }
-            if (WSAGetLastError() == WSA_IO_PENDING) {
+            if (r == 0 || WSAGetLastError() == WSA_IO_PENDING) {
                 c.recv_pending = true;
                 ++pending_;
                 return;
@@ -278,6 +320,13 @@ private:
     }
 
     void on_received(Conn& c, DWORD n) {
+        if (c.draining) {
+            c.in_len = 0;  // dropped
+            if (n == 0) {
+                drop(c);   // the peer closed: the close is complete
+            }
+            return;
+        }
         if (n == 0) {
             c.peer_closed = true;
         } else {
@@ -307,11 +356,12 @@ private:
             WSABUF b{static_cast<ULONG>(c.sending.size() - c.sent), c.sending.data() + c.sent};
             DWORD n = 0;
             std::memset(&c.send_io.ov, 0, sizeof c.send_io.ov);
-            if (WSASend(c.s, &b, 1, &n, 0, &c.send_io.ov, nullptr) == 0) {
+            const int r = WSASend(c.s, &b, 1, &n, 0, &c.send_io.ov, nullptr);
+            if (r == 0 && skip_) {
                 c.sent += n;  // completed at once: no packet comes
                 continue;
             }
-            if (WSAGetLastError() == WSA_IO_PENDING) {
+            if (r == 0 || WSAGetLastError() == WSA_IO_PENDING) {
                 c.send_pending = true;
                 ++pending_;
                 return;
@@ -321,10 +371,29 @@ private:
         }
     }
 
+    // Once every answer is sent: a connection whose peer closed is closed; one the server closes
+    // shuts down its send side and drains (the file's header).
     void maybe_close(Conn& c) {
-        if (c.s != INVALID_SOCKET && (c.closing || c.peer_closed) && !c.send_pending && c.sent == c.sending.size() &&
-            c.out.empty()) {
+        if (c.s == INVALID_SOCKET || c.draining || c.send_pending || c.sent != c.sending.size() || !c.out.empty()) {
+            return;
+        }
+        if (c.peer_closed) {
             drop(c);
+        } else if (c.closing) {
+            shutdown(c.s, SD_SEND);
+            c.draining = true;
+            c.drain_until = std::chrono::steady_clock::now() + kDrain;
+            c.in_len = 0;
+        }
+    }
+
+    // Closes the connections that drained for kDrain without the peer closing.
+    void end_drains() {
+        const auto now = std::chrono::steady_clock::now();
+        for (auto& c : conns_) {
+            if (c->draining && c->s != INVALID_SOCKET && now >= c->drain_until) {
+                drop(*c);
+            }
         }
     }
 
@@ -350,8 +419,14 @@ private:
     }
 
     // Closes every socket, then waits until every operation in flight has completed (they complete
-    // with an error once their socket is closed), at most 5 s.
-    void shut_down() {
+    // with an error once their socket is closed), at most 5 s. What still has an operation in flight
+    // then is left allocated (released, never freed), since the kernel may still write into it.
+    // Runs once: from run(), or from the destructor when serving ended with an error.
+    void shut_down() noexcept {
+        if (shut_) {
+            return;
+        }
+        shut_ = true;
         CancelIoEx(reinterpret_cast<HANDLE>(listen_), nullptr);
         for (auto& a : accepts_) {
             if (a->s != INVALID_SOCKET && !a->pending) {
@@ -377,6 +452,19 @@ private:
             }
         }
         reap();
+        for (auto& c : conns_) {
+            if (c->recv_pending || c->send_pending) {
+                [[maybe_unused]] Conn* left = c.release();
+            }
+        }
+        for (auto& a : accepts_) {
+            if (a->pending) {
+                [[maybe_unused]] Accept* left = a.release();
+            } else if (a->s != INVALID_SOCKET) {
+                closesocket(a->s);
+                a->s = INVALID_SOCKET;
+            }
+        }
     }
 };
 

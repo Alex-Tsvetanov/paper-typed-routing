@@ -3,10 +3,10 @@
 //
 // Each adapter is compiled unchanged; shim/core/runner.hpp registers it here. The arm is built
 // from the routes file as rbench builds it from a table: one rb::Route per line (rb::parse_route
-// of the canonical text), route i as id i, finalize() once. A lookup gets the path copied into one
-// reused std::string, the form these adapters take it in (no allocation once its capacity holds the
-// longest path). A miss gets round 2's harness rule for arms without a 405 of their own
-// (bench/core/runner.hpp, full()): the same path under every other method that has routes.
+// of the canonical text), route i as id i, finalize() once. A lookup hands the adapter the server's
+// path string as it is (route.hpp: the server fills it once per request, for every arm). A miss gets
+// round 2's harness rule for arms without a 405 of their own (bench/core/runner.hpp, full()): the
+// same path under every other method that has routes.
 #pragma once
 
 #include <algorithm>
@@ -46,25 +46,30 @@ static_assert(rb::kMethods == 7 && kGet == 0 && kPost == 1 && kPut == 2 && kDele
 template <rb::Arm A>
 struct External {
     A arm;
-    std::string path;           // the path of the current lookup, reused
-    rb::Captures caps;          // views into the arm's memory or into `path`, until the next lookup
+    rb::Captures caps;          // views into the arm's memory or into the path, until the next lookup
     std::uint16_t methods = 0;  // bit m for every method that has routes
 };
 
+// Round 2's harness runs every adapter's lookup through full(), which treats any id but kNoRoute as
+// a route; an adapter with a 405 of its own (native_405) would answer kMethodNotAllowed instead,
+// and none of the C and C++ adapters has one.
+template <class A>
+concept HasNative405 = requires { A::native_405; };
+
 template <rb::Arm A>
-rb::RouteId lookup(External<A>& e, unsigned method) {
-    return e.arm.lookup(static_cast<rb::Method>(method), e.path, e.caps);
+rb::RouteId lookup(External<A>& e, unsigned method, const std::string& path) {
+    return e.arm.lookup(static_cast<rb::Method>(method), path, e.caps);
 }
 
 template <rb::Arm A>
-void find_external(const void* data, unsigned method, std::string_view path, RouteResult& out) {
+void find_external(const void* data, unsigned method, const std::string& path, RouteResult& out) {
+    static_assert(!HasNative405<A>, "an adapter with its own 405 needs round 2's kMethodNotAllowed rule here");
     auto& e = *const_cast<External<A>*>(static_cast<const External<A>*>(data));  // the arm keeps results between calls
-    e.path.assign(path.data(), path.size());
     out.allowed = 0;
     out.count = 0;
     const bool known = method < rb::kMethods;
     if (known) {
-        const rb::RouteId id = lookup(e, method);
+        const rb::RouteId id = lookup(e, method, path);
         if (id != rb::kNoRoute) {
             out.status = RouteStatus::Found;
             out.route = id;
@@ -77,7 +82,7 @@ void find_external(const void* data, unsigned method, std::string_view path, Rou
     }
     unsigned others = e.methods & ~(known ? 1u << method : 0u);
     for (unsigned m = 0; others != 0; ++m, others >>= 1) {
-        if ((others & 1u) != 0 && lookup(e, m) != rb::kNoRoute) {
+        if ((others & 1u) != 0 && lookup(e, m, path) != rb::kNoRoute) {
             out.allowed = static_cast<std::uint16_t>(out.allowed | (1u << m));
         }
     }
@@ -87,7 +92,7 @@ void find_external(const void* data, unsigned method, std::string_view path, Rou
 }  // namespace detail
 
 // Builds arm A from exactly the file's routes (the server answers the probe GET / itself,
-// Router::probe). Throws std::runtime_error with the adapter's reason when it refuses them.
+// Router::probe). Throws RefusedTable with the adapter's reason when it refuses them.
 template <rb::Arm A>
 Arm make_external(const std::vector<RouteLine>& routes) {
     auto e = std::make_shared<detail::External<A>>();
@@ -99,7 +104,7 @@ Arm make_external(const std::vector<RouteLine>& routes) {
         }
         e->arm.finalize();
     } catch (const std::exception& ex) {
-        throw std::runtime_error(std::string(A::info().name) + " refused the routes: " + ex.what());
+        throw RefusedTable(std::string(A::info().name) + " refused the routes: " + ex.what());
     }
     return {Router{detail::find_external<A>, e.get()}, e};
 }

@@ -211,7 +211,9 @@ private:
             }
             if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
                 // The rest when the socket can take it; a closing connection reads no more.
-                set_events(c, c.closing ? EPOLLOUT : (EPOLLIN | EPOLLOUT));
+                // A connection that reads no more (closing, or its peer closed: end of stream stays
+                // readable under level triggering) waits for EPOLLOUT only.
+                set_events(c, (c.closing || c.peer_closed) ? EPOLLOUT : (EPOLLIN | EPOLLOUT));
                 return;
             }
             drop(c);
