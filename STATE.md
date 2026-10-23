@@ -1,206 +1,155 @@
 # P2 round 3, state digest
 
-Under 200 lines. Read this first. Updated 2026-10-23, evening.
+Under 200 lines. Read this first. Updated 2026-10-23, late.
 
 ## What round 3 is
 
 The end-to-end block of P2 (brief `p2-typed-routing/AGENTS.md` in the Papers repository; plan v2
-section 2.2 and the P2 row of section 3.2). v2 in an HTTP server against each external router
-hosted in an HTTP server, at round 2's table sizes (m = 10, 100, 1,000, 10,000, 100,000), on both
-systems of the laptop. Plus the H7 MSVC compile costs measured again on the laptop's Windows.
-Round 2 is the prior study; its frozen files are never edited.
+section 2.2 and the P2 row of section 3.2): v2 and each external router hosted in an HTTP server,
+round 2's table sizes, both systems of the laptop. Plus the H7 MSVC compile costs on the laptop's
+Windows. Round 2 is the prior study; its frozen files are never edited.
 
 ## Worktree and base
 
-- Worktree `D:\Dev\worktrees\p2-round3`, branch `round3`, from 801aa8c.
-- Why 801aa8c: it is the committed gitlink and the tip of `main`. The manuscript branch
-  `dev/alex-tsvetanov/jss-manuscript` (d38847f) adds two commits that change only `paper/`,
-  `.gitignore` (`*.spl`) and a dated note at the end of `design/round2/schedule.md`. No code
-  differs. Round 3 is engineering, so it stays off the manuscript branch and its owner's edits.
-- The worktree links are relative (`git worktree repair --relative-paths`), so git works in the
-  `papers-dev` container. The repair also made `D:\Dev\GitHub\paper-arms-e`'s link relative; it
-  still resolves (checked).
-- Scratch outside the repository: request sets `D:\Dev\worktrees\p2r3-data\requests\`, builds
-  `D:\Dev\worktrees\p2r3-build\`, container build trees in the docker volume `p2r3-home`.
+- `D:\Dev\worktrees\p2-round3`, branch `round3`, from 801aa8c: the committed gitlink and `main`.
+  The manuscript branch (d38847f) adds only `paper/` changes, so round 3 stays off it.
+- Worktree links are relative (`git worktree repair --relative-paths`); that also rewrote
+  `D:\Dev\GitHub\paper-arms-e`'s link, which still resolves.
+- Outside the repository: request sets `D:\Dev\worktrees\p2r3-data\sets\<shape>\m<m>\t<seed>\`,
+  builds `D:\Dev\worktrees\p2r3-build\`, container trees in the docker volume `p2r3-home`.
 
-## Rules that bind this work
+## Rules
 
-- No timing on the desktop. No req/s, latency or compile-time number from it, ever.
-- No laptop access; laptop jobs go under "Laptop requests". Nothing pushed.
-- Linux builds in `papers-dev:arch-2026-10-23`; Windows with the desktop's MSVC 19.51.36246.
-- `hypotheses-round3.md` and `design/round3/end-to-end.md` are drafts. No freeze here.
+No timing on the desktop; no laptop access; nothing pushed; drafts only (no freeze); the
+integration library never named; no em or en dashes.
 
 ## Documents
 
-- `design/round3/end-to-end.md`: the design draft. Estimand (same-server contrast tested;
-  increments across servers reported), cells, replicates, request sets, the server contract,
-  hosting per language, Windows, risks, Alex's decisions, laptop time.
-- `design/round3/router-survey.md`: the survey of the sixteen routers (Sonnet), with my re-check of
-  the claims round 3 uses at its end.
-- `hypotheses-round3.md`: DRAFT hypotheses H8 (v2 not slower in the C++ server) and H9
-  (carry-over), and what is reported only.
+- `design/round3/end-to-end.md`: the design draft (contrasts, cells, replicates, request sets,
+  server contract, hosting, Windows, generator and runner spec, risks, hours).
+- `design/round3/decisions-for-alex.md`: the twelve decisions and Alex's answers.
+- `design/round3/router-survey.md`: the router survey and my re-check of the claims used.
+- `hypotheses-round3.md`: DRAFT, H8 (v2 not slower in the same server), H9 (carry-over), H10
+  (routing cost across servers, as a difference in ns).
 
 ## What exists (code)
 
-- `server/` C++ server `mserver`: v2, v1 (Linux), null and round 2's C and C++ adapters compiled
-  unchanged through a shim (`server/src/shim/core/runner.hpp`, `server/src/external.hpp`).
-  `--check` mode echoes route and values. The probe `GET /` is answered before any router. epoll on
-  Linux (`loop.cpp`), IOCP on Windows (`loop_iocp.cpp`), shared HTTP code (`answer_all`).
-  RegexMatcher comes from the pinned 2.1.0.0 archive.
-- `server/go/` Go program `mserver-go` (net/http): httprouter, gin, nethttp, chi, null.
-  `bench/arms/go/gin/rbserve.go` adds per-request lookup state to round 2's gin shim.
-- `server/rust/` Rust program `mserver-rs` (hyper 1.12.0, tokio 1.54.1 current-thread): matchit,
+- `server/` C++ server `mserver`: v2 (RegexMatcher 2.1.0.0), v1 (Linux), null, and round 2's C and
+  C++ adapters compiled unchanged through a shim; epoll on Linux, IOCP on Windows; `--check` mode;
+  the probe `GET /` answered before any router; one path copy per request for every arm;
+  `--router ??` lists each arm's release. Round-3 pins in `server/cmake/pins-round3.cmake`
+  (overrides round 2's `bench/cmake/pins.cmake`, which is untouched).
+- `server/capi/`: v2 behind a C interface (`p2v2_build`, `p2v2_find`, `p2v2_build_info`), built in
+  the C++ server's CMake tree.
+- `server/go/` `mserver-go` (net/http; each router as its library's handler): v2 (cgo on Linux, a
+  DLL call on Windows), httprouter, gin (real v1.12.0), nethttp, chi (real v5.5.0), null.
+- `server/rust/` `mserver-rs` (hyper 1.12.0 on tokio current-thread): v2 (C call), matchit,
   path-tree, actix-router, null.
-- `t3/e2e_requests.cpp`, `t3/make_requests.py`: request sets of the 80 cells (mixed-disjoint, five
-  sizes, sixteen seed pairs); `t3/requests-manifest.tsv` holds their digests (files not committed).
-- `t3/check_server.py` (one arm, one cell), `t3/run_checks.py` (the suite).
-- `bench/cmake/isa.cmake`: an MSVC branch (`/arch:AVX2`); the clang output is unchanged.
+- `t3/`: `e2e_requests.cpp` and `make_requests.py` (160 cells: two shapes, five sizes, sixteen
+  pairs; digests in `requests-manifest.tsv`), `check_server.py`, `run_checks.py`,
+  `build_programs.py` (one Go and one Rust binary per system against a named C++ build, sha256s in
+  `build-info.json`), `gen/` (`p2gen`, the load generator), `p2run.py` (the window runner).
+- `bench/cmake/isa.cmake`: MSVC (`/arch:AVX2`) and clang-cl (`-march=native`) branches.
 
-## Arms per system (built 2026-10-23)
+## Pins (Alex, 2026-10-23: the latest releases)
 
-| Program | Linux (container, clang 22.1.8) | Windows (MSVC 19.51) |
+cpp-httplib v0.63.0, chi v5.5.0, Drogon 1.9.14 (label only, same router file), Crow 1.3.5 (a
+pre-release), Go 1.27.3 (to install); the rest already latest. Each changed router's lookup code was
+compared with round 2's pin and found the same (`pins-round3.cmake`, `router-survey.md`).
+
+## Arms per system
+
+| Program | Linux (container, clang 22.1.8) | Windows (desktop, clang-cl 22.1.0 and MSVC) |
 |---|---|---|
-| mserver | v2 null crow drogon oatpp pistache r3 uwebsockets glaze cpp-httplib | v2 null crow drogon oatpp uwebsockets glaze cpp-httplib |
-| mserver-go | httprouter gin nethttp chi null (cross-built, Go 1.27.0) | same (Go 1.27.0) |
-| mserver-rs | waits: no Rust in the image | matchit path-tree actix-router null (cargo 1.98.1) |
+| mserver | v2 null crow drogon oatpp pistache boost-url r3 uwebsockets glaze cpp-httplib | v2 null crow drogon oatpp uwebsockets glaze cpp-httplib |
+| mserver-go | v2 httprouter gin nethttp chi null | same |
+| mserver-rs | v2 matchit path-tree actix-router null | same |
 
-Absent and why: boost-url on both (no Boost 1.92.0 headers); r3 on Windows (POSIX headers);
-Pistache on Windows (its CMake gives cl GCC flags; its meson build not tried).
+Windows gaps: r3 (POSIX headers; absent by design); Pistache (Alex chose its meson build with
+libevent; not yet built, needs meson and libevent); boost-url (needs Boost 1.92.0 headers there).
 
-## Functional checks
+## Functional checks (desktop, untimed)
 
-Every arm answers every route of pair (111, 211) at all five sizes, and the T0 rings of pairs 112
-to 126 at m = 1,000; at m = 100,000 the four linear-scan arms get the ring only (`run_checks.py`).
-- Final suites, after every review fix (2026-10-23, binaries of commit a8c3f8b's sources):
-  - Linux (container, `--cpus 2`): 300 checks, 0 failed (mserver's 10 arms, mserver-go's 5, 20
-    checks each). The 80 request-set cells matched `t3/requests-manifest.tsv`.
-  - Windows (desktop, MSVC build; Go and Rust from `t3/build_programs.py`): 340 checks, 0 failed
-    (mserver 8, mserver-go 5, mserver-rs 4 arms).
-  - Before the fixes the same suites gave the same totals, 0 failed.
-- Linux check of mserver-rs: waits for a Rust toolchain in the image (Lab request 1).
-- Development sanitizers, not records: ASan+UBSan and TSan (clang 22.1.8, container; TSan with
-  `seccomp=unconfined`) on all ten Linux arms, and MSVC ASan on all eight Windows arms, each at
-  m = 1,000 with every route and the ring: no report, clean exits; the unit tests pass under each.
-  These ran before the review fixes; after them, ASan+UBSan and MSVC ASan ran the loopback test
-  (below). MSan not run: no instrumented libc++ in the image.
-- Loopback test (`server/tests/test_loopback.cpp`, now on both systems, after the fixes): Windows
-  release 10 of 10 runs and MSVC ASan 10 of 10 (8 and 4 of 10 before the graceful close); Linux
-  release 9 of 9 and ASan+UBSan 9 of 9. Linux CTest 4 of 4.
-- Not exercised on the desktop: the IOCP path for a TCP provider that is not IFS (`skip_` false);
-  the desktop's providers are all IFS. A partial overlapped send did not occur either (every
-  WSASend completed whole), so that branch is untested.
-- Kernel blind spots: none used. epoll and loopback TCP only; no io_uring, no eBPF.
+Every arm: every route of pair (111, 211) at all five sizes, and the T0 rings of pairs 112 to 126 at
+m = 1,000, on both shapes; at m = 100,000 the linear-scan arms get the ring only. Latest suites,
+2026-10-23:
+- mserver: Linux 440 of 440 (11 arms); Windows clang-cl 320 of 320 (8 arms).
+- mserver-go: Linux (cgo) 240 of 240, Windows 240 of 240. mserver-rs: 200 of 200 on each system.
+- CTest on Linux: 6 of 6 (unit, loopback, H6 agreement, contract, p2gen unit and edge); loopback
+  test on Windows 10 of 10 (release and MSVC ASan).
+- p2gen: unit, net and edge tests in every tree; count mode against all three programs completed
+  every request with no error. p2run: 73 unit tests; count mode 36 of 36 windows on each system.
+- Development sanitizers (not records): ASan+UBSan and TSan on Linux, MSVC ASan on Windows, clean.
+- Not run on the desktop, by rule: any timed mode. Kernel features used: epoll, IOCP, loopback TCP.
 
-## Review
+## Reviews
 
-A fresh Opus review of the whole diff (2026-10-23): no CRITICAL; 3 HIGH, 3 MEDIUM, 10 LOW.
-Fixed:
-- H1: only the external C++ arms paid a path copy. Now the server copies the path once per
-  request into one reused string for every arm, v2 and null included (`route.hpp`, `http1.cpp`).
-- H2: chi was hosted below its documented use. Every Go router is now its library's
-  `http.Handler`: gin's Engine (real v1.12.0 module; its `tree.go` sha256 89d06fd0... equals round
-  2's vendored copy), chi's Mux, httprouter's Router, net/http's ServeMux. `bench/arms/go/gin/
-  rbserve.go` is gone.
-- H3: Rust now builds with `-C target-cpu=native` (`server/rust/.cargo/config.toml`, checked by
-  `build.rs` and a start-up line); Go's `GOAMD64=v3` is set by `t3/build_programs.py` and printed
-  at start.
-- M1 (IOCP accept slots re-posted every pass), M2 (Go sink atomic; a `-race` build is clean), M3
-  (loopback test ported to Windows: see below).
-- L1 (static check that no C++ adapter has its own 405), L2 (IOCP teardown never frees memory with
-  an operation in flight), L3 (IFS check before skipping completion packets), L5 (Rust runtime
-  without a time driver, comments true), L6 (C++ sink stored at teardown), L9 (exit code 3 for a
-  refused table in all three programs), L10 (stale comments).
-- L4 turned out real on Windows: the ported loopback test lost the 413 to a reset, because the
-  server closed with unread input and a Windows client drops received data on a reset. The IOCP
-  backend now closes gracefully (shutdown of the send side, then reads and drops input until the
-  peer closes, at most 2 s). The epoll backend keeps round 2's close (a Linux client keeps the
-  data); its spin after a peer half-close is fixed.
-Documented, not changed: L7 (methods other than GET differ by library; never measured), L8 (a
-child in its own process group gets Ctrl-Break only).
+1. Whole first diff (Opus): 0 CRITICAL, 3 HIGH, 3 MEDIUM, 10 LOW; all HIGH and MEDIUM fixed; one LOW
+   (reset on close) proved a real Windows bug and was fixed.
+2. Generator and v2 arms (Opus): 0 CRITICAL, 1 HIGH (nothing tied the Go and Rust v2 arms to the C++
+   build; fixed by `build_programs.py`, `p2v2_build_info` and the start lines), 3 MEDIUM (fixed),
+   8 LOW (fixed or documented).
+3. The runner was reviewed by a fresh agent inside its own task, which adopted the findings.
+
+## To settle in the frozen text (with the freeze proposal and its hours)
+
+- delta for H8 from the A/A pilot; the minimum D_T0 for H9; H10's margin in ns.
+- The runner's validity additions beyond lab/t1 (connect errors, server alive and exit 0, sample
+  span within 50 ms of the window, a missing generator key, the stop after 8 consecutive faults)
+  and its reconnect rule (reconnects allowed only as far as timeouts, connect errors and lost
+  requests explain them; `peer_closes` above 0 invalidates a window).
+- The overload edges: zero completions with timeouts is invalid; connect errors during overload make
+  the window invalid.
 
 ## Laptop requests
 
-Each job runs on the laptop between campaigns; the coordinator schedules them.
-0. **The Windows load generator and runner** (blocks every Windows window, the probe included):
-   Alex chose P2's own portable generator (2026-10-23); it is engineering here, then a laptop job
-   to build and A/A-check it against `t1gen` on L. No measured basis.
-0b. **clang-cl 22.1.8 on W** (Alex, 2026-10-23): LLVM installed and checked by sha256, like the
-   other W tools in `lab/laptop/versions.md`, plus MinGW gcc for Go's cgo. No measured basis.
-1. **Request sets on L and W.** Not committed (about 10 MB per cell at m = 100,000). Either
-   generate them there with `t3/make_requests.py` and `e2e_requests` (every-route set at m =
-   100,000 for pair 111 only), or copy them; either way check them with `make_requests.py --verify`
-   against `t3/requests-manifest.tsv`. Length: no measured basis (the desktop's time is not one).
-2. **Toolchains on W and L.** Go 1.27.3 (Alex: the latest releases) and the Rust toolchain on W;
-   confirm both on L and add them to `lab/laptop/versions.md`. Shares P4's planned Go and Rust
-   bring-up on W. Length: no measured basis.
-2b. **P2's generator and runner**: Release builds, their own D5 records (L ASan+UBSan, TSan, MSan;
-   W clang-cl ASan), and the A/A check against `t1gen` on L. Length: no measured basis.
-3. **Release builds** of `mserver`, `mserver-go`, `mserver-rs` on L and W, and the functional suite
-   (`t3/run_checks.py`) on each. Length: no measured basis for these builds; the desktop suite is
-   not a basis (other hardware).
-4. **Sanitizer records (D5)** of `mserver` with all its arms: L ASan+UBSan, TSan, MSan
-   (instrumented libc++); W MSVC ASan. Go and Rust coverage gaps go in `bench/coverage.json`.
-   Length: no measured basis for this arm set.
-5. **Timing probe** before the freeze: every arm at m = 10 and m = 100,000, pair (111, 211), two
-   windows each, on mixed-disjoint: 80 windows on L, 72 on W (before the arms Alex added; with them
-   88 and 84). Basis: H6's 6.30 s per window on L and plan v2's
-   6.123 s on W give 504 s and 441 s, plus server start-up at m = 100,000, which has no measured
-   basis (round 2 measured the table build alone at up to 4.6 s, Drogon). lab/t1's readiness wait
-   is 15 s.
-6. **The campaign**, after the freeze, with Alex's answers of 2026-10-23 (two shapes; v2 in the Go
-   and Rust programs; Pistache on W): L 22 arms, 44 windows per pair and size, 7,040 windows,
-   44,352 s = 12.32 h; W 21 arms, 42 windows, 6,720 windows, 41,147 s = 11.43 h. Basis: H6's
-   6.30 s per window on L, plan v2's 6.123 s on W. Together 23.75 h, 1.21 calendar days at 19.68
-   measuring hours a day. Plus the A/A pilot and start-up (no measured basis), and H7's MSVC costs
-   on W, 0.33 h by plan v2's desktop basis.
+Each runs on the laptop between campaigns; the coordinator schedules them.
+0. P2's generator and runner: Release builds, D5 records (L ASan+UBSan, TSan, MSan; W clang-cl
+   ASan), and the A/A check of `p2gen` against `t1gen` on L in the pilot. No measured basis.
+1. Toolchains: LLVM 22.1.8 (clang-cl) and Go 1.27.3 on W; Go 1.27.3 on L; Rust on W; meson and
+   libevent on W (Pistache); Boost 1.92.0 headers on W. All sha256-checked. No measured basis.
+2. Request sets on L and W, generated there or copied, checked with `make_requests.py --verify`.
+   No measured basis.
+3. Release builds of the three programs (`build_programs.py --cxx-build ...`) and the functional
+   suite on L and W. No measured basis.
+4. D5 records of `mserver` with all arms (L ASan+UBSan, TSan, MSan; W clang-cl ASan); Go `-race`
+   and Rust gaps in `bench/coverage.json`. No measured basis for this arm set.
+5. Timing probe before the freeze: every arm at m = 10 and 100,000, pair 111, both shapes, 2
+   windows each: 176 windows on L (1,109 s at H6's 6.30 s per window), 168 on W (1,029 s at plan
+   v2's 6.123 s), plus start-up at m = 100,000, no measured basis (round 2's table builds alone
+   reach 4.6 s).
+6. The campaign after the freeze: L 22 arms x 2 windows x 160 pairs and sizes = 7,040 windows,
+   44,352 s = 12.32 h; W 21 arms, 6,720 windows, 41,147 s = 11.43 h. Together 23.75 h, 1.21
+   calendar days at 19.68 measuring hours a day. Plus the A/A pilot and start-up (no measured
+   basis), and H7's MSVC costs on W, 0.33 h (plan v2's desktop basis).
 
 ## Lab requests
 
-1. Done 2026-10-23 (image 7f39a629ada0): Rust 1.98.1, Go 1.27.1, Boost 1.92.0. Still needed: Go
-   1.27.3 (Alex, 2026-10-23) in the image, outside the package snapshot, checked by sha256.
-   Was: add Go, the Rust toolchain matching the laptop, and the `boost` headers
-   (the snapshot has `boost-libs` 1.92.0 but not the headers). Blocks the Linux checks of
-   `mserver-rs` and the boost-url arm.
-2. A Windows load generator and runner with lab/t1's window rules, if the coordinator chooses
-   lab tooling over P2's own generator (Laptop request 0).
-3. Boost 1.92.0 headers on the laptop's Windows, for boost-url there (or Alex drops it on W).
-4. LLVM 22.1.8 (clang-cl) on the desktop too: it has 22.1.0 at `C:\Program Files\LLVM`, so its
-   clang-cl checks are development checks of another patch release until then.
+1. Done 2026-10-23 (image 7f39a629ada0): Rust 1.98.1, Go 1.27.1, Boost 1.92.0. Still needed in the
+   image: Go 1.27.3 (outside the package snapshot).
+2. LLVM 22.1.8 (clang-cl) on the desktop, which has 22.1.0, plus meson, libevent and Boost 1.92.0
+   headers for the desktop's Windows checks of Pistache and boost-url.
 
 ## Alex decides
 
-Answered by Alex on 2026-10-23 (AskUserQuestion; the options are in
-`design/round3/decisions-for-alex.md`):
-1. Same-server test against Go and Rust: **v2 as an arm inside both programs** (cgo needs MinGW
-   gcc on the laptop's Windows).
-2. Windows load generator: **P2's own portable C++23 generator and runner**, used on both systems,
-   A/A-checked against `t1gen` on Linux.
-3. Windows C++ compiler: **clang-cl 22.1.8** (MSVC the fallback for an arm that fails).
-4. Linear-scan cells at m = 100,000: **same windows; a router that cannot sustain the load is
-   reported with its counts and leaves the tested family**, by a rule fixed in the frozen file.
-5. Routing cost across servers: **a tested hypothesis** with its own Holm family.
-6. Shapes: **mixed-disjoint and static, at all five sizes.**
-7. H8's margin: **the larger of 1.02 and the A/A pilot's 97.5th percentile**, rule frozen before
-   the pilot.
-8. Pins: **the latest releases** (RegexMatcher stays 2.1.0.0, the measured library). Asked again
-   the same day: **Crow's 1.3.5 pre-release** (not 1.3.4) and **Go 1.27.3 installed everywhere**
-   (not the snapshot's 1.27.1). Lookup code checked unchanged for cpp-httplib, chi, Drogon and
-   Crow (`server/cmake/pins-round3.cmake`).
-9. Boost.URL: **add the Boost 1.92.0 headers** to the image and the laptop's Windows.
-10. Pistache on Windows: **bring up its meson build with libevent.**
-11. Go hosting: **keep each library's documented handler.**
-12. Timestamp: **push `round3` at the freeze**, before any confirmatory window.
+Answered on 2026-10-23 (AskUserQuestion; details in `design/round3/decisions-for-alex.md`):
+1. v2 inside the Go and Rust programs. 2. P2's own generator and runner. 3. clang-cl on Windows.
+4. Overloaded linear-scan routers reported, out of the tested family. 5. The cross-server routing
+cost tested (H10). 6. Mixed-disjoint and static, five sizes each. 7. H8's margin from the A/A
+pilot. 8. The latest releases; then Crow's 1.3.5 pre-release and Go 1.27.3. 9. Boost headers added.
+10. Pistache's meson build on Windows. 11. Go routers as their libraries' handlers. 12. Push
+`round3` at the freeze.
 
-Still open: none from Alex. Engineering these answers need, in order: P2's generator (2), clang-cl
-on the desktop and the laptop (3), v2's C interface in Go and Rust (1), the re-pins (8), the static
-request sets (6), Pistache's meson build on Windows (10), the Boost headers (9).
+Open with Alex: none. The frozen-text items above go to him with the freeze proposal and its hours.
 
 ## Commits on `round3` (local, not pushed)
 
-1862c01 723a235 354a536 dd5ae0a (round-3 docs, request sets, servers), d8b51eb a8c3f8b 4942900
-(review fixes; d8b51eb also removes `bench/arms/go/gin/rbserve.go`), e8af074 cfc8d11 6829ed0
-(state, decisions, Alex's answers), and the commit of this update.
+1862c01 723a235 354a536 dd5ae0a (first servers), d8b51eb a8c3f8b 4942900 (first review), e8af074
+cfc8d11 6829ed0 b69bde7 9596d62 f40d81a (state, decisions, answers, spec), 9444920 7fc0fed 1ecdeb0
+69557f8 (pins, v2 arms, generator, Crow), 9d7366b 7459902 508f54d (second review), 62ed742
+(runner), and the commit of this update. `bench/` equals round 2's files except `isa.cmake`.
 
-Side effects outside this worktree: the relative-path repair also rewrote the `.git` link of
-`D:\Dev\GitHub\paper-arms-e` (still resolves). `bench/` equals round 2's files except the MSVC
-branch of `bench/cmake/isa.cmake`.
+## Next engineering
+
+Pistache's meson build on Windows and boost-url there (after the tools arrive); the laptop's
+bring-up (requests 0 to 4); the timing probe; then the freeze proposal with its hours.
