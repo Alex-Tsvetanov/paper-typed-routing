@@ -23,6 +23,9 @@ pub struct Segment {
 
 pub struct Route {
     pub segs: Vec<Segment>,
+    /// The pattern as the file has it (rbench's syntax), for the router that takes it unconverted.
+    #[cfg_attr(not(feature = "v2"), allow(dead_code))]
+    pub text: String,
 }
 
 impl Route {
@@ -58,7 +61,7 @@ fn parse_pattern(text: &str) -> Result<Route, String> {
     let rest = text.strip_prefix('/').ok_or_else(|| format!("route must start with '/': {text}"))?;
     let mut segs: Vec<Segment> = Vec::new();
     if rest.is_empty() {
-        return Ok(Route { segs });
+        return Ok(Route { segs, text: text.to_string() });
     }
     for seg in rest.split('/') {
         if seg.is_empty() {
@@ -83,7 +86,7 @@ fn parse_pattern(text: &str) -> Result<Route, String> {
     if params > MAX_PARAMS {
         return Err(format!("more than {MAX_PARAMS} parameters in route: {text}"));
     }
-    Ok(Route { segs })
+    Ok(Route { segs, text: text.to_string() })
 }
 
 /// Reads the routes file. CR before the newline is stripped and empty lines are skipped. Any other

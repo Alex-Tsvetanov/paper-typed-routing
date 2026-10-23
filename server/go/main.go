@@ -1,7 +1,7 @@
 // mserver-go hosts one Go router in an HTTP server for the end-to-end block of P2
 // (design/round3/end-to-end.md, sections 5 and 6):
 //
-//	mserver-go --port P --workers 1 --routes FILE --router httprouter|gin|nethttp|chi|null [--check]
+//	mserver-go --port P --workers 1 --routes FILE --router httprouter|gin|nethttp|chi|v2|null [--check]
 //
 // It listens on 127.0.0.1:P with net/http, HTTP/1.1 keep-alive, one worker (GOMAXPROCS(1)) and no
 // logging per request. The router holds the file's routes and nothing else. GET / and HEAD / are
@@ -10,7 +10,8 @@
 // Ctrl-Break on Windows) stops the server and exits 0.
 //
 // Exit codes: 0 after a stop signal, 1 for a server failure, 2 for a bad argument or routes file,
-// 3 when the router refuses the table.
+// 3 when the router refuses the table. The router v2 needs the p2v2 library (v2.go): a build or a
+// machine without it exits 2.
 package main
 
 import (
@@ -40,6 +41,7 @@ var builders = map[string]func([]route, replier) (http.Handler, error){
 	"gin":        newGin,
 	"nethttp":    newNetHTTP,
 	"chi":        newChi,
+	"v2":         newV2,
 	"null":       newNull,
 }
 
@@ -83,6 +85,10 @@ func run(args []string, stderr io.Writer) int {
 	}
 	rep := replier{check: *check}
 	handler, err := build(routes, rep)
+	if errors.Is(err, errV2Unavailable) {
+		fmt.Fprintf(stderr, "mserver-go: %v\n", err)
+		return 2
+	}
 	if err != nil {
 		fmt.Fprintf(stderr, "mserver-go: %s refuses the table: %v\n", *name, err)
 		return 3

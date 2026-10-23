@@ -9,6 +9,11 @@ description = "Round 3 server program: hyper on a current-thread tokio runtime h
 name = "mserver-rs"
 path = "src/main.rs"
 
+[features]
+# Router `v2`: RegexMatcher v2 behind its C interface (server/capi/p2v2.h), linked statically from
+# the directory P2V2_LIB_DIR names (build.rs). Off by default, so a build without the library works.
+v2 = []
+
 [dependencies]
 # The routers: round 2's pins (bench/arms/rust/Cargo.toml). Cargo.lock starts from round 2's lock,
 # so their own dependencies resolve to the versions round 2 locked.

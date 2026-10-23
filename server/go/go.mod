@@ -4,7 +4,7 @@ go 1.27
 
 require (
 	github.com/gin-gonic/gin v1.12.0
-	github.com/go-chi/chi/v5 v5.3.2
+	github.com/go-chi/chi/v5 v5.5.0
 	github.com/julienschmidt/httprouter v1.3.0
 )
 
@@ -40,7 +40,6 @@ require (
 	google.golang.org/protobuf v1.36.10 // indirect
 )
 
-// chi's router, vendored at v5.3.2 (bench/arms/go/chi, the full package). gin is the module
-// itself, from the Go proxy, pinned by go.sum: its route tree is byte for byte the one the
-// in-process arm vendored (bench/arms/go/gin/tree.go, checked by hash).
-replace github.com/go-chi/chi/v5 => ../../bench/arms/go/chi
+// gin and chi are the real modules from the Go proxy, pinned by go.sum. Their route trees are the
+// ones round 2 vendored: gin's tree.go byte for byte (bench/arms/go/gin/tree.go), chi's with the
+// differences listed in chi.go.

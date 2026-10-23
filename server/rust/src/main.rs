@@ -1,12 +1,14 @@
 //! The round 3 server program of the Rust routers (design/round3/end-to-end.md, sections 5 and 6):
 //!
-//!     mserver-rs --port P --workers 1 --routes FILE --router matchit|path-tree|actix-router|null [--check]
+//!     mserver-rs --port P --workers 1 --routes FILE --router matchit|path-tree|actix-router|null|v2 [--check]
 //!
 //! hyper's HTTP/1 server on tokio's current-thread runtime, one listener on 127.0.0.1:P, one
 //! worker. It is ready when the socket accepts. SIGTERM and SIGINT (Unix) or Ctrl-C and Ctrl-Break
 //! (Windows) stop it with exit code 0. Exit code 2 is a refused command line or routes file, 3 is
 //! a routes file a router refuses (a conflict, a pattern it cannot take), 1 is a failure at run
 //! time. The first line on stderr names the instruction set the program was built for.
+//!
+//! Router `v2` (cargo feature `v2`) is RegexMatcher v2 behind its C interface, server/capi/p2v2.h.
 //!
 //! Routes: the file's `GET <pattern>` lines, route i being line i. The routers hold exactly these
 //! routes, never a `/` of their own. The service answers `GET /` (and `HEAD /`) itself, before it
@@ -34,6 +36,8 @@ mod null_arm;
 mod path_tree_arm;
 mod routes;
 mod stop;
+#[cfg(feature = "v2")]
+mod v2_arm;
 
 use std::cell::RefCell;
 use std::convert::Infallible;
@@ -59,11 +63,13 @@ use crate::null_arm::NullArm;
 use crate::path_tree_arm::PathTreeArm;
 use crate::routes::MAX_PARAMS;
 use crate::stop::Stop;
+#[cfg(feature = "v2")]
+use crate::v2_arm::V2Arm;
 
 const BODY: &[u8] = b"Hello, World!";
 const TEXT_PLAIN: HeaderValue = HeaderValue::from_static("text/plain");
 const ALLOWED: HeaderValue = HeaderValue::from_static("GET, HEAD");
-const USAGE: &str = "usage: mserver-rs --port P --workers 1 --routes FILE --router matchit|path-tree|actix-router|null [--check]";
+const USAGE: &str = "usage: mserver-rs --port P --workers 1 --routes FILE --router matchit|path-tree|actix-router|null|v2 [--check]";
 
 /// The captured values of one lookup, in pattern order, as slices of the request path.
 pub struct Captures<'a> {
@@ -293,6 +299,13 @@ fn main() -> ExitCode {
             Err(why) => refused_by_router(&why),
         },
         "null" => serve(NullArm, args.port, cfg),
+        #[cfg(feature = "v2")]
+        "v2" => match V2Arm::build(&routes) {
+            Ok(r) => serve(r, args.port, cfg),
+            Err(why) => refused_by_router(&why),
+        },
+        #[cfg(not(feature = "v2"))]
+        "v2" => refuse("router v2 is not in this build (cargo feature v2, with P2V2_LIB_DIR set)"),
         other => refuse(&format!("an unknown router: {other}")),
     }
 }
