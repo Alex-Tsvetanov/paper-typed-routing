@@ -108,8 +108,10 @@ m = 1,000, on both shapes; at m = 100,000 the linear-scan arms get the ring only
 Each runs on the laptop between campaigns; the coordinator schedules them.
 0. P2's generator and runner: Release builds, D5 records (L ASan+UBSan, TSan, MSan; W clang-cl
    ASan), and the A/A check of `p2gen` against `t1gen` on L in the pilot. No measured basis.
-1. Toolchains: LLVM 22.1.8 (clang-cl) and Go 1.27.3 on W; Go 1.27.3 on L; Rust on W; meson and
-   libevent on W (Pistache); Boost 1.92.0 headers on W. All sha256-checked. No measured basis.
+1. Toolchains (approved for laptop gaps, 2026-10-23; the operator does the desktop-side checked
+   downloads): on W LLVM 22.1.8 (clang-cl), Go 1.27.3, Rust 1.99.0, meson and libevent
+   (Pistache), Boost 1.92.0 headers; on L Go 1.27.3 and Rust 1.99.0 side by side under `~/opt`
+   (no pacman change until P4's Arch blocks end). All sha256-checked. No measured basis.
 2. Request sets on L and W, generated there or copied, checked with `make_requests.py --verify`.
    No measured basis.
 3. Release builds of the three programs (`build_programs.py --cxx-build ...`) and the functional
@@ -127,8 +129,10 @@ Each runs on the laptop between campaigns; the coordinator schedules them.
 
 ## Lab requests
 
-1. Done 2026-10-23 (image 7f39a629ada0): Rust 1.98.1, Go 1.27.1, Boost 1.92.0. Still needed in the
-   image: Go 1.27.3 (outside the package snapshot).
+1. Done 2026-10-23 (image 7f39a629ada0): Rust 1.98.1, Go 1.27.1, Boost 1.92.0. Wanted in the
+   image, side by side, so the desktop's Linux checks use the laptop's versions: Go 1.27.3 and
+   Rust 1.99.0 (Alex, 2026-10-23). Until then those checks are development checks of other patch
+   releases.
 2. LLVM 22.1.8 (clang-cl) on the desktop, which has 22.1.0, plus meson, libevent and Boost 1.92.0
    headers for the desktop's Windows checks of Pistache and boost-url.
 
@@ -141,6 +145,12 @@ cost tested (H10). 6. Mixed-disjoint and static, five sizes each. 7. H8's margin
 pilot. 8. The latest releases; then Crow's 1.3.5 pre-release and Go 1.27.3. 9. Boost headers added.
 10. Pistache's meson build on Windows. 11. Go routers as their libraries' handlers. 12. Push
 `round3` at the freeze.
+
+Laptop queue plan, answered by Alex on 2026-10-23 (Papers `lab/laptop/queue-plan-2026-10-draft.md`,
+section 10), as it touches P2: the toolchain gap block is approved (Laptop request 1); D1 no pacman
+upgrade or install on L until P4's Arch blocks end, extra versions side by side under `~/opt`; D2
+Go side by side, P2 keeps 1.27.3 while P4, P7 and P5 use 1.27.2, and P2 takes Rust 1.99.0, the
+version P4 installs (not the image's 1.98.1); D4 P4's idle day carries read-only jobs only.
 
 Open with Alex: none. The frozen-text items above go to him with the freeze proposal and its hours.
 
