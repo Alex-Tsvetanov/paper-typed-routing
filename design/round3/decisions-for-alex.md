@@ -6,6 +6,9 @@ window is 6.30 s on the laptop's Arch (H6) and 6.123 s on its Windows (plan v2).
 is 3,200 windows (5.60 h) on Arch and 2,880 windows (4.90 h) on Windows, before the pilot and
 start-up. Answer by number and letter.
 
+**Answered by Alex on 2026-10-23:** 1 (a), 2 (b), 3 (b), 4 (b), 5 (b), 6 (b), 7 (b), 8 (b),
+9 (a), 10 (a), 11 (a), 12 (a). Recorded in `STATE.md`, "Alex decides".
+
 ## 1. A same-server contrast against the Go and Rust routers
 
 **What.** Today only the C and C++ routers run in the same server as v2, so only they are tested

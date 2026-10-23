@@ -122,10 +122,10 @@ child in its own process group gets Ctrl-Break only).
 
 Each job runs on the laptop between campaigns; the coordinator schedules them.
 0. **The Windows load generator and runner** (blocks every Windows window, the probe included):
-   lab/t1's `t1gen` and `t1.py` are Linux only. Coordinator decides between porting lab/t1 to
-   Windows (lab tooling) and P2's own portable generator in this repository (the brief's
-   "Repository" section says "C++23 for this paper's server and generator", and P3 and P4 have
-   their own). No measured basis for either.
+   Alex chose P2's own portable generator (2026-10-23); it is engineering here, then a laptop job
+   to build and A/A-check it against `t1gen` on L. No measured basis.
+0b. **clang-cl 22.1.8 on W** (Alex, 2026-10-23): LLVM installed and checked by sha256, like the
+   other W tools in `lab/laptop/versions.md`, plus MinGW gcc for Go's cgo. No measured basis.
 1. **Request sets on L and W.** Not committed (about 10 MB per cell at m = 100,000). Either
    generate them there with `t3/make_requests.py` and `e2e_requests` (every-route set at m =
    100,000 for pair 111 only), or copy them; either way check them with `make_requests.py --verify`
@@ -140,13 +140,17 @@ Each job runs on the laptop between campaigns; the coordinator schedules them.
    (instrumented libc++); W MSVC ASan. Go and Rust coverage gaps go in `bench/coverage.json`.
    Length: no measured basis for this arm set.
 5. **Timing probe** before the freeze: every arm at m = 10 and m = 100,000, pair (111, 211), two
-   windows each: 80 windows on L, 72 on W. Basis: H6's 6.30 s per window on L and plan v2's
+   windows each, on mixed-disjoint: 80 windows on L, 72 on W (before the arms Alex added; with them
+   88 and 84). Basis: H6's 6.30 s per window on L and plan v2's
    6.123 s on W give 504 s and 441 s, plus server start-up at m = 100,000, which has no measured
    basis (round 2 measured the table build alone at up to 4.6 s, Drogon). lab/t1's readiness wait
    is 15 s.
-6. **The campaign**, after the freeze: about 5.60 h on L and 4.90 h on W, plus the A/A pilot and
-   start-up (`end-to-end.md`, section 11). Plus H7's MSVC costs on W, 0.33 h by plan v2's desktop
-   basis.
+6. **The campaign**, after the freeze, with Alex's answers of 2026-10-23 (two shapes; v2 in the Go
+   and Rust programs; Pistache on W): L 22 arms, 44 windows per pair and size, 7,040 windows,
+   44,352 s = 12.32 h; W 21 arms, 42 windows, 6,720 windows, 41,147 s = 11.43 h. Basis: H6's
+   6.30 s per window on L, plan v2's 6.123 s on W. Together 23.75 h, 1.21 calendar days at 19.68
+   measuring hours a day. Plus the A/A pilot and start-up (no measured basis), and H7's MSVC costs
+   on W, 0.33 h by plan v2's desktop basis.
 
 ## Lab requests
 
@@ -160,20 +164,29 @@ Each job runs on the laptop between campaigns; the coordinator schedules them.
 
 ## Alex decides
 
-1. v2 behind its C interface inside the Go and Rust programs, as a same-server control against the
-   fastest Go and Rust routers (gin and matchit lead several round-2 cells)? Adds 4 windows per pair
-   and size per system.
-2. The Windows C++ compiler: MSVC (installed) or clang-cl 22.1.8 (to install), for the cross-OS
-   contrast.
-3. Linear-scan cells at m = 100,000 (actix-router about 33 lookups per second there by round 2's
-   lookup time alone): measure and report counts, or report without testing below a set count.
-4. Whether the routing increment across servers becomes a tested hypothesis.
-5. Pins: keep round 2's (recommended, so T1 runs the code T0 timed) although newer releases exist
-   (cpp-httplib six, chi two, Drogon 1.9.14 with an identical router file, Go 1.27.3).
-6. Pistache on Windows through its meson build, or absent there.
-7. The push of `round3` to the public repository: the frozen `hypotheses-round3.md` needs a
-   public timestamp before the first confirmatory window, so that push comes with the freeze.
-   Nothing is pushed until then.
+Answered by Alex on 2026-10-23 (AskUserQuestion; the options are in
+`design/round3/decisions-for-alex.md`):
+1. Same-server test against Go and Rust: **v2 as an arm inside both programs** (cgo needs MinGW
+   gcc on the laptop's Windows).
+2. Windows load generator: **P2's own portable C++23 generator and runner**, used on both systems,
+   A/A-checked against `t1gen` on Linux.
+3. Windows C++ compiler: **clang-cl 22.1.8** (MSVC the fallback for an arm that fails).
+4. Linear-scan cells at m = 100,000: **same windows; a router that cannot sustain the load is
+   reported with its counts and leaves the tested family**, by a rule fixed in the frozen file.
+5. Routing cost across servers: **a tested hypothesis** with its own Holm family.
+6. Shapes: **mixed-disjoint and static, at all five sizes.**
+7. H8's margin: **the larger of 1.02 and the A/A pilot's 97.5th percentile**, rule frozen before
+   the pilot.
+8. Pins: **the latest releases** (Crow's 1.3.5 is a pre-release, so Crow stays at its latest
+   release, 1.3.4, unless Alex says otherwise; RegexMatcher stays 2.1.0.0, the measured library).
+9. Boost.URL: **add the Boost 1.92.0 headers** to the image and the laptop's Windows.
+10. Pistache on Windows: **bring up its meson build with libevent.**
+11. Go hosting: **keep each library's documented handler.**
+12. Timestamp: **push `round3` at the freeze**, before any confirmatory window.
+
+Still open: none from Alex. Engineering these answers need, in order: P2's generator (2), clang-cl
+on the desktop and the laptop (3), v2's C interface in Go and Rust (1), the re-pins (8), the static
+request sets (6), Pistache's meson build on Windows (10), the Boost headers (9).
 
 ## Commits on `round3` (local, not pushed)
 
