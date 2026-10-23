@@ -71,14 +71,39 @@ Pistache on Windows (its CMake gives cl GCC flags; its meson build not tried).
 
 Every arm answers every route of pair (111, 211) at all five sizes, and the T0 rings of pairs 112
 to 126 at m = 1,000; at m = 100,000 the four linear-scan arms get the ring only (`run_checks.py`).
-- Linux suite: PENDING (running).
-- Windows suite: PENDING (running).
-- Development sanitizers (not records): ASan+UBSan in the container and MSVC ASan: PENDING.
+- Linux suite (container, `--cpus 2`), 2026-10-23: 300 checks, 0 failed (mserver's 10 arms and
+  mserver-go's 5, 20 checks each). The 80 request-set cells matched `t3/requests-manifest.tsv`.
+- Windows suite (desktop, MSVC build), 2026-10-23: 340 checks, 0 failed (mserver 8, mserver-go 5,
+  mserver-rs 4 arms).
+- Linux check of mserver-rs: waits for a Rust toolchain in the image (Lab request 1).
+- Development sanitizers, not records: ASan+UBSan (clang 22.1.8, container) on all ten Linux arms,
+  and MSVC ASan on all eight Windows arms, each at m = 1,000 with every route and the ring: no
+  report, clean exits; the unit tests pass under both. TSan and MSan not run here (TSan needs
+  `seccomp=unconfined`; MSan has no instrumented libc++ in the image).
 - Kernel blind spots: none used. epoll and loopback TCP only; no io_uring, no eBPF.
 
 ## Review
 
-Fresh Opus review of the diff: PENDING.
+A fresh Opus review of the whole diff (2026-10-23): no CRITICAL; 3 HIGH, 3 MEDIUM, 10 LOW.
+Fixed:
+- H1: only the external C++ arms paid a path copy. Now the server copies the path once per
+  request into one reused string for every arm, v2 and null included (`route.hpp`, `http1.cpp`).
+- H2: chi was hosted below its documented use. Every Go router is now its library's
+  `http.Handler`: gin's Engine (real v1.12.0 module; its `tree.go` sha256 89d06fd0... equals round
+  2's vendored copy), chi's Mux, httprouter's Router, net/http's ServeMux. `bench/arms/go/gin/
+  rbserve.go` is gone.
+- H3: Rust now builds with `-C target-cpu=native` (`server/rust/.cargo/config.toml`, checked by
+  `build.rs` and a start-up line); Go's `GOAMD64=v3` is set by `t3/build_programs.py` and printed
+  at start.
+- M1 (IOCP accept slots re-posted every pass), M2 (Go sink atomic; a `-race` build is clean), M3
+  (loopback test ported to Windows: see below).
+- L1 (static check that no C++ adapter has its own 405), L2 (IOCP teardown never frees memory with
+  an operation in flight), L3 (IFS check before skipping completion packets), L5 (Rust runtime
+  without a time driver, comments true), L6 (C++ sink stored at teardown), L9 (exit code 3 for a
+  refused table in all three programs), L10 (stale comments).
+Documented, not changed: L4 (a reset when closing with unread input, as in round 2), L7 (methods
+other than GET differ by library; never measured), L8 (a child in its own process group gets
+Ctrl-Break only).
 
 ## Laptop requests
 

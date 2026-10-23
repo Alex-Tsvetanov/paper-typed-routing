@@ -99,7 +99,15 @@ file of H6 needs no new form.
 - Check mode (`--check`): the body is the route id in decimal, then a tab and each captured value
   as the router returned it, then a newline. Same binary as the measured mode, one runtime flag.
 - No route: 404, empty body. HTTP/1.1 keep-alive. A request body is not expected.
-- SIGTERM or SIGINT on Linux, Ctrl-C or Ctrl-Break on Windows: exit 0.
+- Methods other than GET are never measured, and the programs answer them as their libraries do:
+  the C++ server answers 405 when a GET route matches (round 2's harness rule) and HEAD through the
+  GET route; the Rust program does the same; in the Go program net/http answers HEAD through GET,
+  and httprouter, gin and chi answer by their own defaults.
+- SIGTERM or SIGINT on Linux, Ctrl-Break on Windows (and Ctrl-C when the console delivers it; a
+  child started in its own process group, as `t3/check_server.py` starts it, gets Ctrl-Break
+  only): exit 0.
+- Exit codes: 2 a bad command line or routes file, 3 the router refuses the routes, 1 any other
+  failure.
 
 ## 6. Hosting, per language
 
@@ -107,34 +115,36 @@ file of H6 needs no new form.
   boost-url|r3|uwebsockets|glaze|cpp-httplib`. The external arms are round 2's rbench adapters
   (`bench/arms/*.cpp`), compiled unchanged. A shim `core/runner.hpp` (`server/src/shim/`) turns
   `RB_ARM(Type)` into a registration with the server, so the code that lookups run is exactly the
-  code T0 timed. The server gives every arm the path as bytes in its input buffer. An adapter whose
-  router takes `const std::string&` gets the path copied into one reused string (no allocation in
-  steady state). That is the form these libraries' own request types carry it in. The harness's
-  405 rule of round 2 is applied to arms without their own.
+  code T0 timed. Round 2's adapters take the path as `const std::string&`, so the server copies the
+  request's path once into one reused string and hands that string to every arm, v2 and null
+  included (`server/src/route.hpp`, `http1.cpp`). No arm pays a copy that another does not. The
+  harness's 405 rule of round 2 is applied to arms without their own.
 - **Go** (`server/go/`, binary `mserver-go`): `--router httprouter|gin|nethttp|chi|null`. Go's
-  `net/http` server. gin and chi use round 2's vendored trees and shims (`bench/arms/go/gin`,
-  `bench/arms/go/chi`), called as gin's engine and chi's mux call them. httprouter through its
-  `Router` lookup, as in round 2. net/http through its `ServeMux`.
+  `net/http` server, with each router as the `http.Handler` its library documents, so each request
+  pays the library's own steps around the lookup: gin's `Engine` (`gin.New()` in release mode, the
+  real v1.12.0 module, whose `tree.go` is the one round 2 vendored), chi's `Mux` (round 2's vendored
+  v5.3.2 package), httprouter's `Router`, net/http's `ServeMux`. The lookup code is round 2's, at
+  the same versions; T0 timed it without those steps.
 - **Rust** (`server/rust/`, binary `mserver-rs`): `--router matchit|path-tree|actix-router|null`.
   hyper's HTTP/1 server on tokio's current-thread runtime. Each router called as round 2's crate
   calls it (`bench/arms/rust/*.rs`).
 
 Where the servers depart from round 2's single-threaded harness, and why:
 - Go runs one goroutine per connection, and the scheduler can preempt one between a lookup and
-  the read of its result even with `GOMAXPROCS=1`. Round 2's gin shim kept one lookup state per
-  engine. The server takes a state per request from a `sync.Pool`, as gin's Engine takes a Context
-  from its pool (`bench/arms/go/gin/rbserve.go`, new; the vendored files and `rbshim.go` are
-  unchanged). The route id is the position of the route's handler chain in one backing array, so
-  no shared slot and no lock is needed. chi takes its route context from a pool, as chi's
-  `Mux.ServeHTTP` does. httprouter and net/http answer from each route's own handler.
-- net/http keeps its own 307 redirects for paths that are not canonical; no request set has one.
+  the read of its result even with `GOMAXPROCS=1`. So no Go arm shares lookup state between
+  requests: each library's handler keeps its own per-request state (gin's and chi's pooled
+  contexts, httprouter's params pool), and each route's handler closes over its id. The sink is
+  added atomically, the same for every Go arm.
+- net/http and the other Go libraries keep their own redirects (non-canonical paths, trailing
+  slashes); no request set has such a path.
 - httprouter and gin return a catch-all value with its leading `/`, chi and net/http without.
   Mixed-disjoint has no catch-all route, so the check never meets it. A shape with one would need
   round 2's declared semantics.
-- hyper's 30 s header-read timer is off: the current-thread runtime has no timer, and no arm is
-  charged for one.
-- Every C++ arm gets the path copied into one reused string (`server/src/external.hpp`). v2 and the
-  null arm read the request's bytes in place, as their APIs take a `std::string_view`.
+- hyper's 30 s header-read timeout is switched off, so no timer is armed per connection.
+- Instruction sets, as round 2's (Appendix B): C and C++ `-march=native` (MSVC `/arch:AVX2`), Rust
+  `-C target-cpu=native` (`server/rust/.cargo/config.toml`), Go `GOAMD64=v3`, the highest level
+  the laptop runs (round 2: a `GOAMD64=v4` build refuses to start there), set by
+  `t3/build_programs.py`. Each Go and Rust program prints its setting at start.
 
 Arms per system, as built on the desktop on 2026-10-23:
 - Linux (clang 22.1.8): v2, null, crow, drogon, oatpp, pistache, r3, uwebsockets, glaze,
@@ -211,3 +221,7 @@ its estimate). A timing probe on the laptop replaces all of these before the fre
 - 2026-10-23, after the first builds: the probe `/` is answered by every program itself (section
   5); the per-language departures and the arms per system (section 6); MSVC flags and the IOCP
   backend (section 7).
+- 2026-10-23, after the code review: the server copies the path once for every arm, v2 and null
+  included (section 6); every Go router is hosted as its library's `http.Handler` (section 6);
+  instruction sets of the Go and Rust programs; method answers, Windows stop signal and exit codes
+  (section 5).
