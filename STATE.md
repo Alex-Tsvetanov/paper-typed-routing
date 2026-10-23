@@ -156,7 +156,9 @@ Each job runs on the laptop between campaigns; the coordinator schedules them.
 
 ## Lab requests
 
-1. `papers-dev`: add Go 1.27.3, the Rust toolchain matching the laptop, and the `boost` headers
+1. Done 2026-10-23 (image 7f39a629ada0): Rust 1.98.1, Go 1.27.1, Boost 1.92.0. Still needed: Go
+   1.27.3 (Alex, 2026-10-23) in the image, outside the package snapshot, checked by sha256.
+   Was: add Go, the Rust toolchain matching the laptop, and the `boost` headers
    (the snapshot has `boost-libs` 1.92.0 but not the headers). Blocks the Linux checks of
    `mserver-rs` and the boost-url arm.
 2. A Windows load generator and runner with lab/t1's window rules, if the coordinator chooses
@@ -180,8 +182,10 @@ Answered by Alex on 2026-10-23 (AskUserQuestion; the options are in
 6. Shapes: **mixed-disjoint and static, at all five sizes.**
 7. H8's margin: **the larger of 1.02 and the A/A pilot's 97.5th percentile**, rule frozen before
    the pilot.
-8. Pins: **the latest releases** (Crow's 1.3.5 is a pre-release, so Crow stays at its latest
-   release, 1.3.4, unless Alex says otherwise; RegexMatcher stays 2.1.0.0, the measured library).
+8. Pins: **the latest releases** (RegexMatcher stays 2.1.0.0, the measured library). Asked again
+   the same day: **Crow's 1.3.5 pre-release** (not 1.3.4) and **Go 1.27.3 installed everywhere**
+   (not the snapshot's 1.27.1). Lookup code checked unchanged for cpp-httplib, chi, Drogon and
+   Crow (`server/cmake/pins-round3.cmake`).
 9. Boost.URL: **add the Boost 1.92.0 headers** to the image and the laptop's Windows.
 10. Pistache on Windows: **bring up its meson build with libevent.**
 11. Go hosting: **keep each library's documented handler.**
