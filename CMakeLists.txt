@@ -18,8 +18,16 @@ enable_testing()
 
 # Sanitizers, applied to every target here, as rbench does (bench/CMakeLists.txt); MemorySanitizer
 # needs an instrumented libc++.
-set(P2_SANITIZER "" CACHE STRING "Sanitizer (address+undefined, thread, memory)")
-if(P2_SANITIZER)
+set(P2_SANITIZER "" CACHE STRING "Sanitizer (address+undefined, thread, memory; with MSVC: address)")
+if(P2_SANITIZER AND MSVC)
+    # MSVC's AddressSanitizer, the Windows records' sanitizer (CLAUDE.md, D5).
+    if(NOT P2_SANITIZER STREQUAL "address")
+        message(FATAL_ERROR "with MSVC, P2_SANITIZER can only be address")
+    endif()
+    add_compile_options(/fsanitize=address /Zi)
+    add_link_options(/INCREMENTAL:NO /DEBUG)
+    message(STATUS "h6: sanitizer ${P2_SANITIZER} (MSVC)")
+elseif(P2_SANITIZER)
     string(REPLACE "+" "," _san "${P2_SANITIZER}")
     add_compile_options(-fsanitize=${_san} -fno-omit-frame-pointer -fno-sanitize-recover=all -g)
     add_link_options(-fsanitize=${_san})
@@ -44,5 +52,11 @@ set(_bench "${CMAKE_CURRENT_SOURCE_DIR}/bench")
 add_executable(h6_targets t1/h6_targets.cpp "${_bench}/core/table.cpp" "${_bench}/core/route.cpp"
     "${_bench}/core/sha256.cpp" "${_bench}/core/github_api.cpp")
 target_include_directories(h6_targets PRIVATE "${_bench}")
+
+# Round 3's request sets (design/round3/end-to-end.md, section 4): the same generator, with the T0
+# ring and the expected answers.
+add_executable(e2e_requests t3/e2e_requests.cpp "${_bench}/core/table.cpp" "${_bench}/core/route.cpp"
+    "${_bench}/core/sha256.cpp" "${_bench}/core/github_api.cpp")
+target_include_directories(e2e_requests PRIVATE "${_bench}")
 
 add_subdirectory(server)
