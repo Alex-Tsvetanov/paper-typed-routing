@@ -34,6 +34,7 @@ include("${_bench}/cmake/isa.cmake")
 
 include(FetchContent)
 include("${_bench}/cmake/pins.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/pins-round3.cmake")  # round 3's newer releases
 find_package(Git QUIET)
 if(NOT COMMAND rb_git)
     function(rb_git dir out)
@@ -109,6 +110,7 @@ target_include_directories(mserver_external PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/
                                                    "${CMAKE_CURRENT_SOURCE_DIR}/src" "${_bench}")
 target_link_libraries(mserver_external PUBLIC mserver_http1)
 target_compile_options(mserver_external PRIVATE ${_warn})
+target_compile_definitions(mserver_external PRIVATE "MSERVER_ROUND3_VERSIONS=\"${MSERVER_ROUND3_VERSIONS}\"")
 
 set(_arm_objects "")
 function(rb_arm name source)
@@ -178,3 +180,17 @@ if(NOT WIN32)
     target_compile_options(test_contract PRIVATE ${_warn})
     add_test(NAME contract COMMAND test_contract $<TARGET_FILE:mserver>)
 endif()
+
+# RegexMatcher v2 behind a C interface (capi/p2v2.h), for the v2 arms of the Go and Rust programs
+# (design/round3/end-to-end.md, section 1), compiled with this project's compiler and flags: a
+# static library (Linux cgo, Rust) and a shared one (the Windows DLL the Go program calls).
+add_library(p2v2_c STATIC capi/p2v2.cpp)
+target_include_directories(p2v2_c PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/capi")
+target_link_libraries(p2v2_c PRIVATE RegexMatcher::route)
+target_compile_options(p2v2_c PRIVATE ${_warn})
+set_target_properties(p2v2_c PROPERTIES POSITION_INDEPENDENT_CODE ON)
+add_library(p2v2 SHARED capi/p2v2.cpp)
+target_include_directories(p2v2 PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/capi")
+target_compile_definitions(p2v2 PUBLIC P2V2_SHARED PRIVATE P2V2_BUILD)
+target_link_libraries(p2v2 PRIVATE RegexMatcher::route)
+target_compile_options(p2v2 PRIVATE ${_warn})

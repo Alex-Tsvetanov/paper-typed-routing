@@ -2,7 +2,7 @@
 // design/round3/end-to-end.md, sections 5 to 7):
 //     mserver --port P --workers 1 --routes FILE --router NAME [--check]
 // NAME is v2, v1 (Linux builds), null, or one of the external arms this build has (run with
-// --router '?' for the list). It is ready when its listening socket (127.0.0.1:P) accepts. SIGTERM
+// --router '?' for the list, and '??' for each external arm's release). It is ready when its listening socket (127.0.0.1:P) accepts. SIGTERM
 // or SIGINT on Linux, Ctrl-C or Ctrl-Break on Windows (a child started in its own process group,
 // as check_server.py starts it, gets Ctrl-Break only), stops it, and it exits with 0. Exit codes:
 // 2 a bad command line, 3 the router refuses the routes, 1 any other failure. One worker only: any
@@ -167,6 +167,12 @@ int main(int argc, char** argv) {
     }
     if (router_name == "?") {
         list_arms();
+        return 0;
+    }
+    if (router_name == "??") {  // provenance: each external arm with the release it was built from
+        for (const mserver::ExternalArm& e : mserver::external_arms()) {
+            std::printf("%s\t%s\n", e.name.c_str(), e.version.c_str());
+        }
         return 0;
     }
     if (workers != "1") {

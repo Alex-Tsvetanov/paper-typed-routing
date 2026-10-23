@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Round 3's request sets (design/round3/end-to-end.md, section 4).
 
-Runs e2e_requests for mixed-disjoint at the five sizes and round 2's sixteen seed pairs (table
-seeds 111 to 126 with ring seeds 211 to 226), into OUT/m<m>/t<table seed>/, and writes
-OUT/manifest.tsv: one line per cell with every digest e2e_requests prints.
+Runs e2e_requests for round 3's shapes (mixed-disjoint and static, Alex 2026-10-23) at the five
+sizes and round 2's sixteen seed pairs (table seeds 111 to 126 with ring seeds 211 to 226), into
+OUT/<shape>/m<m>/t<table seed>/, and writes OUT/manifest.tsv: one line per cell with every digest
+e2e_requests prints.
 
-    make_requests.py --bin BUILD/e2e_requests --out DIR [--sizes 10,100] [--pairs 16] [--all-pairs 1]
+    make_requests.py --bin BUILD/e2e_requests --out DIR [--shapes static] [--sizes 10,100] [--pairs 16]
+                     [--all-pairs 1]
     make_requests.py --verify DIR --manifest t3/requests-manifest.tsv
 
 The second form compares a generated manifest with the committed one, so every program and run
@@ -18,13 +20,13 @@ import subprocess
 import sys
 from pathlib import Path
 
-SHAPE = "mixed-disjoint"
+SHAPES = ("mixed-disjoint", "static")
 SIZES = (10, 100, 1000, 10000, 100000)
 PAIRS = tuple((111 + k, 211 + k) for k in range(16))
 
 
-def cell_dir(out: Path, m: int, table_seed: int) -> Path:
-    return out / f"m{m}" / f"t{table_seed}"
+def cell_dir(out: Path, shape: str, m: int, table_seed: int) -> Path:
+    return out / shape / f"m{m}" / f"t{table_seed}"
 
 
 def parse_line(line: str) -> dict:
@@ -34,19 +36,23 @@ def parse_line(line: str) -> dict:
     return dict(zip(words[0::2], words[1::2]))
 
 
-def generate(binary: Path, out: Path, sizes, pairs, all_pairs: int) -> int:
+def generate(binary: Path, out: Path, shapes, sizes, pairs, all_pairs: int) -> int:
     rows = []
-    for m in sizes:
-        for k, (table_seed, ring_seed) in enumerate(pairs):
-            d = cell_dir(out, m, table_seed)
-            d.mkdir(parents=True, exist_ok=True)
-            p = subprocess.run([str(binary), "--shape", SHAPE, "--m", str(m), "--table-seed", str(table_seed),
-                                "--ring-seed", str(ring_seed), "--out", str(d)] + ([] if m < 100000 or k < all_pairs else ["--no-all"]),
-                               capture_output=True, text=True)
-            if p.returncode != 0:
-                print(f"make_requests: m {m} pair ({table_seed}, {ring_seed}): {p.stderr.strip()}", file=sys.stderr)
-                return 1
-            rows.append(parse_line(p.stdout.strip()))
+    for shape in shapes:
+        for m in sizes:
+            for k, (table_seed, ring_seed) in enumerate(pairs):
+                d = cell_dir(out, shape, m, table_seed)
+                d.mkdir(parents=True, exist_ok=True)
+                cmd = [str(binary), "--shape", shape, "--m", str(m), "--table-seed", str(table_seed),
+                       "--ring-seed", str(ring_seed), "--out", str(d)]
+                if m == 100000 and k >= all_pairs:
+                    cmd.append("--no-all")
+                p = subprocess.run(cmd, capture_output=True, text=True)
+                if p.returncode != 0:
+                    print(f"make_requests: {shape} m {m} pair ({table_seed}, {ring_seed}): {p.stderr.strip()}",
+                          file=sys.stderr)
+                    return 1
+                rows.append(parse_line(p.stdout.strip()))
     keys = list(rows[0].keys())
     with open(out / "manifest.tsv", "w", newline="\n") as f:
         f.write("\t".join(keys) + "\n")
@@ -76,6 +82,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--bin", type=Path)
     ap.add_argument("--out", type=Path)
+    ap.add_argument("--shapes", default=",".join(SHAPES))
     ap.add_argument("--sizes", default=",".join(map(str, SIZES)))
     ap.add_argument("--pairs", type=int, default=len(PAIRS), help="the first N seed pairs")
     ap.add_argument("--all-pairs", type=int, default=1, help="at m = 100,000, the every-route set for the first N pairs")
@@ -89,10 +96,11 @@ def main() -> int:
     if not a.bin or not a.out:
         ap.error("--bin and --out are required")
     sizes = [int(s) for s in a.sizes.split(",")]
-    if any(s not in SIZES for s in sizes) or not 1 <= a.pairs <= len(PAIRS):
-        ap.error("sizes must be among 10,100,1000,10000,100000 and pairs within 1 to 16")
+    shapes = a.shapes.split(",")
+    if any(s not in SIZES for s in sizes) or any(s not in SHAPES for s in shapes) or not 1 <= a.pairs <= len(PAIRS):
+        ap.error("shapes among mixed-disjoint,static; sizes among 10,100,1000,10000,100000; pairs within 1 to 16")
     a.out.mkdir(parents=True, exist_ok=True)
-    return generate(a.bin, a.out, sizes, PAIRS[: a.pairs], a.all_pairs)
+    return generate(a.bin, a.out, shapes, sizes, PAIRS[: a.pairs], a.all_pairs)
 
 
 if __name__ == "__main__":

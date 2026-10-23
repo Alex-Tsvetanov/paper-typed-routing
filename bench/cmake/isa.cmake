@@ -20,11 +20,21 @@ set(RB_GOAMD64 "" CACHE STRING "GOAMD64 of the Go arms (empty: the highest level
 
 set(RB_ISA_TARGET_CPU "")
 set(RB_ISA_FEATURES "")
-if(MSVC)
+if(MSVC AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # clang-cl (round 3's Windows compiler, Alex 2026-10-23): clang's own -march through /clang:,
+    # so the instruction set is resolved as on Linux.
+    if(RB_MARCH)
+        add_compile_options("/clang:-march=${RB_MARCH}")
+        execute_process(COMMAND "${CMAKE_CXX_COMPILER}" "/clang:-march=${RB_MARCH}" "-###" -c /TP NUL
+                        ERROR_VARIABLE _isa_driver OUTPUT_QUIET RESULT_VARIABLE _isa_rc)
+        if(NOT _isa_driver MATCHES "\"-target-cpu\" \"([^\"]+)\"")
+            message(FATAL_ERROR "isa: ${CMAKE_CXX_COMPILER} does not resolve /clang:-march=${RB_MARCH}")
+        endif()
+        set(RB_ISA_TARGET_CPU "clang-cl ${CMAKE_MATCH_1}")
+    endif()
+elseif(MSVC)
     # MSVC has no -march (round 3's Windows builds, design/round3/end-to-end.md, section 7). Its
-    # nearest option is /arch, whose highest level the laptop's Ryzen 7 5800H runs is AVX2. clang-cl
-    # also sets MSVC, so a clang-cl build gets /arch:AVX2 too, not -march=native; holding the
-    # instruction set equal to Linux's with clang-cl needs its own branch here.
+    # nearest option is /arch, whose highest level the laptop's Ryzen 7 5800H runs is AVX2.
     set(RB_MSVC_ARCH "AVX2" CACHE STRING "/arch of every C and C++ target with MSVC (empty: none)")
     set(RB_MARCH "")
     if(RB_MSVC_ARCH)
