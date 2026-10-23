@@ -71,10 +71,12 @@ libevent; not yet built, needs meson and libevent); boost-url (needs Boost 1.92.
 ## Functional checks (desktop, untimed)
 
 Every arm: every route of pair (111, 211) at all five sizes, and the T0 rings of pairs 112 to 126 at
-m = 1,000, on both shapes; at m = 100,000 the linear-scan arms get the ring only. Latest suites,
-2026-10-23:
-- mserver: Linux 440 of 440 (11 arms); Windows clang-cl 320 of 320 (8 arms).
-- mserver-go: Linux (cgo) 240 of 240, Windows 240 of 240. mserver-rs: 200 of 200 on each system.
+m = 1,000, on both shapes; at m = 100,000 the linear-scan arms get the ring only. Final suites,
+2026-10-23, all three programs in one run, Go and Rust built by `t3/build_programs.py` only:
+- Linux (container): 880 of 880 (22 arms). mserver sha256 9ea7cd75..., mserver-go dc405e3a...,
+  mserver-rs 586dfe70...; the v2 library both link, 988f2c45..., matches `build-info.json`.
+- Windows (desktop, clang-cl 22.1.0): 760 of 760 (19 arms). mserver fd0e5c73..., mserver-go
+  74fba04d..., mserver-rs 1a86633f...; p2v2.dll a66a8780..., as recorded.
 - CTest on Linux: 6 of 6 (unit, loopback, H6 agreement, contract, p2gen unit and edge); loopback
   test on Windows 10 of 10 (release and MSVC ASan).
 - p2gen: unit, net and edge tests in every tree; count mode against all three programs completed
