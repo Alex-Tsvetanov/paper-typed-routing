@@ -130,9 +130,12 @@ Each runs on the laptop between campaigns; the coordinator schedules them.
    `C:\Users\alext\opt\rustup` and `cargo`). Read from the check job's versions.txt in
    `C:\Users\alext\lab\laptop-archive\gap2-w-q2-p2-toolchains-1384391a\`. meson 1.12.1 and libevent
    2.1.13-stable were pinned on 2026-10-24 (latest stable; both publish only a GPG signature, so the
-   sha256s are GitHub's asset digests, meson's equal to PyPI's). L: Go 1.27.3 and Rust 1.99.0 under
-   `~/opt` come with the Arch visit (`gap1-a-p2-toolchains.sh`). No pkgconf needed: meson finds
-   libevent through libevent's CMake package.
+   sha256s are GitHub's asset digests, meson's equal to PyPI's). L: done 2026-10-24, ending 03:24:57,
+   job `a1-p2-toolchains-l` exit 0 (Arch visit A1, `gap1-a-p2-toolchains.sh`): `~/opt/p2/go1.27.3`
+   (go1.27.3 linux/amd64) and Rust 1.99.0 installed by the checked rustup-init into `~/opt/rustup`
+   and `~/opt/cargo` (minimal profile), no pacman change; read from
+   `laptop-archive\gap1-a-q4-visit-a1-c0eb9960\a1-p2-toolchains-l.tar.gz`. Row 1 is complete. No
+   pkgconf needed: meson finds libevent through libevent's CMake package.
 2. Request sets on L and W, generated there or copied, checked with `make_requests.py --verify`.
    No measured basis.
 3. Release builds of the three programs (`build_programs.py --cxx-build ...`) and the functional
