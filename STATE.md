@@ -105,6 +105,13 @@ m = 1,000, on both shapes; at m = 100,000 the linear-scan arms get the ring only
    build; fixed by `build_programs.py`, `p2v2_build_info` and the start lines), 3 MEDIUM (fixed),
    8 LOW (fixed or documented).
 3. The runner was reviewed by a fresh agent inside its own task, which adopted the findings.
+4. D5 tooling and the laptop jobs (Opus, 2026-10-24): 0 CRITICAL, 2 HIGH, 3 MEDIUM, 4 LOW. Fixed:
+   bare commands resolved on the job's PATH (Windows; it would have stopped every W job); records
+   only on the laptop's host and CPU, checked again by the gate; Go and Rust toolchains and found
+   tool trees compared; no green record without kept logs; the system's arms required; the arm
+   list logged; no inherited sanitizer options; p2v2.h in the Go hash; Go caches under P2R3; the
+   /tmp check. Kept: crates in P4's shared CARGO_HOME (Alex's D2); RapidJSON by git tag on Linux,
+   as round 2 (listed in each record's fetched sources).
 
 ## To settle in the frozen text (with the freeze proposal and its hours)
 
