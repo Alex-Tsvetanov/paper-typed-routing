@@ -150,7 +150,7 @@ class PlanTests(unittest.TestCase):
 
     def test_example_plan(self) -> None:
         plan, _ = p2run.load_plan(HERE / "plans" / "example.json")
-        self.assertEqual(p2run.total_windows(plan), 2 * 5 * 16 * (2 * 10 + 2 * 6 + 2 * 5))
+        self.assertEqual(p2run.total_windows(plan), 2 * 5 * 16 * (2 * 11 + 2 * 6 + 2 * 5))
         self.assertEqual(sum(1 for _ in p2run.windows(plan)), p2run.total_windows(plan))
         self.assertEqual((plan.server_cpu, plan.generator_cpus), (14, tuple(range(2, 14))))
 
@@ -934,9 +934,9 @@ class MainTests(unittest.TestCase):
             rc = p2run.main([str(HERE / "plans" / "example.json"), "--dry-run"])
         lines = buf.getvalue().splitlines()
         self.assertEqual(rc, 0)
-        self.assertEqual(lines[-1], "windows: 6720")
-        self.assertEqual(len(lines), 6721)
-        self.assertIn("mixed-disjoint/m10/t111 mserver v2 1/20", lines[0])
+        self.assertEqual(lines[-1], "windows: 7040")
+        self.assertEqual(len(lines), 7041)
+        self.assertIn("mixed-disjoint/m10/t111 mserver v2 1/22", lines[0])
 
     def test_bad_command_lines_exit_2(self) -> None:
         ex = str(HERE / "plans" / "example.json")

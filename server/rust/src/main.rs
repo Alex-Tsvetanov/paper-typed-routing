@@ -47,6 +47,7 @@ use std::future::ready;
 use std::hint::black_box;
 use std::net::SocketAddr;
 use std::process::ExitCode;
+use std::sync::atomic::{AtomicPtr, Ordering};
 
 use bytes::Bytes;
 use http_body_util::Full;
@@ -184,12 +185,19 @@ async fn connection<R: Lookup>(stream: TcpStream, http: &'static http1::Builder,
 }
 
 /// Runs the server until a stop signal. The routers are built before the runtime starts.
+/// The router and hyper's settings live as long as the process: `serve` leaks them to share them as
+/// `&'static`. Their addresses are kept here, so the memory stays reachable at exit and
+/// LeakSanitizer (D5's ASan records, t3/sanitize.py) does not report it; nothing reads them back.
+static LIFETIME: [AtomicPtr<()>; 2] = [AtomicPtr::new(std::ptr::null_mut()), AtomicPtr::new(std::ptr::null_mut())];
+
 fn serve<R: Lookup>(router: R, port: u16, cfg: Config) -> ExitCode {
     let router: &'static R = Box::leak(Box::new(router));
     let mut builder = http1::Builder::new();
     // Keep-alive. hyper's default header-read timeout (30 s) needs a timer; with None it makes none.
     builder.keep_alive(true).header_read_timeout(None);
     let http: &'static http1::Builder = Box::leak(Box::new(builder));
+    LIFETIME[0].store(router as *const R as *mut (), Ordering::Relaxed);
+    LIFETIME[1].store(http as *const http1::Builder as *mut (), Ordering::Relaxed);
 
     // hyper-util's `tokio` feature turns tokio's `time` feature on, but only enable_io() is asked
     // for here: the runtime has no time driver, and a timer call would panic. hyper makes none.

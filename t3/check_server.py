@@ -13,7 +13,7 @@ Then it stops the server (SIGTERM on Linux, Ctrl-Break on Windows) and requires 
 for the first targets. Untimed: it measures nothing.
 
     check_server.py --program BIN --router NAME --cell DIR [--set all|ring|both] [--measured]
-                    [--server-log FILE]
+                    [--server-log FILE] [--io-timeout S]
 
 --server-log appends the server's standard output and error to FILE (for D5's records, whose
 writer scans them for sanitizer reports); without it they go to a pipe that is read only if the
@@ -82,8 +82,8 @@ def stop(proc: subprocess.Popen, timeout: float = 20.0) -> int:
 class Conn:
     """One keep-alive HTTP/1.1 connection that reads responses framed by Content-Length."""
 
-    def __init__(self, port: int):
-        self.s = socket.create_connection(("127.0.0.1", port), timeout=30)
+    def __init__(self, port: int, timeout: float = 30.0):
+        self.s = socket.create_connection(("127.0.0.1", port), timeout=timeout)
         self.s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         self.buf = b""
 
@@ -164,7 +164,7 @@ def checks(a, log) -> dict:
     proc = start(a.program, a.router, routes, port, check=True, log=log)
     try:
         wait_ready(proc, port, a.ready_timeout)
-        conn = Conn(port)
+        conn = Conn(port, a.io_timeout)
         root = m  # every server answers the probe itself, the null arm too
         (status, body), = conn.get_many(["/"])
         if status != 200 or body != f"{root}\n".encode():
@@ -185,7 +185,7 @@ def checks(a, log) -> dict:
         proc = start(a.program, a.router, routes, port, check=False, log=log)
         try:
             wait_ready(proc, port, a.ready_timeout)
-            conn = Conn(port)
+            conn = Conn(port, a.io_timeout)
             paths = read_lines(cell / "ring.txt")[:256] + ["/"]
             for path, (status, body) in zip(paths, conn.get_many(paths)):
                 if status != 200 or body != BODY:
@@ -209,6 +209,8 @@ def main() -> int:
     ap.add_argument("--measured", action="store_true")
     ap.add_argument("--ready-timeout", type=float, default=120.0)
     ap.add_argument("--server-log", help="append the server's output to this file")
+    ap.add_argument("--io-timeout", type=float, default=30.0,
+                    help="seconds a read may wait for the server (sanitizer builds of the linear-scan arms need more)")
     a = ap.parse_args()
     try:
         result = run(a)

@@ -60,6 +60,7 @@ def main() -> int:
     ap.add_argument("--no-v2", action="store_true", help="leave out the Go and Rust programs' v2 arm")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--logs", type=Path, help="a folder for each server's output, one file per program and arm")
+    ap.add_argument("--io-timeout", type=float, default=30.0, help="check_server.py --io-timeout")
     a = ap.parse_args()
     if a.logs:
         a.logs.mkdir(parents=True, exist_ok=True)
@@ -79,7 +80,7 @@ def main() -> int:
         for program, arms in programs:
             for prog, arm, cell, sets, measured in jobs(a.data, program, arms):
                 cmd = [sys.executable, str(HERE / "check_server.py"), "--program", prog, "--router", arm,
-                       "--cell", str(cell), "--set", sets, "--ready-timeout", "300"]
+                       "--cell", str(cell), "--set", sets, "--ready-timeout", "300", "--io-timeout", str(a.io_timeout)]
                 if measured:
                     cmd.append("--measured")
                 if a.logs:

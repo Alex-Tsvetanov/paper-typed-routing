@@ -10,8 +10,8 @@ the Visual Studio environment that vcvars64.bat sets).
                            (the Boost 1.92.0 tree), P2_MESON (meson.py of meson 1.12.1),
                            P2_LIBEVENT_SRC (libevent 2.1.13-stable's source), P2_RAPIDJSON_WRAP (the two
                            files of Pistache's RapidJSON wrap), LAB_VCVARS, LAB_CMAKE, LAB_NINJA (lab/laptop)
-                and GOPROXY=direct, GOTOOLCHAIN=local (Go checks modules against go.sum and never
-                fetches a toolchain).
+                and GOPROXY=direct, GOTOOLCHAIN=local, RUSTUP_AUTO_INSTALL=0 (Go checks modules
+                against go.sum; neither Go nor rustup ever fetches a toolchain).
   versions      the versions of every tool, checked against EXPECT_CLANG (22.1.8), EXPECT_GO
                 (go1.27.3) and EXPECT_RUST (1.99.0).
   configure     the CMake configure and build of the paper's root project, Release, under a
@@ -101,11 +101,18 @@ def tool_env(sanitizer: str = "none") -> dict:
         llvm = Path(setting("P2_LLVM"))
         first += [str(llvm / "bin")]
         if sanitizer == "asan":
-            first += [str(p) for p in sorted((llvm / "lib" / "clang").glob("*/lib/windows"))]
+            # LLVM's ASan runtime, which clang-cl's objects need, first on PATH (its DLL) and on LIB:
+            # rustc's -Zsanitizer=address otherwise links Visual Studio's import library of the same
+            # name, and the program then fails to start against LLVM's DLL (0xC0000139).
+            rt = [str(p) for p in sorted((llvm / "lib" / "clang").glob("*/lib/windows"))]
+            first += rt
+            lib = next((k for k in env if k.upper() == "LIB"), "LIB")
+            env[lib] = os.pathsep.join(rt + [env.get(lib, "")])
         first += [str(Path(setting("LAB_CMAKE")).parent), str(Path(setting("LAB_NINJA")).parent)]
     key = next((k for k in env if k.upper() == "PATH"), "PATH")
     env[key] = os.pathsep.join(first + [env.get(key, "")])
-    env.update(GOPROXY="direct", GOTOOLCHAIN="local", PYTHONUTF8="1")
+    # Neither Go nor rustup may fetch a toolchain: a missing one is an error, never a download.
+    env.update(GOPROXY="direct", GOTOOLCHAIN="local", RUSTUP_AUTO_INSTALL="0", PYTHONUTF8="1")
     env.update((SANITIZER_ENV_W if WINDOWS else SANITIZER_ENV).get(sanitizer, {}))
     return env
 

@@ -172,8 +172,9 @@ def main() -> int:
         steps.add("sets", rc, last_line(work / "sets.log"))
         mserver = L.exe(build / "server" / "mserver")
         suite = ["--mserver", mserver] + (["--go", go_bin] if go_bin else []) + (["--rust", rust_bin] if rust_bin else [])
+        # Under a sanitizer one pipelined batch of a linear-scan arm at m = 100,000 can take minutes.
         rc = L.run([L.PY, L.T3 / "run_checks.py", "--data", sets, *suite, "--out", work / "suite.jsonl", "--logs",
-                    work / "suite-logs"], work / "suite.out", env)
+                    work / "suite-logs", "--io-timeout", "900"], work / "suite.out", env)
         steps.add("suite", rc, last_line(work / "suite.out"), mserver_arms=arms)
         programs = [("mserver", mserver, arms, None)]
         if go_bin:
