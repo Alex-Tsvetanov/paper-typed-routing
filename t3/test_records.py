@@ -13,6 +13,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -303,9 +304,8 @@ class LabstepsTests(unittest.TestCase):
             root = Path(tmp)
             write(root / "work" / "a.log", "one\n")
             write(root / "work" / "sub" / "b.log", "two\n")
-            old = os.environ.get("RECORDS_LOGS")
-            os.environ["RECORDS_LOGS"] = str(root / "logs")
-            try:
+            # The temporary folder may be under /tmp, which records_logs refuses (tested below).
+            with mock.patch.object(labsteps, "records_logs", return_value=root / "logs"):
                 tar, sha = labsteps.keep_logs("p2r3-x-L-asan", [root / "work" / "a.log", root / "work" / "sub"])
                 self.assertTrue(Path(tar).is_file())
                 self.assertEqual(len(sha), 64)
@@ -314,11 +314,14 @@ class LabstepsTests(unittest.TestCase):
                 self.assertIn("./sub/b.log", sums)
                 with self.assertRaises(labsteps.StepError):
                     labsteps.keep_logs("p2r3-x-L-asan", [root / "work" / "a.log"])
-            finally:
-                if old is None:
-                    os.environ.pop("RECORDS_LOGS", None)
-                else:
-                    os.environ["RECORDS_LOGS"] = old
+
+    @unittest.skipIf(os.name == "nt", "the /tmp rule is Linux's")
+    def test_record_logs_never_go_to_tmp(self) -> None:
+        import labsteps
+        for path in ("/tmp", "/tmp/x", "/var/tmp/y"):
+            with mock.patch.dict(os.environ, {"RECORDS_LOGS": path}):
+                with self.assertRaises(labsteps.StepError):
+                    labsteps.records_logs()
 
     def test_arms_must_be_the_systems(self) -> None:
         import labsteps
