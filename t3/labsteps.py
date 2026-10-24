@@ -63,10 +63,51 @@ SANITIZER_ENV = {
 # Windows' AddressSanitizer has no LeakSanitizer; the rest of the options are the Linux ones.
 SANITIZER_ENV_W = {"asan": {"ASAN_OPTIONS": "detect_stack_use_after_return=1:strict_string_checks=1:symbolize=1"}}
 REPO_URL = "https://github.com/Alex-Tsvetanov/paper-typed-routing.git"
+# The laptop, the only host whose runs are records (CLAUDE.md, D5 and D7; lab/laptop/versions.md).
+LAPTOP = {"L": {"host": "alex-laptop", "cpu": "AMD Ryzen 7 5800H"},
+          "W": {"host": "DESKTOP-A1RHS5R", "cpu": "AMD Ryzen 7 5800H"}}
+# mserver's router arms per system (STATE.md, Arms per system); EXPECT_ARMS replaces them, for
+# development runs only.
+EXPECTED_ARMS = {"L": "v2 v1 null crow drogon oatpp pistache boost-url r3 uwebsockets glaze cpp-httplib",
+                 "W": "v2 null crow drogon oatpp pistache boost-url uwebsockets glaze cpp-httplib"}
+# Paths a Windows build takes as found (third_party.found of the inputs; t3/check_records.py compares them).
+FOUND_KEYS = ("P2_BOOST_ROOT", "P2_MESON", "P2_LIBEVENT_SRC", "P2_RAPIDJSON_WRAP", "P2_MSAN_LIBCXX")
 
 
 class StepError(Exception):
     pass
+
+
+def host_tag() -> str:
+    return os.environ.get("HOST_TAG") or ("W" if WINDOWS else "L")
+
+
+def cpu_model() -> str:
+    if WINDOWS:
+        try:
+            import winreg
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DESCRIPTION\System\CentralProcessor\0") as k:
+                return str(winreg.QueryValueEx(k, "ProcessorNameString")[0]).strip()
+        except OSError:
+            return "unknown"
+    try:
+        for line in Path("/proc/cpuinfo").read_text(encoding="utf-8", errors="replace").splitlines():
+            if line.startswith("model name"):
+                return line.split(":", 1)[1].strip()
+    except OSError:
+        pass
+    return "unknown"
+
+
+def on_laptop(tag: str, host: str, cpu: str) -> bool:
+    want = LAPTOP[tag]
+    return host.lower() == want["host"].lower() and want["cpu"] in cpu
+
+
+def check_arms(arms: list) -> None:
+    want = (os.environ.get("EXPECT_ARMS") or EXPECTED_ARMS[host_tag()]).split()
+    if sorted(arms) != sorted(want):
+        raise StepError(f"mserver has the arms {' '.join(arms)}, not {' '.join(want)}: a tool tree is missing?")
 
 
 def setting(name: str) -> str:
@@ -111,8 +152,14 @@ def tool_env(sanitizer: str = "none") -> dict:
         first += [str(Path(setting("LAB_CMAKE")).parent), str(Path(setting("LAB_NINJA")).parent)]
     key = next((k for k in env if k.upper() == "PATH"), "PATH")
     env[key] = os.pathsep.join(first + [env.get(key, "")])
-    # Neither Go nor rustup may fetch a toolchain: a missing one is an error, never a download.
-    env.update(GOPROXY="direct", GOTOOLCHAIN="local", RUSTUP_AUTO_INSTALL="0", PYTHONUTF8="1")
+    # Neither Go nor rustup may fetch a toolchain: a missing one is an error, never a download. Go's
+    # module and build caches stay in the job's P2R3 folder.
+    go = Path(os.environ.get("P2R3") or HOME / "lab" / "p2r3") / "go"
+    env.update(GOPROXY="direct", GOTOOLCHAIN="local", RUSTUP_AUTO_INSTALL="0", PYTHONUTF8="1",
+               GOMODCACHE=str(go / "mod"), GOCACHE=str(go / "cache"), GOPATH=str(go / "path"))
+    # No sanitizer option comes from outside (an inherited LSAN_OPTIONS could suppress reports).
+    for k in [k for k in env if k.upper().endswith("SAN_OPTIONS") or k.upper() == "GORACE"]:
+        del env[k]
     env.update((SANITIZER_ENV_W if WINDOWS else SANITIZER_ENV).get(sanitizer, {}))
     return env
 
@@ -221,12 +268,14 @@ def exe(path: Path) -> Path:
     return path.with_suffix(".exe") if WINDOWS else path
 
 
-def mserver_arms(build: Path, env: dict) -> list:
-    """Every router arm of a build's mserver (its --router '?' list), v1 included where built."""
-    text = output([exe(build / "server" / "mserver"), "--router", "?"], env)
+def mserver_arms(build: Path, env: dict, log: Path) -> list:
+    """Every router arm of a build's mserver (its --router '?' list), v1 included where built. The
+    output goes to LOG, which a record scans for sanitizer reports; the program must exit 0."""
+    rc = run([exe(build / "server" / "mserver"), "--router", "?"], log, env)
+    text = log.read_text(encoding="utf-8", errors="replace")
     line = next((l for l in text.splitlines() if l.startswith("router arms:")), "")
-    if not line:
-        raise StepError(f"{build}'s mserver lists no arm: {text[-300:]}")
+    if rc != 0 or not line:
+        raise StepError(f"{build}'s mserver --router ? exited {rc} and listed {line or 'no arm'}; see {log}")
     return line.split(":", 1)[1].split()
 
 
@@ -235,16 +284,17 @@ def inputs(build: Path, prefix: Path, env: dict, ih: Path) -> int:
     libraries it links (a target's hash covers its own translation units only), one arm_<name> per
     external arm, v2's C interface, p2gen with its libraries, and e2e_requests; RegexMatcher v2 is the
     dependency root "regexmatcher", hashed apart under regexmatcher/include/ for mserver_arms and
-    p2v2_c. Returns the number of targets."""
-    arms = mserver_arms(build, env)
+    p2v2_c; the tool trees a Windows build takes as found are recorded (FOUND_KEYS). Returns the
+    number of targets."""
+    log = Path(str(prefix) + ".inputs.log")
+    arms = mserver_arms(build, env, Path(str(prefix) + ".arms.log"))
     targets = ["mserver", "mserver_arms", "mserver_http1", "mserver_loop", "mserver_external", "p2v2_c", "p2v2",
                "p2gen", "p2gen_core", "p2gen_net", "e2e_requests"]
     if "v1" in arms:
         targets.append("mserver_v1")
     targets += ["arm_" + a.replace("-", "_") for a in arms if a not in ("v2", "v1", "null")]
     common = ["--root-label", "project", "--config-key", "CMAKE_BUILD_TYPE",
-              "--dep-root", "regexmatcher=RegexMatcher_SOURCE_DIR"]
-    log = Path(str(prefix) + ".inputs.log")
+              "--dep-root", "regexmatcher=RegexMatcher_SOURCE_DIR", *[x for k in FOUND_KEYS for x in ("--found-key", k)]]
     t = [x for n in targets for x in ("--target", n)]
     if run([PY, ih, "--build", f"p2r3={build}", *t, *common, "--out", f"{prefix}.inputs.json"], log, env) != 0:
         raise StepError(f"inputs_hash.py failed; see {log}")
@@ -272,8 +322,9 @@ def git(*args: str) -> str:
 
 def records_logs() -> Path:
     root = Path(os.environ.get("RECORDS_LOGS") or HOME / "lab" / "records-logs")
-    if root.as_posix().startswith("/tmp/"):
-        raise StepError("record logs never go to /tmp")
+    full = root.resolve()
+    if not WINDOWS and any(p in (Path("/tmp"), Path("/var/tmp")) for p in (full, *full.parents)):
+        raise StepError("record logs never go to /tmp or /var/tmp")
     return root
 
 

@@ -3,7 +3,8 @@
 
 The C++ targets are hashed by the Papers repo's lab/bin/inputs_hash.py from what Ninja compiled.
 Go and Rust have no Ninja log, so a program's inputs are every file git tracks under its folder
-(server/go: the .go files, go.mod, go.sum; server/rust: Cargo.toml, Cargo.lock, build.rs,
+(server/go: the .go files, go.mod, go.sum, and server/capi/p2v2.h, which cgo compiles on Linux;
+server/rust: Cargo.toml, Cargo.lock, build.rs,
 .cargo/config.toml, src/), whatever the build tags pick: a change to any of them makes a new hash.
 The third-party code is pinned by go.sum and Cargo.lock, which are among the files. The v2 library
 they link is the C++ target p2v2_c (or p2v2 on Windows), hashed with the C++ targets.
@@ -22,20 +23,22 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PROGRAMS = {"mserver-go": "server/go", "mserver-rs": "server/rust"}
+# The Linux Go program compiles server/capi/p2v2.h through cgo, so the header is among its inputs.
+PROGRAMS = {"mserver-go": ("server/go", "server/capi/p2v2.h"), "mserver-rs": ("server/rust",)}
 
 
-def tracked(root: Path, folder: str) -> list:
-    p = subprocess.run(["git", "-C", str(root), "ls-files", "-z", "--", folder], capture_output=True)
+def tracked(root: Path, paths) -> list:
+    paths = [paths] if isinstance(paths, str) else list(paths)
+    p = subprocess.run(["git", "-C", str(root), "ls-files", "-z", "--", *paths], capture_output=True)
     if p.returncode != 0:
-        raise RuntimeError(f"git ls-files {folder} in {root}: {p.stderr.decode(errors='replace').strip()}")
+        raise RuntimeError(f"git ls-files {' '.join(paths)} in {root}: {p.stderr.decode(errors='replace').strip()}")
     files = sorted(f for f in p.stdout.decode("utf-8").split("\0") if f)
     if not files:
-        raise RuntimeError(f"git tracks no file under {folder} in {root}")
+        raise RuntimeError(f"git tracks no file under {' '.join(paths)} in {root}")
     return files
 
 
-def folder_hash(root: Path, folder: str) -> dict:
+def folder_hash(root: Path, folder) -> dict:
     files = {}
     for f in tracked(root, folder):
         data = (root / f).read_bytes().replace(b"\r\n", b"\n")

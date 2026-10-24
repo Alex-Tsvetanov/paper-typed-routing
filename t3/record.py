@@ -177,6 +177,7 @@ def main() -> int:
               "options", "regexmatcher-commit"):
         ap.add_argument(f"--{k}", required=True)
     ap.add_argument("--seconds", type=int, required=True)
+    ap.add_argument("--cpu", default="unknown", help="the host's CPU model (t3/labsteps.cpu_model)")
     ap.add_argument("--pins", action="append", required=True, help="a pins file the build used (repeatable)")
     ap.add_argument("--coverage", default=str(HERE / "coverage.json"))
     ap.add_argument("--logs-archive", default="")
@@ -217,11 +218,14 @@ def main() -> int:
         presets.append({"preset": "suite/mserver", "status": "red", "detail": "the suite step names no mserver arm"})
     presets += suite_presets(work, mserver_arms, programs)
     presets += load_presets(work, mserver_arms, programs)
+    if a.seconds >= 0 and not (a.logs_archive and a.logs_sha256):
+        presets.append({"preset": "logs", "status": "red", "detail": "the logs were not kept (D5: archived with a sha256)"})
     reports = report_blocks(work)
     green = (all(p["status"] == "green" for p in presets) and not reports and bool(inputs.get("inputs_hash"))
              and bool(inputs.get("prefix_hashes")))
     rec = {"repo": a.repo, "commit": a.commit, "repo_head": a.repo_head,
            "date": datetime.now().astimezone().isoformat(timespec="seconds"), "host": a.host, "host_tag": a.host_tag,
+           "cpu": a.cpu,
            "green": green, "compiler": compiler, **inputs, "programs": built,
            "pins_sha256": {Path(f).resolve().relative_to(root).as_posix(): sha256_lf(Path(f)) for f in a.pins},
            "presets": presets, "tool": "p2r3", "sanitizer": a.sanitizer, "regexmatcher_commit": a.regexmatcher_commit,

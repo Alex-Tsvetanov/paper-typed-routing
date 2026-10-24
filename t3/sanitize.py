@@ -32,10 +32,16 @@ commit is the last commit that changed the sources below, which must have no loc
 name ends in -desktop: it never passes for a record and never goes to lab/sanitizer-records.
 Exit status: record.py's (0 green), 2 when the run could not start.
 
+Without --desktop it runs only on the laptop (labsteps.LAPTOP: host name and CPU), and the record
+names both. mserver's arms must be the system's (labsteps.EXPECTED_ARMS), so a missing tool tree
+fails the run instead of leaving an arm out.
+
 Environment: labsteps.py's (toolchain locations, INPUTS_HASH_PY or LAB_TOOLS, RECORDS_LOGS), JOBS
 (default the CPU count), P2_CPU_SERVER, P2_CPU_GEN, P2_CPU_HOUSE (14, 2-13, 0-1). Downloads: the
 CMake FetchContent archives, each checked against its sha256 (bench/cmake/pins.cmake,
-server/cmake/pins-round3.cmake); Go modules against go.sum; crates against Cargo.lock (--locked).
+server/cmake/pins-round3.cmake), except RapidJSON v1.1.0, which Pistache's CMake fetches on Linux by
+git tag when the system has none, as in round 2 (the record lists it under third_party.fetched);
+Go modules against go.sum; crates against Cargo.lock (--locked).
 """
 
 from __future__ import annotations
@@ -120,11 +126,15 @@ def main() -> int:
     ap.add_argument("--work", type=Path, help="default: ~/lab/p2r3/san (the work directory is WORK/<sanitizer>)")
     ap.add_argument("--desktop", action="store_true", help="a development run on the desktop: no time, never a record")
     a = ap.parse_args()
-    host_tag = os.environ.get("HOST_TAG") or ("W" if L.WINDOWS else "L")
+    host_tag = L.host_tag()
     san = a.sanitizer
+    host, cpu = socket.gethostname(), L.cpu_model()
     try:
         if san not in HOST_SANITIZERS[host_tag]:
             raise L.StepError(f"host {host_tag} records {', '.join(HOST_SANITIZERS[host_tag])}, not {san}")
+        if not a.desktop and not L.on_laptop(host_tag, host, cpu):
+            raise L.StepError(f"records are made on the laptop only ({L.LAPTOP[host_tag]['host']}), not on {host} "
+                              f"({cpu}); a development run here takes --desktop")
         if not (a.sets / "manifest.tsv").is_file():
             raise L.StepError(f"no request sets at {a.sets} (the bring-up job makes them)")
         ih = L.inputs_hash_py()
@@ -159,7 +169,9 @@ def main() -> int:
         steps.add("ctest", rc, next((l for l in reversed(read(work / "ctest.log").splitlines()) if "tests passed" in l), ""))
         arms: list = []
         try:
-            arms = [x for x in L.mserver_arms(build, env) if x != "v1"]
+            listed = L.mserver_arms(build, env, work / "arms.log")
+            L.check_arms(listed)
+            arms = [x for x in listed if x != "v1"]
             steps.add("inputs", 0, f"{L.inputs(build, work / 'build', env, ih)} targets")
         except L.StepError as e:
             steps.add("inputs", 1, str(e))
@@ -198,7 +210,7 @@ def main() -> int:
     options = ";".join(f"{k}={v}" for k, v in (L.SANITIZER_ENV_W if L.WINDOWS else L.SANITIZER_ENV)[san].items())
     rc = L.run([L.PY, L.T3 / "record.py", "--work", work, "--record", records / f"{name}.json", "--repo", L.REPO_URL,
                 "--commit", code, "--repo-head", L.git("rev-parse", "HEAD"), "--sanitizer", san, "--host-tag", host_tag,
-                "--host", socket.gethostname(), f"--cmake-args={' '.join(args)}", f"--options={options}",
+                "--host", host, "--cpu", cpu, f"--cmake-args={' '.join(args)}", f"--options={options}",
                 "--seconds", str(seconds), "--regexmatcher-commit", rm_commit,
                 "--pins", L.ROOT / "bench" / "cmake" / "pins.cmake", "--pins", L.ROOT / "server" / "cmake" / "pins-round3.cmake",
                 "--logs-archive", archive, "--logs-sha256", sha], work / "record.out", env)

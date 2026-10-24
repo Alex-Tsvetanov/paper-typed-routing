@@ -23,6 +23,14 @@ import source_hash  # noqa: E402
 ARMS = ["v2", "null", "crow"]
 TARGETS = {"mserver": "a" * 64, "mserver_arms": "b" * 64, "p2v2_c": "c" * 64, "arm_crow": "d" * 64}
 GO_HASH, RUST_HASH = "e" * 64, "f" * 64
+GO_TC = {"go": "go version go1.27.3 linux/amd64", "GOAMD64": "v3"}
+RUST_TC = {"rustc": "rustc 1.99.0 (b940084d7 2026-09-28)"}
+LAPTOP_CPU = "AMD Ryzen 7 5800H with Radeon Graphics"
+
+
+def check_records_host(tag: str) -> str:
+    import labsteps
+    return labsteps.LAPTOP[tag]["host"]
 COMPILER = "Clang 22.1.8"
 
 
@@ -76,7 +84,8 @@ def run_record(w: Path, out: Path, sanitizer: str = "asan", host: str = "L", sec
     argv = ["record.py", "--work", str(w), "--record", str(out), "--repo", "r", "--commit", "c" * 40,
             "--repo-head", "c" * 40, "--sanitizer", sanitizer, "--host-tag", host, "--host", "h", "--cmake-args", "x",
             "--options", "y", "--seconds", str(seconds), "--regexmatcher-commit", "d" * 40, "--pins", str(pins),
-            "--pins", str(HERE.parent / "server" / "cmake" / "pins-round3.cmake")]
+            "--pins", str(HERE.parent / "server" / "cmake" / "pins-round3.cmake"),
+            "--logs-archive", "x.tar.gz", "--logs-sha256", "0" * 64]
     old = sys.argv
     sys.argv = argv
     try:
@@ -156,6 +165,22 @@ class RecordTests(unittest.TestCase):
         self.assertEqual(rc, 1)
         self.assertIn("programs/mserver-go", [p["preset"] for p in r["presets"] if p["status"] == "red"])
 
+    def test_a_record_without_kept_logs_is_red(self) -> None:
+        w = work_dir(self.root, {"go": "asan", "rust": "asan"})
+        old = sys.argv
+        argv = ["record.py", "--work", str(w), "--record", str(self.root / "r.json"), "--repo", "r", "--commit", "c",
+                "--repo-head", "c", "--sanitizer", "asan", "--host-tag", "L", "--host", "h", "--cmake-args", "x",
+                "--options", "y", "--seconds", "10", "--regexmatcher-commit", "d",
+                "--pins", str(HERE.parent / "bench" / "cmake" / "pins.cmake")]
+        sys.argv = argv
+        try:
+            rc = record.main()
+        finally:
+            sys.argv = old
+        r = json.loads((self.root / "r.json").read_text(encoding="utf-8"))
+        self.assertEqual(rc, 1)
+        self.assertIn("logs", [p["preset"] for p in r["presets"] if p["status"] == "red"])
+
     def test_a_desktop_run_says_so(self) -> None:
         w = work_dir(self.root, {"go": "asan", "rust": "asan"})
         _, r = run_record(w, self.root / "rec.json", seconds=-1)
@@ -166,8 +191,8 @@ def measured(root: Path, host: str = "L") -> Path:
     out = root / "measured"
     write(out / "build.inputs.json", inputs_json(TARGETS))
     write(out / "build.log", f"-- The CXX compiler identification is {COMPILER}\n")
-    write(out / "build-info.json", json.dumps({"go": {"sanitizer": "none", "source": {"inputs_hash": GO_HASH}},
-                                               "rust": {"sanitizer": "none", "source": {"inputs_hash": RUST_HASH}}}))
+    write(out / "build-info.json", json.dumps({"go": {"sanitizer": "none", "source": {"inputs_hash": GO_HASH}, **GO_TC},
+                                               "rust": {"sanitizer": "none", "source": {"inputs_hash": RUST_HASH}, **RUST_TC}}))
     return out
 
 
@@ -178,7 +203,9 @@ def good_record(san: str, host: str = "L", **over) -> dict:
     for prog, h in (("mserver-go", GO_HASH), ("mserver-rs", RUST_HASH)):
         if san not in (gaps.get(prog) or {}).get("not_covered_by", []):
             hashes[prog] = h
-    r = {"tool": "p2r3", "sanitizer": san, "host_tag": over.pop("host_tag", host), "green": True, "compiler": COMPILER,
+    tag = over.pop("host_tag", host)
+    r = {"tool": "p2r3", "sanitizer": san, "host_tag": tag, "host": check_records_host(tag), "cpu": LAPTOP_CPU,
+         "programs": {"mserver-go": dict(GO_TC), "mserver-rs": dict(RUST_TC)}, "green": True, "compiler": COMPILER,
          "config": {"CMAKE_BUILD_TYPE": "Release"}, "pins_sha256": pins, "inputs_hash": hashes,
          "third_party": {"fetched": {"crow": {"url": "u", "url_hash": "h"}}}, "desktop_development": False}
     r.update(over)
@@ -245,6 +272,23 @@ class GateTests(unittest.TestCase):
         self.assertTrue(g["green"], g["missing"])
         self.assertIn("mserver-go", g["gaps"])
 
+    def test_a_record_from_another_host_or_cpu_is_left_out(self) -> None:
+        self.put("p2r3-a-L-asan.json", good_record("asan", host="L", **{}) | {"host": "01893c10e426"})
+        self.put("p2r3-b-L-tsan.json", good_record("tsan") | {"cpu": "AMD Ryzen 5 3600 6-Core Processor"})
+        g = self.run_gate()
+        self.assertEqual(len(g["left_out"]), 2, g["left_out"])
+        self.assertFalse(g["green"])
+
+    def test_another_go_release_does_not_cover_the_go_program(self) -> None:
+        for san in ("asan", "tsan", "msan"):
+            r = good_record(san)
+            r["programs"]["mserver-go"]["go"] = "go version go1.27.1 linux/amd64"
+            self.put(f"p2r3-x-L-{san}.json", r)
+        g = self.run_gate()
+        self.assertFalse(g["green"])
+        self.assertTrue(any(m.startswith("mserver-go (") for m in g["missing"]), g["missing"])
+        self.assertNotIn("mserver-go", [m.split(" ")[0] for m in g["missing"] if not m.startswith("mserver-go")])
+
     def test_a_sanitized_measured_build_is_refused(self) -> None:
         out = measured(self.root)
         write(out / "build-info.json", json.dumps({"go": {"sanitizer": "asan", "source": {"inputs_hash": GO_HASH}}}))
@@ -275,6 +319,24 @@ class LabstepsTests(unittest.TestCase):
                     os.environ.pop("RECORDS_LOGS", None)
                 else:
                     os.environ["RECORDS_LOGS"] = old
+
+    def test_arms_must_be_the_systems(self) -> None:
+        import labsteps
+        old = os.environ.pop("EXPECT_ARMS", None)
+        try:
+            want = labsteps.EXPECTED_ARMS[labsteps.host_tag()].split()
+            labsteps.check_arms(list(reversed(want)))
+            with self.assertRaises(labsteps.StepError):
+                labsteps.check_arms([a for a in want if a != "pistache"])
+        finally:
+            if old is not None:
+                os.environ["EXPECT_ARMS"] = old
+
+    def test_the_laptop_is_told_by_host_and_cpu(self) -> None:
+        import labsteps
+        self.assertTrue(labsteps.on_laptop("W", "desktop-a1rhs5r", LAPTOP_CPU))
+        self.assertFalse(labsteps.on_laptop("W", "ALEX-PC", LAPTOP_CPU))
+        self.assertFalse(labsteps.on_laptop("L", "alex-laptop", "AMD Ryzen 5 3600 6-Core Processor"))
 
     def test_the_count_plan_parses_as_a_runner_plan(self) -> None:
         import labsteps

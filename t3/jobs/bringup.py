@@ -103,7 +103,9 @@ def main() -> int:
     mserver = L.exe(build / "server" / "mserver")
     L.run([mserver, "--router", "??"], out / "router-releases.txt", env)
     try:
-        arms = [a for a in L.mserver_arms(build, env) if a != "v1"]
+        listed = L.mserver_arms(build, env, out / "arms.log")
+        L.check_arms(listed)
+        arms = [a for a in listed if a != "v1"]
         ok("inputs", f"{L.inputs(build, out / 'build', env, ih)} targets")
     except L.StepError as e:
         return fail("inputs", str(e))
