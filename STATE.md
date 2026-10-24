@@ -20,14 +20,13 @@ Windows. Round 2 is the prior study; its frozen files are never edited.
 
 ## Rules
 
-No timing on the desktop; no laptop access; nothing pushed; drafts only (no freeze); the
-integration library never named; no em or en dashes.
+No timing on the desktop; no laptop access; nothing pushed; drafts only; no em or en dashes.
 
 ## Documents
 
 - `design/round3/end-to-end.md`: the design draft (contrasts, cells, replicates, request sets,
   server contract, hosting, Windows, generator and runner spec, risks, hours).
-- `design/round3/decisions-for-alex.md`: the twelve decisions and Alex's answers.
+- `design/round3/decisions-for-alex.md`: the thirteen decisions and Alex's answers.
 - `design/round3/router-survey.md`: the router survey and my re-check of the claims used.
 - `hypotheses-round3.md`: DRAFT, H8 (v2 not slower in the same server), H9 (carry-over), H10
   (routing cost across servers, as a difference in ns).
