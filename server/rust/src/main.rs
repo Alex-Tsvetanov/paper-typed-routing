@@ -47,7 +47,6 @@ use std::future::ready;
 use std::hint::black_box;
 use std::net::SocketAddr;
 use std::process::ExitCode;
-use std::sync::atomic::{AtomicPtr, Ordering};
 
 use bytes::Bytes;
 use http_body_util::Full;
@@ -185,19 +184,15 @@ async fn connection<R: Lookup>(stream: TcpStream, http: &'static http1::Builder,
 }
 
 /// Runs the server until a stop signal. The routers are built before the runtime starts.
-/// The router and hyper's settings live as long as the process: `serve` leaks them to share them as
-/// `&'static`. Their addresses are kept here, so the memory stays reachable at exit and
-/// LeakSanitizer (D5's ASan records, t3/sanitize.py) does not report it; nothing reads them back.
-static LIFETIME: [AtomicPtr<()>; 2] = [AtomicPtr::new(std::ptr::null_mut()), AtomicPtr::new(std::ptr::null_mut())];
-
+/// The router and hyper's settings are shared as `&'static` with every connection task, so `serve`
+/// leaks them, and frees them once the runtime and with it every task is gone: LeakSanitizer (D5's
+/// ASan records, t3/sanitize.py) then sees no leak at exit.
 fn serve<R: Lookup>(router: R, port: u16, cfg: Config) -> ExitCode {
     let router: &'static R = Box::leak(Box::new(router));
     let mut builder = http1::Builder::new();
     // Keep-alive. hyper's default header-read timeout (30 s) needs a timer; with None it makes none.
     builder.keep_alive(true).header_read_timeout(None);
     let http: &'static http1::Builder = Box::leak(Box::new(builder));
-    LIFETIME[0].store(router as *const R as *mut (), Ordering::Relaxed);
-    LIFETIME[1].store(http as *const http1::Builder as *mut (), Ordering::Relaxed);
 
     // hyper-util's `tokio` feature turns tokio's `time` feature on, but only enable_io() is asked
     // for here: the runtime has no time driver, and a timer call would panic. hyper makes none.
@@ -205,6 +200,8 @@ fn serve<R: Lookup>(router: R, port: u16, cfg: Config) -> ExitCode {
         Ok(rt) => rt,
         Err(e) => {
             eprintln!("mserver-rs: cannot start the runtime: {e}");
+            // SAFETY: no task exists yet, so nothing else holds either reference.
+            unsafe { free_leaked(router, http) };
             return ExitCode::from(1);
         }
     };
@@ -224,12 +221,29 @@ fn serve<R: Lookup>(router: R, port: u16, cfg: Config) -> ExitCode {
             }
         }
     });
+    // Dropping the current-thread runtime drops every task it still holds.
+    drop(runtime);
+    // SAFETY: every task that held `router` or `http` was dropped with the runtime, and nothing below
+    // uses them.
+    unsafe { free_leaked(router, http) };
     match outcome {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
             eprintln!("mserver-rs: {e}");
             ExitCode::from(1)
         }
+    }
+}
+
+/// Frees the two boxes `serve` leaked.
+///
+/// # Safety
+/// Both references come from `Box::leak` in `serve`, and none of their copies is used afterwards.
+unsafe fn free_leaked<R>(router: &'static R, http: &'static http1::Builder) {
+    // SAFETY: as the function's contract says.
+    unsafe {
+        drop(Box::from_raw(router as *const R as *mut R));
+        drop(Box::from_raw(http as *const http1::Builder as *mut http1::Builder));
     }
 }
 
