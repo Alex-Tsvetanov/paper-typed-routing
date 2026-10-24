@@ -1,16 +1,27 @@
 {
- "about": "P2 round 3's next laptop request (STATE.md, Laptop requests 0, 2, 3 and 4), four jobs drafted in the lab queue's job format (lab/laptop/README.md) for the operator to copy into queues; not a queue itself. Commit: c30a75ecc07c5c30216d3cf8a3eae3d6fb873273 on branch round3 of p2-typed-routing/typed-routing (local; the operator bundles it from that checkout, as for a27b47e). Order on each system: its bring-up, then its records (the records use the bring-up's request sets). Untimed: no job reads a time of any program, and none is quiet-checked. Downloads during the jobs: the CMake FetchContent archives, each checked against its sha256 pin; RapidJSON v1.1.0 by git tag on Arch when the system has none (Pistache's CMake, as in round 2); Go modules checked against go.sum (GOPROXY=direct, GOTOOLCHAIN=local, caches under ~/lab/p2r3/go or C:\\Users\\alext\\lab\\p2r3\\go); crates against Cargo.lock (cargo --locked, P4's CARGO_HOME); no toolchain is ever fetched (RUSTUP_AUTO_INSTALL=0). Needs: P2 Laptop request 1 on both systems (done 2026-10-24); on Arch round 2's instrumented libc++ at ~/opt/libcxx-msan-gcc (MSan). The records refuse to run on any host but the laptop (host name and CPU). No measured basis for any expected_s; the bases named are lower bounds.",
+ "about": "P2 round 3's next laptop request (STATE.md, Laptop requests 0, 2, 3 and 4), four jobs drafted in the lab queue's job format (lab/laptop/README.md) for the operator to copy into queues; not a queue itself. Commit: 3ff814e50cd8b81e7d482a17206ea6fc31f128c8 on branch round3 of p2-typed-routing/typed-routing (local; the operator bundles it from that checkout, as for a27b47e). Order on each system: its bring-up, then its records (the records use the bring-up's request sets). Untimed: no job reads a time of any program, and none is quiet-checked. Downloads during the jobs: the CMake FetchContent archives, each checked against its sha256 pin; RapidJSON v1.1.0 by git tag on Arch when the system has none (Pistache's CMake, as in round 2); Go modules checked against go.sum (GOPROXY=direct, GOTOOLCHAIN=local, caches under ~/lab/p2r3/go or C:\\Users\\alext\\lab\\p2r3\\go); crates against Cargo.lock (cargo --locked, P4's CARGO_HOME); no toolchain is ever fetched (RUSTUP_AUTO_INSTALL=0). Needs: P2 Laptop request 1 on both systems (done 2026-10-24); on Arch round 2's instrumented libc++ at ~/opt/libcxx-msan-gcc (MSan). The records refuse to run on any host but the laptop (host name and CPU). No measured basis for any expected_s; the bases named are lower bounds.",
  "jobs": [
   {
    "id": "p2r3-bringup-l",
    "paper": "P2",
    "os": "linux",
-   "repo": {"name": "typed-routing", "path": "p2-typed-routing/typed-routing"},
-   "commit": "c30a75ecc07c5c30216d3cf8a3eae3d6fb873273",
+   "repo": {
+    "name": "typed-routing",
+    "path": "p2-typed-routing/typed-routing"
+   },
+   "commit": "3ff814e50cd8b81e7d482a17206ea6fc31f128c8",
    "build": "",
    "run": "\"$LAB_PYTHON\" \"$LAB_SRC/t3/jobs/bringup.py\" \"$LAB_OUT/bringup\"",
-   "outputs": ["out/bringup/steps.txt", "out/bringup/versions.json", "out/bringup/build.log", "out/bringup/build.inputs.json",
-               "out/bringup/build-info.json", "out/bringup/suite.jsonl", "out/bringup/count.jsonl", "record.json"],
+   "outputs": [
+    "out/bringup/steps.txt",
+    "out/bringup/versions.json",
+    "out/bringup/build.log",
+    "out/bringup/build.inputs.json",
+    "out/bringup/build-info.json",
+    "out/bringup/suite.jsonl",
+    "out/bringup/count.jsonl",
+    "record.json"
+   ],
    "quiet": false,
    "boost": false,
    "poll_s": 120,
@@ -24,18 +35,27 @@
    "id": "p2r3-records-l",
    "paper": "P2",
    "os": "linux",
-   "repo": {"name": "typed-routing", "path": "p2-typed-routing/typed-routing"},
-   "commit": "c30a75ecc07c5c30216d3cf8a3eae3d6fb873273",
+   "repo": {
+    "name": "typed-routing",
+    "path": "p2-typed-routing/typed-routing"
+   },
+   "commit": "3ff814e50cd8b81e7d482a17206ea6fc31f128c8",
    "build": "",
    "run": "\"$LAB_PYTHON\" \"$LAB_SRC/t3/jobs/records.py\" \"$LAB_OUT/records\"",
-   "outputs": ["out/records/steps.txt", "out/records/asan.log", "out/records/tsan.log", "out/records/msan.log",
-               "out/records/io_uring.txt", "record.json"],
+   "outputs": [
+    "out/records/steps.txt",
+    "out/records/asan.log",
+    "out/records/tsan.log",
+    "out/records/msan.log",
+    "out/records/io_uring.txt",
+    "record.json"
+   ],
    "quiet": false,
    "boost": false,
    "poll_s": 300,
    "expected_s": 10800,
    "timeout_s": 28800,
-   "note": "after p2r3-bringup-l (its request sets); the records go to out/records/records/p2r3-<code>-L-<san>.json for the lab to copy into lab/sanitizer-records, their logs to ~/lab/records-logs; stops at the first red record; no measured basis: round 2's three rbench records on Arch took 1,581, 2,258 and 2,822 s, and round 3 adds the functional suite under each sanitizer",
+   "note": "after p2r3-bringup-l (its request sets); the records go to out/records/records/p2r3-<code>-L-<san>.json for the lab to copy into lab/sanitizer-records, their logs to ~/lab/records-logs; stops at the first red record; no measured basis: round 2's three rbench records on Arch took 1,581, 2,258 and 2,822 s, and round 3 adds the functional suite under each sanitizer; MSan, the last of the three, has not run anywhere yet (the desktop has no instrumented libc++): a failure there keeps the ASan and TSan records, and a fix and a rerun of MSan alone (ONLY=msan) may follow",
    "run_label": "P2 round 3 D5 records on Arch: t3/sanitize.py under ASan+UBSan, TSan and MSan, each building every arm and running CTest, the functional suite and the load generator in count mode",
    "plain": "Build and check P2's test servers under the three memory and thread checkers on Arch, so their results can be cited"
   },
@@ -43,12 +63,23 @@
    "id": "p2r3-bringup-w",
    "paper": "P2",
    "os": "windows",
-   "repo": {"name": "typed-routing", "path": "p2-typed-routing/typed-routing"},
-   "commit": "c30a75ecc07c5c30216d3cf8a3eae3d6fb873273",
+   "repo": {
+    "name": "typed-routing",
+    "path": "p2-typed-routing/typed-routing"
+   },
+   "commit": "3ff814e50cd8b81e7d482a17206ea6fc31f128c8",
    "build": "",
    "run": "\"%LAB_PYTHON%\" \"%LAB_SRC%\\t3\\jobs\\bringup.py\" \"%LAB_OUT%\\bringup\"",
-   "outputs": ["out/bringup/steps.txt", "out/bringup/versions.json", "out/bringup/build.log", "out/bringup/build.inputs.json",
-               "out/bringup/build-info.json", "out/bringup/suite.jsonl", "out/bringup/count.jsonl", "record.json"],
+   "outputs": [
+    "out/bringup/steps.txt",
+    "out/bringup/versions.json",
+    "out/bringup/build.log",
+    "out/bringup/build.inputs.json",
+    "out/bringup/build-info.json",
+    "out/bringup/suite.jsonl",
+    "out/bringup/count.jsonl",
+    "record.json"
+   ],
    "quiet": false,
    "boost": false,
    "poll_s": 120,
@@ -62,11 +93,18 @@
    "id": "p2r3-records-w",
    "paper": "P2",
    "os": "windows",
-   "repo": {"name": "typed-routing", "path": "p2-typed-routing/typed-routing"},
-   "commit": "c30a75ecc07c5c30216d3cf8a3eae3d6fb873273",
+   "repo": {
+    "name": "typed-routing",
+    "path": "p2-typed-routing/typed-routing"
+   },
+   "commit": "3ff814e50cd8b81e7d482a17206ea6fc31f128c8",
    "build": "",
    "run": "\"%LAB_PYTHON%\" \"%LAB_SRC%\\t3\\jobs\\records.py\" \"%LAB_OUT%\\records\"",
-   "outputs": ["out/records/steps.txt", "out/records/asan.log", "record.json"],
+   "outputs": [
+    "out/records/steps.txt",
+    "out/records/asan.log",
+    "record.json"
+   ],
    "quiet": false,
    "boost": false,
    "poll_s": 300,

@@ -118,7 +118,7 @@ windows. Not run on the desktop, by rule: any timed mode. Kernel features used: 
 
 The coordinator schedules them. The next request is rows 0, 2, 3 and 4: four jobs drafted in the lab
 queue's format, with commands, outputs, times and `plain` sentences, in `t3/jobs/requests-2026-10-24.json`,
-at commit c30a75ecc. Untimed, none quiet-checked; on each system the bring-up comes before the records.
+at commit 3ff814e50. Untimed, none quiet-checked; on each system the bring-up comes before the records.
 0, 2, 3. Bring-up, `t3/jobs/bringup.py OUT` (p2r3-bringup-l, p2r3-bringup-w): the toolchains checked
    (clang or clang-cl 22.1.8, Go 1.27.3, Rust 1.99.0), the Release build with every arm of the system,
    CTest, the inputs hash, the Go and Rust programs, the request sets made there and checked (all 160
@@ -131,13 +131,14 @@ at commit c30a75ecc. Untimed, none quiet-checked; on each system the bring-up co
    2,822 s; round 3 adds the suite under each sanitizer); W 1.5 h, timeout 6 h; no measured basis.
    Then Lab request 3.
    W time: no quiet hours; at most 10 h by the timeouts (about 2.5 h expected), within one Windows gap.
-   Desktop development passes of these commands (untimed, never records; laptop versions of every
-   tool, the Linux ones in the container): W bring-up every step green (840 checks, 168 of 168
-   windows); W ASan green but for one Oat++ count window that stalled past p2gen's 1 s limit, now 60 s
-   in the records (8 of 8 windows on a rerun); L ASan green (880 checks, 88 of 88 windows); L TSan
-   green (680 checks, 68 of 68; the container needs seccomp unconfined for TSan's ASLR re-exec, the
-   laptop does not); L bring-up every step green (880 checks, 176 of 176 windows). MSan runs only on
-   the laptop (the desktop has no instrumented libc++).
+   Desktop development passes at 3ff814e (untimed, never records; the laptop's tool versions, Linux
+   in the container): W bring-up every step green (840 checks, 168 of 168 windows, Go from an empty
+   module cache); W ASan green (600 checks, 60 of 60 windows); L ASan green (880, 88 of 88); L TSan
+   green (680, 68 of 68; the container needs seccomp unconfined for TSan's ASLR re-exec, the laptop
+   does not). L bring-up every step green at e19f0b1 (880 checks, 176 of 176 windows; later commits
+   change only an optional plan argument and Windows lines). MSan has run nowhere yet (the desktop
+   has no instrumented libc++); it is the last step of p2r3-records-l, so a failure there keeps the
+   ASan and TSan records, and a fix and a rerun may follow.
 1. Toolchains: done on both systems, 2026-10-24. W, four jobs exit 0, 01:06 to 01:19 (Papers
    `lab/laptop/queues/gap2-w-q2-p2-toolchains.json` at a27b47e, its `.ps1` holding every pin): under
    `C:\Users\alext\opt` go-1.27.3, meson-1.12.1, libevent-2.1.13-stable, rapidjson-1.1.0 (the wrap
@@ -189,7 +190,7 @@ Open with Alex: none. The frozen-text items above go to him with the freeze prop
 ## Commits on `round3` (local, not pushed)
 
 1862c01 to 06adfe5 (servers, reviews 1 to 3, decisions, pins, v2 arms, generator, runner, final
-suites); a27b47e f9fc513 083b47c (Laptop request 1); 40e08db to c30a75e (D5 tooling, laptop jobs,
+suites); a27b47e f9fc513 083b47c (Laptop request 1); 40e08db to 3ff814e (D5 tooling, laptop jobs,
 Windows Pistache and boost-url, review 4); and the commit of this update. `bench/` equals round 2's
 files except `isa.cmake`.
 
