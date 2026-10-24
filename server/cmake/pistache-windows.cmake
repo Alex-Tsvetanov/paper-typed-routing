@@ -32,17 +32,17 @@ set(_p2_flags "/clang:-march=${RB_MARCH}")
 set(_p2_libevent_san "")
 set(_p2_meson_san "")
 if(P2_SANITIZER STREQUAL "address")
-    # As the rest of the build (the root CMakeLists.txt): clang-cl's ASan with the runtime the clang-cl
-    # driver links, given to the linker of libevent's and meson's own checks too. libevent's checks run
-    # Release, since ASan refuses the debug runtime (/MDd) of CMake's default check configuration.
+    # As the rest of the build (the root CMakeLists.txt): clang-cl's ASan. libevent's CMake links its
+    # own checks with lld-link directly, so it gets the runtime the clang-cl driver would add, and runs
+    # them Release, since ASan refuses the debug runtime (/MDd) of CMake's default check configuration.
+    # meson links through the clang-cl driver, which adds that runtime itself under b_sanitize.
     string(APPEND _p2_flags " /fsanitize=address")
     set(_p2_asan_link "${_asan_rt}/clang_rt.asan_dynamic-x86_64.lib" "/INCLUDE:__asan_seh_interceptor"
                       "/WHOLEARCHIVE:${_asan_rt}/clang_rt.asan_dynamic_runtime_thunk-x86_64.lib")
     list(JOIN _p2_asan_link " " _p2_asan_link_text)
-    list(JOIN _p2_asan_link "," _p2_asan_link_meson)
     set(_p2_libevent_san -DCMAKE_TRY_COMPILE_CONFIGURATION=Release "-DCMAKE_EXE_LINKER_FLAGS=${_p2_asan_link_text}"
                          "-DCMAKE_SHARED_LINKER_FLAGS=${_p2_asan_link_text}")
-    set(_p2_meson_san -Db_sanitize=address "-Dcpp_link_args=${_p2_asan_link_meson}")
+    set(_p2_meson_san -Db_sanitize=address)
 endif()
 set(_p2_dir "${CMAKE_BINARY_DIR}/_p2")
 
@@ -94,6 +94,7 @@ file(COPY "${P2_RAPIDJSON_WRAP}/rapidjson-1.1.0.tar.gz" "${P2_RAPIDJSON_WRAP}/ra
 set(_p2_build "${_p2_dir}/pistache-build")
 set(_p2_lib "${_p2_build}/src/libpistache.a")
 if(NOT EXISTS "${_p2_lib}")
+    file(REMOVE_RECURSE "${_p2_build}")  # a failed setup leaves a folder meson will not set up again
     set(_p2_env "${CMAKE_COMMAND}" -E env "CC=${CMAKE_C_COMPILER}" "CXX=${CMAKE_CXX_COMPILER}"
                 "NINJA=${CMAKE_MAKE_PROGRAM}")
     _p2_run(pistache-setup ${_p2_env} "${Python3_EXECUTABLE}" "${P2_MESON}" setup "${_p2_build}" "${_p2_src}"
