@@ -117,9 +117,22 @@ def tool_env(sanitizer: str = "none") -> dict:
     return env
 
 
+def resolve(cmd: list, env: dict) -> list:
+    """CMD with its program found on ENV's PATH. On Windows a child started by a bare name is looked
+    up on this process's PATH, not on the PATH of the environment it is given, so it would run the
+    wrong compiler, or none on the laptop."""
+    cmd = [str(c) for c in cmd]
+    if not os.path.dirname(cmd[0]):
+        path = next((v for k, v in env.items() if k.upper() == "PATH"), None)
+        found = shutil.which(cmd[0], path=path)
+        if found:
+            cmd[0] = found
+    return cmd
+
+
 def output(cmd: list, env: dict) -> str:
     try:
-        p = subprocess.run([str(c) for c in cmd], capture_output=True, text=True, env=env)
+        p = subprocess.run(resolve(cmd, env), capture_output=True, text=True, env=env)
     except OSError as e:
         return f"(not found: {e})"
     return (p.stdout + p.stderr).strip()
@@ -183,7 +196,7 @@ def run(cmd: list, log: Path, env: dict, cwd: Path | None = None, append: bool =
         f.write(("== " + " ".join(str(c) for c in cmd) + "\n").encode())
         f.flush()
         try:
-            return subprocess.run([str(c) for c in cmd], stdout=f, stderr=subprocess.STDOUT, env=env, cwd=cwd).returncode
+            return subprocess.run(resolve(cmd, env), stdout=f, stderr=subprocess.STDOUT, env=env, cwd=cwd).returncode
         except OSError as e:
             f.write(f"cannot run: {e}\n".encode())
             return 127
