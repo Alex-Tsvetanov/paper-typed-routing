@@ -58,7 +58,8 @@ integration library never named; no em or en dashes.
   `t3/check_records.py` (the gate), `t3/source_hash.py` (Go and Rust inputs),
   `t3/jobs/bringup.py`, `t3/jobs/records.py`, `t3/test_records.py`; `server/tests/test_p2v2.cpp`
   (v2's C interface, static and DLL); `server/cmake/boost-headers/` (Boost on Windows,
-  `P2_BOOST_ROOT`); clang-cl ASan links the driver's runtime (root `CMakeLists.txt`).
+  `P2_BOOST_ROOT`); `server/cmake/pistache-windows.cmake` (`P2_MESON`, `P2_LIBEVENT_SRC`,
+  `P2_RAPIDJSON_WRAP`); clang-cl ASan links the driver's runtime (root `CMakeLists.txt`).
 
 ## Pins (Alex, 2026-10-23: the latest releases)
 
@@ -68,14 +69,17 @@ compared with round 2's pin and found the same (`pins-round3.cmake`, `router-sur
 
 ## Arms per system
 
-| Program | Linux (container, clang 22.1.8) | Windows (desktop, clang-cl 22.1.0 and MSVC) |
+| Program | Linux (container, clang 22.1.8) | Windows (desktop, clang-cl 22.1.8) |
 |---|---|---|
-| mserver | v2 null crow drogon oatpp pistache boost-url r3 uwebsockets glaze cpp-httplib | v2 null crow drogon oatpp uwebsockets glaze cpp-httplib |
+| mserver | v2 null crow drogon oatpp pistache boost-url r3 uwebsockets glaze cpp-httplib | the same but r3 |
 | mserver-go | v2 httprouter gin nethttp chi null | same |
 | mserver-rs | v2 matchit path-tree actix-router null | same |
 
-Windows gaps: r3 (POSIX headers; absent by design); Pistache (Alex chose its meson build with
-libevent; not yet built, needs meson and libevent); boost-url (needs Boost 1.92.0 headers there).
+Windows: r3 absent (POSIX headers). Pistache through `server/cmake/pistache-windows.cmake`: libevent
+with its CMake, Pistache's meson build of its static library, the logging installer's line removed
+from the fetched `src/meson.build` (Alex, 2026-10-24); nothing installed (checked: no Program Files
+folder, no HKCU key); 40 of 40 checks. boost-url through `server/cmake/boost-headers/`: 40 of 40.
+Round 2's adapters and every file compiled on Linux are unchanged by both.
 
 ## Functional checks (desktop, untimed)
 
@@ -127,8 +131,8 @@ Each runs on the laptop between campaigns; the coordinator schedules them.
    `C:\Users\alext\lab\laptop-archive\gap2-w-q2-p2-toolchains-1384391a\`. meson 1.12.1 and libevent
    2.1.13-stable were pinned on 2026-10-24 (latest stable; both publish only a GPG signature, so the
    sha256s are GitHub's asset digests, meson's equal to PyPI's). L: Go 1.27.3 and Rust 1.99.0 under
-   `~/opt` come with the Arch visit (`gap1-a-p2-toolchains.sh`). Open: pkgconf, until Pistache's
-   first Windows build.
+   `~/opt` come with the Arch visit (`gap1-a-p2-toolchains.sh`). No pkgconf needed: meson finds
+   libevent through libevent's CMake package.
 2. Request sets on L and W, generated there or copied, checked with `make_requests.py --verify`.
    No measured basis.
 3. Release builds of the three programs (`build_programs.py --cxx-build ...`) and the functional
@@ -150,8 +154,15 @@ Each runs on the laptop between campaigns; the coordinator schedules them.
    image, side by side, so the desktop's Linux checks use the laptop's versions: Go 1.27.3 and
    Rust 1.99.0 (Alex, 2026-10-23). Until then those checks are development checks of other patch
    releases.
-2. LLVM 22.1.8 (clang-cl) on the desktop, which has 22.1.0, plus meson, libevent and Boost 1.92.0
-   headers for the desktop's Windows checks of Pistache and boost-url.
+2. Done 2026-10-24 by me with the coordinator's yes: the lab's checked archives copied out of
+   `C:\Users\alext\lab\dl-gap1-p2-2026-10-24` and `dl-gap2-p2-2026-10-24` (read only), each sha256
+   checked against its MANIFEST.json, unpacked into `D:\Dev\worktrees\p2r3-build\tools\` by the
+   laptop script's methods, each tree equal to the laptop's (files and bytes): go-1.27.3 (f26081f4...),
+   meson-1.12.1 (ab0a6ca0...), libevent-2.1.13-stable (f7e9383b...), boost-1.92.0 (69370b3e...),
+   llvm-22.1.8 (d96c2cc1...), rapidjson-1.1.0 with its two wrap files packed (bf7ced29..., c1480d0e...).
+   Full digests in `tools\UNPACKED.txt`. Desktop side effect, undone: a development run with
+   RUSTUP_TOOLCHAIN=1.98.1 made rustup install a 1.98.1 toolchain (2026-10-24 02:10); I removed it,
+   and the jobs now set RUSTUP_AUTO_INSTALL=0.
 
 ## Alex decides
 
@@ -168,6 +179,10 @@ section 10), as it touches P2: the toolchain gap block is approved (Laptop reque
 upgrade or install on L until P4's Arch blocks end, extra versions side by side under `~/opt`; D2
 Go side by side, P2 keeps 1.27.3 while P4, P7 and P5 use 1.27.2, and P2 takes Rust 1.99.0, the
 version P4 installs (not the image's 1.98.1); D4 P4's idle day carries read-only jobs only.
+
+13. (2026-10-24, AskUserQuestion) Pistache on Windows: its meson build with the logging installer
+patched out of the fetched copy (the build would copy a DLL into Program Files, install an event-log
+manifest and write HKCU keys).
 
 Open with Alex: none. The frozen-text items above go to him with the freeze proposal and its hours.
 

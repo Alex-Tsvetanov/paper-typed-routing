@@ -206,3 +206,20 @@ confirmatory window. P2's repository is public. Nothing of round 3 is pushed.
 - (c) A Zenodo record of the frozen file at the freeze, the push later.
 
 **Recommendation.** (a).
+
+## 13. Pistache on Windows: its build installs into the system (2026-10-24)
+
+**What.** Pistache v0.4.26's meson build on Windows runs its script `src/winlog/installman.ps1` as a
+build step of the library: it copies `pistachelog.dll` into `C:\Program Files\pistache_distribution\bin`
+and installs an event-log manifest with `wevtutil im` (both as administrator), and writes registry
+keys under `HKCU\Software\pistacheio`. Pistache's CMake build has no Windows path at all. Decision 10
+chose the meson build before this was known.
+
+**Options.**
+- (a) The meson build without its installer: the one line of the fetched copy's `src/meson.build`
+  that makes the library depend on it is removed; Pistache's C++ code is unchanged, and its router
+  code (`src/server/router.cc`) makes no log call.
+- (b) The meson build as published, installed as administrator on the laptop and the desktop.
+- (c) Pistache absent on Windows: 10 cells fewer.
+
+**Recommendation.** (a). **Answered by Alex on 2026-10-24 (AskUserQuestion): (a).**
