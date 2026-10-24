@@ -129,7 +129,6 @@ at commit 3ff814e50. Untimed, none quiet-checked; on each system the bring-up co
    `t3/sanitize.py` under L ASan+UBSan, TSan and MSan and W clang-cl ASan; gaps in `t3/coverage.json`.
    L expected 3 h, timeout 8 h (lower bound: round 2's three rbench records on L took 1,581, 2,258 and
    2,822 s; round 3 adds the suite under each sanitizer); W 1.5 h, timeout 6 h; no measured basis.
-   Then Lab request 3.
    W time: no quiet hours; at most 10 h by the timeouts (about 2.5 h expected), within one Windows gap.
    Desktop development passes at 3ff814e (untimed, never records; the laptop's tool versions, Linux
    in the container): W bring-up every step green (840 checks, 168 of 168 windows, Go from an empty
