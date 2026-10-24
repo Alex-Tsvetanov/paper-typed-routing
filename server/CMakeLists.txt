@@ -100,11 +100,16 @@ endif()
 find_package(Boost 1.92.0 EXACT QUIET CONFIG)
 set(_externals_default ${_externals_all})
 if(WIN32)
-    # r3 at 83d362f includes POSIX headers (src/node.c: netinet/in.h). Pistache v0.4.26's CMake
-    # build gives cl GCC's warning flags; its Windows build is its meson build with libevent
-    # (design/round3/router-survey.md). Both are absent from the Windows cells for these reasons.
-    list(REMOVE_ITEM _externals_default r3 pistache)
-    message(STATUS "mserver: Windows, so no r3 and no pistache arm")
+    # r3 at 83d362f includes POSIX headers (src/node.c: netinet/in.h): absent from the Windows cells.
+    # Pistache v0.4.26's CMake build has no Windows path; its Windows build is its meson build with
+    # libevent (cmake/pistache-windows.cmake), so the arm is there only when P2_MESON names meson.py.
+    list(REMOVE_ITEM _externals_default r3)
+    set(P2_MESON "" CACHE FILEPATH "meson.py of meson 1.12.1 (Windows: the pistache arm)")
+    if(NOT P2_MESON)
+        list(REMOVE_ITEM _externals_default pistache)
+        message(STATUS "mserver: Windows without P2_MESON, so no pistache arm")
+    endif()
+    message(STATUS "mserver: Windows, so no r3 arm")
 endif()
 if(NOT Boost_FOUND)
     list(REMOVE_ITEM _externals_default boost-url)
@@ -132,7 +137,11 @@ foreach(_arm IN LISTS MSERVER_EXTERNALS)
     if(NOT _arm IN_LIST _externals_all)
         message(FATAL_ERROR "mserver: unknown external arm '${_arm}'")
     endif()
-    include("${_bench}/cmake/arm-${_arm}.cmake")
+    if(WIN32 AND _arm STREQUAL "pistache")
+        include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/pistache-windows.cmake")
+    else()
+        include("${_bench}/cmake/arm-${_arm}.cmake")
+    endif()
 endforeach()
 if(WIN32 AND TARGET rb_crow)
     # asio's archive at the pin has asio/include as a symbolic link to ../include. Unpacked on

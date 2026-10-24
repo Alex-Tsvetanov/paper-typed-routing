@@ -10,7 +10,7 @@ Appendix B). Run it on the system the binaries are for: on Linux the Go program'
                DIR/server/libp2v2_c.a (Linux) or p2v2_c.lib and p2v2.dll (Windows). So v2 in the
                Go and Rust programs is the build of the C++ server's v2 arm, compiler and flags
                included.
-  --sanitizer  for D5's records only (t3/sanitize.sh, t3/sanitize_w.ps1), never for a measured
+  --sanitizer  for D5's records only (t3/sanitize.py), never for a measured
                build. asan: Go with `go build -asan` (Linux only; Go has no AddressSanitizer on
                Windows) and CGO_CFLAGS and CGO_LDFLAGS -fsanitize=address, against an ASan tree's
                libp2v2_c.a; Rust with -Zsanitizer=address (RUSTC_BOOTSTRAP=1, the stable rustc's

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Write one D5 sanitizer record of round 3 from the work directory of t3/sanitize.sh (Linux) or
-t3/sanitize_w.ps1 (Windows).
+"""Write one D5 sanitizer record of round 3 from the work directory of t3/sanitize.py (either
+system of the laptop).
 
 The record has the shape of round 2's records (t1/h6_record.py, bench/sanitizer_record.py): repo,
 commit, date, host, green, compiler, what the build compiled, presets, the reports. What it covers:
@@ -230,7 +230,7 @@ def main() -> int:
            "desktop_development": a.seconds < 0,
            "coverage_gaps": gaps, "sanitizer_reports": len(reports), "report_blocks": reports[:20],
            "logs_archive": a.logs_archive, "logs_archive_sha256": a.logs_sha256,
-           "note": a.note or ("Round 3's programs under the sanitizer (t3/sanitize.sh or t3/sanitize_w.ps1): the C++ "
+           "note": a.note or ("Round 3's programs under the sanitizer (t3/sanitize.py): the C++ "
                               "server with every arm, v2's C interface, p2gen and e2e_requests with the CTest suite; "
                               "the functional suite over every program built; p2gen against every arm in count mode.")}
     Path(a.record).parent.mkdir(parents=True, exist_ok=True)

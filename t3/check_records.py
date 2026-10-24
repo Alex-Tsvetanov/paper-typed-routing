@@ -5,7 +5,7 @@
                      [--out gate.json]
 
 OUT is a bring-up or campaign job's output folder with what the measured build compiled:
-build.inputs.json (t3/inputs.sh), build-info.json (t3/build_programs.py) and build.log (the
+build.inputs.json (t3/labsteps.py, inputs), build-info.json (t3/build_programs.py) and build.log (the
 configure, for the compiler). The records are round 3's (tool p2r3, t3/record.py) in DIR, the Papers
 repo's lab/sanitizer-records once the lab has copied them there.
 

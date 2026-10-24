@@ -11,7 +11,8 @@ the record is kept as it is, never made again in silence (sanitize.py refuses a 
 logs exist). On Linux, after the records: whether any binary of them can use io_uring
 (MemorySanitizer cannot see the kernel's writes into an io_uring buffer; the programs use epoll): ldd,
 dynamic symbols and strings of each, into OUT_DIR/io_uring.txt. Environment: t3/labsteps.py's,
-P2R3 (~/lab/p2r3), WORK (P2R3/san), ONLY (a space-separated subset of the host's sanitizers).
+P2R3 (~/lab/p2r3), WORK (P2R3/san), ONLY (a space-separated subset of the host's sanitizers),
+P2_DESKTOP (any value: a development run on the desktop, sanitize.py --desktop; never on the laptop).
 """
 
 from __future__ import annotations

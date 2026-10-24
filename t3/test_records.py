@@ -38,7 +38,7 @@ def inputs_json(targets: dict) -> str:
 
 
 def work_dir(root: Path, programs: dict) -> Path:
-    """A green ASan work directory of t3/sanitize.sh, with PROGRAMS {"go": ..., "rust": ...} built."""
+    """A green ASan work directory of t3/sanitize.py, with PROGRAMS {"go": ..., "rust": ...} built."""
     w = root / "work"
     write(w / "build.log", f"-- The CXX compiler identification is {COMPILER}\n")
     write(w / "ctest.log", "100% tests passed out of 9\n")

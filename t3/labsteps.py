@@ -163,6 +163,10 @@ def cmake_args(sanitizer: str, extra: list | None = None) -> list:
         boost = Path(setting("P2_BOOST_ROOT"))
         if (boost / "boost" / "version.hpp").is_file():
             args.append(f"-DP2_BOOST_ROOT={boost.as_posix()}")
+        meson, libevent, wrap = (Path(setting(k)) for k in ("P2_MESON", "P2_LIBEVENT_SRC", "P2_RAPIDJSON_WRAP"))
+        if meson.is_file() and (libevent / "CMakeLists.txt").is_file() and wrap.is_dir():
+            args += [f"-DP2_MESON={meson.as_posix()}", f"-DP2_LIBEVENT_SRC={libevent.as_posix()}",
+                     f"-DP2_RAPIDJSON_WRAP={wrap.as_posix()}"]
         if sanitizer == "asan":
             args.append("-DP2_SANITIZER=address")
         elif sanitizer != "none":
