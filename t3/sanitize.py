@@ -22,8 +22,10 @@ says which failed (t3/record.py):
   suite     t3/run_checks.py over this tree's mserver, every arm, and the programs built, on
             SETS_DIR (the bring-up job's request sets), every server's output kept;
   load      t3/p2run.py in count mode with this tree's p2gen against every arm of every program
-            built, both shapes at m = 1,000, the pair (111, 211), 20,000 requests a window, every
-            log kept. Count mode reads no time.
+            built, both shapes at m = 1,000, the pair (111, 211), 20,000 requests a window, a
+            60 s stall limit for p2gen (a sanitizer build of a linear-scan arm queues 64
+            connections longer than the runner's default 1 s), every log kept. Count mode reads
+            no time.
 Then the logs (WORK without its build trees and binaries) go to RECORDS_LOGS/<name>/ and
 <name>.tar.gz (labsteps.keep_logs, which refuses an existing name), and t3/record.py writes
 RECORDS_DIR/<name>.json, <name> being p2r3-<code commit, 9 characters>-<L|W>-<sanitizer>. The code
@@ -194,7 +196,7 @@ def main() -> int:
         if rust_bin:
             programs.append(("mserver-rs", rust_bin, RUST_ARMS, None))
         L.load_plan(work / "load-plan.json", L.exe(build / "t3" / "gen" / "p2gen"), sets, programs, [1000],
-                    "t3/sanitize.py's load step: count mode, untimed")
+                    "t3/sanitize.py's load step: count mode, untimed", timeout_ms=60000)
         rc = L.run([L.PY, L.T3 / "p2run.py", work / "load-plan.json", "--out", work / "load.jsonl", "--count", "20000",
                     "--workdir", work / "load.work", "--keep-logs"], work / "load.out", env)
         steps.add("load", rc, last_line(work / "load.out"))

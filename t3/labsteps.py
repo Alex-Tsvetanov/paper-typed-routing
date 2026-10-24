@@ -357,9 +357,12 @@ def keep_logs(name: str, sources: list) -> tuple[str, str]:
     return str(tar), sha
 
 
-def load_plan(path: Path, p2gen: Path, sets: Path, programs: list, sizes: list, comment: str) -> None:
+def load_plan(path: Path, p2gen: Path, sets: Path, programs: list, sizes: list, comment: str,
+              timeout_ms: int | None = None) -> None:
     """A count-mode plan for t3/p2run.py over PROGRAMS [(name, binary, arms, env)], pinned as the
-    campaign is (P2_CPU_SERVER, P2_CPU_GEN, P2_CPU_HOUSE; default 14, 2-13, 0-1, lab/laptop/README.md)."""
+    campaign is (P2_CPU_SERVER, P2_CPU_GEN, P2_CPU_HOUSE; default 14, 2-13, 0-1, lab/laptop/README.md).
+    TIMEOUT_MS replaces p2gen's stall limit (the runner's default, 1,000 ms): sanitizer builds of the
+    linear-scan arms answer 64 queued connections more slowly than that."""
     progs = []
     for name, binary, arms, penv in programs:
         p = {"name": name, "path": str(binary), "arms": list(arms)}
@@ -371,4 +374,6 @@ def load_plan(path: Path, p2gen: Path, sets: Path, programs: list, sizes: list, 
             "cpus": {"server": int(os.environ.get("P2_CPU_SERVER", "14")), "generator": os.environ.get("P2_CPU_GEN", "2-13")},
             "housekeeping_cpus": os.environ.get("P2_CPU_HOUSE", "0-1"), "connections": 64, "ready_timeout_s": 300,
             "stop_timeout_s": 60, "count_limit_s": 1200, "verify_sets": True, "programs": progs}
+    if timeout_ms is not None:
+        plan["timeout_ms"] = timeout_ms
     path.write_text(json.dumps(plan, indent=1) + "\n", encoding="utf-8")
