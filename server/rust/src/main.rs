@@ -184,6 +184,16 @@ async fn connection<R: Lookup>(stream: TcpStream, http: &'static http1::Builder,
 }
 
 /// Runs the server until a stop signal. The routers are built before the runtime starts.
+/// Under ASan only (the cargo feature `asan`, which t3/build_programs.py turns on with
+/// -Zsanitizer=address for D5's records): actix-router keeps the patterns it parses for the life of
+/// the process on purpose (src/resource.rs), so LeakSanitizer ignores leaks allocated in
+/// `ResourceDef::parse`, and no other, with round 2's suppression text (bench/arms/actix_router.cpp).
+#[cfg(feature = "asan")]
+#[no_mangle]
+pub extern "C" fn __lsan_default_suppressions() -> *const std::ffi::c_char {
+    c"leak:actix_router::resource::ResourceDef>::parse\n".as_ptr()
+}
+
 /// The router and hyper's settings are shared as `&'static` with every connection task, so `serve`
 /// leaks them, and frees them once the runtime and with it every task is gone: LeakSanitizer (D5's
 /// ASan records, t3/sanitize.py) then sees no leak at exit.

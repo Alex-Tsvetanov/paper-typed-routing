@@ -208,7 +208,15 @@ def main() -> int:
     pins = (L.ROOT / "bench" / "cmake" / "pins.cmake").read_text(encoding="utf-8")
     rm_commit = re.search(r"^set\(RB_REGEXMATCHER_V2_COMMIT ([0-9a-f]+)\)", pins, re.MULTILINE).group(1)
     options = ";".join(f"{k}={v}" for k, v in (L.SANITIZER_ENV_W if L.WINDOWS else L.SANITIZER_ENV)[san].items())
-    rc = L.run([L.PY, L.T3 / "record.py", "--work", work, "--record", records / f"{name}.json", "--repo", L.REPO_URL,
+    note = []
+    if san == "asan":
+        note = ["--note", "Round 3's programs under the sanitizer (t3/sanitize.py): the C++ server with every arm, "
+                "v2's C interface, p2gen and e2e_requests with the CTest suite; the functional suite over every "
+                "program built; p2gen against every arm in count mode. LeakSanitizer ignores leaks allocated in "
+                "actix_router::resource::ResourceDef>::parse and no other: actix-router keeps the patterns it "
+                "parses on purpose, and mserver-rs's cargo feature asan (records only) carries round 2's "
+                "suppression text (bench/arms/actix_router.cpp)."]
+    rc = L.run([L.PY, L.T3 / "record.py", "--work", work, "--record", records / f"{name}.json", "--repo", L.REPO_URL, *note,
                 "--commit", code, "--repo-head", L.git("rev-parse", "HEAD"), "--sanitizer", san, "--host-tag", host_tag,
                 "--host", host, "--cpu", cpu, f"--cmake-args={' '.join(args)}", f"--options={options}",
                 "--seconds", str(seconds), "--regexmatcher-commit", rm_commit,

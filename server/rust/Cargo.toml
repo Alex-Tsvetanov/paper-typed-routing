@@ -15,6 +15,10 @@ path = "src/main.rs"
 # The measured binary is always built with `--features v2` (t3/build_programs.py), so that every
 # Rust arm runs from one binary.
 v2 = []
+# D5's ASan records only (t3/build_programs.py --sanitizer asan, with -Zsanitizer=address): tells
+# LeakSanitizer to ignore the leaks actix-router makes on purpose in ResourceDef::parse (src/main.rs),
+# as round 2's C++ adapter does (bench/arms/actix_router.cpp). Never in a measured build.
+asan = []
 
 [dependencies]
 # The routers: round 2's pins (bench/arms/rust/Cargo.toml). Cargo.lock starts from round 2's lock,

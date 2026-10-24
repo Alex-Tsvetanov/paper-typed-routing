@@ -103,19 +103,23 @@ def build_rust(out: Path, jobs: int, cxx: Path, sanitizer: str) -> dict:
     if sanitizer == "race":
         raise RuntimeError("--sanitizer race builds the Go program only")
     env = dict(os.environ, CARGO_TARGET_DIR=str(out / "rust"), P2V2_LIB_DIR=str(cxx / "server"))
-    cmd = ["cargo", "build", "--release", "--locked", "--features", "v2", "-j", str(jobs)]
+    features = ["v2"]
+    cmd = ["cargo", "build", "--release", "--locked", "-j", str(jobs)]
     release = out / "rust" / "release"
     if sanitizer == "asan":
-        # RUSTFLAGS replaces .cargo/config.toml's rustflags, so it carries their target-cpu too.
+        # RUSTFLAGS replaces .cargo/config.toml's rustflags, so it carries their target-cpu too. The
+        # feature `asan` adds LeakSanitizer's suppression of actix-router's deliberate leak (src/main.rs).
         triple = host_triple()
         env.update(RUSTC_BOOTSTRAP="1", RUSTFLAGS="-C target-cpu=native -Zsanitizer=address")
         cmd += ["--target", triple]
+        features.append("asan")
         release = out / "rust" / triple / "release"
+    cmd += ["--features", ",".join(features)]
     run(cmd, ROOT / "server" / "rust", env)
     exe = release / ("mserver-rs.exe" if WINDOWS else "mserver-rs")
     config = (ROOT / "server" / "rust" / ".cargo" / "config.toml").read_text(encoding="utf-8")
     return {"binary": str(exe), "sha256": sha256(exe), "rustc": run(["rustc", "--version"], ROOT),
-            "cargo": run(["cargo", "--version"], ROOT), "cargo_config": config, "features": ["v2"],
+            "cargo": run(["cargo", "--version"], ROOT), "cargo_config": config, "features": features,
             "sanitizer": sanitizer, "command": cmd, "rustflags": env.get("RUSTFLAGS"),
             "source": program_hash(ROOT, "mserver-rs")}
 
