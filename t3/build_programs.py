@@ -107,12 +107,14 @@ def build_rust(out: Path, jobs: int, cxx: Path, sanitizer: str) -> dict:
     cmd = ["cargo", "build", "--release", "--locked", "-j", str(jobs)]
     release = out / "rust" / "release"
     if sanitizer == "asan":
-        # RUSTFLAGS replaces .cargo/config.toml's rustflags, so it carries their target-cpu too. The
-        # feature `asan` adds LeakSanitizer's suppression of actix-router's deliberate leak (src/main.rs).
+        # RUSTFLAGS replaces .cargo/config.toml's rustflags, so it carries their target-cpu too. On
+        # Linux the feature `asan` adds LeakSanitizer's suppression of actix-router's deliberate leak
+        # (src/main.rs); Windows' AddressSanitizer has no LeakSanitizer, so it is left out there.
         triple = host_triple()
         env.update(RUSTC_BOOTSTRAP="1", RUSTFLAGS="-C target-cpu=native -Zsanitizer=address")
         cmd += ["--target", triple]
-        features.append("asan")
+        if not WINDOWS:
+            features.append("asan")
         release = out / "rust" / triple / "release"
     cmd += ["--features", ",".join(features)]
     run(cmd, ROOT / "server" / "rust", env)

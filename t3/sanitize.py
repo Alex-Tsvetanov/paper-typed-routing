@@ -211,7 +211,7 @@ def main() -> int:
     rm_commit = re.search(r"^set\(RB_REGEXMATCHER_V2_COMMIT ([0-9a-f]+)\)", pins, re.MULTILINE).group(1)
     options = ";".join(f"{k}={v}" for k, v in (L.SANITIZER_ENV_W if L.WINDOWS else L.SANITIZER_ENV)[san].items())
     note = []
-    if san == "asan":
+    if san == "asan" and not L.WINDOWS:  # Windows' AddressSanitizer has no LeakSanitizer
         note = ["--note", "Round 3's programs under the sanitizer (t3/sanitize.py): the C++ server with every arm, "
                 "v2's C interface, p2gen and e2e_requests with the CTest suite; the functional suite over every "
                 "program built; p2gen against every arm in count mode. LeakSanitizer ignores leaks allocated in "
