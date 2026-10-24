@@ -59,7 +59,9 @@ def main() -> int:
     for san in only:
         print(f"== {san} start", flush=True)
         log = out / f"{san}.log"
-        rc = L.run([L.PY, L.T3 / "sanitize.py", san, out / "records", p2r3 / "sets", "--work", work], log, dict(os.environ))
+        desktop = ["--desktop"] if os.environ.get("P2_DESKTOP") else []  # development runs only (D7)
+        rc = L.run([L.PY, L.T3 / "sanitize.py", san, out / "records", p2r3 / "sets", "--work", work, *desktop], log,
+                   dict(os.environ))
         print("\n".join(log.read_text(encoding="utf-8", errors="replace").splitlines()[-25:]), flush=True)
         with open(out / "steps.txt", "a", encoding="utf-8", newline="\n") as f:
             f.write(f"{san} {rc}\n")

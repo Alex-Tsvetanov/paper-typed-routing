@@ -50,6 +50,15 @@ integration library never named; no em or en dashes.
   `build_programs.py` (one Go and one Rust binary per system against a named C++ build, sha256s in
   `build-info.json`), `gen/` (`p2gen`, the load generator), `p2run.py` (the window runner).
 - `bench/cmake/isa.cmake`: MSVC (`/arch:AVX2`) and clang-cl (`-march=native`) branches.
+- D5 and the laptop jobs (`design/round3/end-to-end.md`, section 8), one Python code path for both
+  systems: `t3/labsteps.py` (toolchains, configure, inputs, logs), `t3/sanitize.py` (one record:
+  build, CTest, inputs, programs, request-set cells, suite, count-mode load; name
+  `p2r3-<code>-<L|W>-<san>`; `--desktop` reads no time and names it `-desktop`), `t3/record.py`,
+  `t3/coverage.json` (round 3's gaps; round 2's `bench/coverage.json` untouched),
+  `t3/check_records.py` (the gate), `t3/source_hash.py` (Go and Rust inputs),
+  `t3/jobs/bringup.py`, `t3/jobs/records.py`, `t3/test_records.py`; `server/tests/test_p2v2.cpp`
+  (v2's C interface, static and DLL); `server/cmake/boost-headers/` (Boost on Windows,
+  `P2_BOOST_ROOT`); clang-cl ASan links the driver's runtime (root `CMakeLists.txt`).
 
 ## Pins (Alex, 2026-10-23: the latest releases)
 
