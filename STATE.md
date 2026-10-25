@@ -126,18 +126,18 @@ at commit 3ff814e50. Untimed, none quiet-checked; on each system the bring-up co
    Expected 1 h each, timeout 4 h. Row 0's A/A check of p2gen against t1gen stays in the pilot.
 4. Records after each bring-up, `t3/jobs/records.py OUT` (p2r3-records-l, p2r3-records-w):
    `t3/sanitize.py` under L ASan+UBSan, TSan and MSan and W clang-cl ASan; gaps in `t3/coverage.json`.
-   L expected 3 h, timeout 8 h (lower bound: round 2's three rbench records on L took 1,581, 2,258 and
-   2,822 s; round 3 adds the suite under each sanitizer); W 1.5 h, timeout 6 h; no measured basis.
-   W: DONE on the laptop, 2026-10-25, at 3ff814e (as the coordinator reported; the archives in
-   `laptop-archive\gap9-w-q2-p2-a18f07bb\`, sha256 3ac9251f... and 3066863e..., checked by me):
-   p2r3-bringup-w 02:11:46 to 03:11:48 EEST, exit 0, every step green (840 checks, 168 of 168
-   windows); p2r3-records-w 03:11:54 EEST to 03:41:56 EET, exit 0, record p2r3-3ff814e50-W-asan
-   green, 0 reports, host DESKTOP-A1RHS5R, filed in Papers `lab/sanitizer-records/laptop-w/` (7e0e6a0).
-   W gate (`t3/check_records.py --host-tag W --records <Papers>/lab/sanitizer-records/laptop-w`) on
-   that bring-up's build: green, 21 targets, mserver-go's declared gap. L: running in Arch visit A2.
-   Desktop development passes at 3ff814e were green (L ASan 880 checks, L TSan 680 in a container
-   with seccomp unconfined). MSan has run nowhere yet; it is the last step of p2r3-records-l, so a
-   failure there keeps the ASan and TSan records, and a fix and a rerun may follow.
+   DONE on the laptop, 2026-10-25, at 3ff814e, every job exit 0 (as the coordinator reported; each
+   archive's sha256 checked by me, in `laptop-archive\gap9-w-q2-p2-a18f07bb\` and `gap9-a-q1-5b0f7b2a\`).
+   W: p2r3-bringup-w 02:11:46 to 03:11:48 EEST, every step green (840 checks, 168 of 168 windows);
+   p2r3-records-w 03:11:54 EEST to 03:41:56 EET: p2r3-3ff814e50-W-asan green, 0 reports, 5,270 s,
+   filed in Papers `lab/sanitizer-records/laptop-w/` (7e0e6a0). L: p2r3-bringup-l 09:48:38 to
+   10:48:39 EET, every step green (880 checks, 176 of 176 windows); p2r3-records-l 10:48:41 to
+   13:48:43: -L-asan, -L-tsan and -L-msan green, 0 reports (MSan's first run anywhere), 1,615, 1,711
+   and 2,582 s, filed in `lab/sanitizer-records/` (7fd305b), logs sha256 equal to the records'.
+   Gates (`t3/check_records.py --host-tag W --records <Papers>/lab/sanitizer-records/laptop-w`, and
+   L with `lab/sanitizer-records`) on each bring-up's build: green, W 21 targets with mserver-go's
+   gap, L 23 targets with Go's MSan and Rust's TSan and MSan gaps. (labrun polls at expected_s, so
+   the bring-ups may have ended before their hour.)
 1. Toolchains: done on both systems, 2026-10-24. W, four jobs exit 0, 01:06 to 01:19 (Papers
    `lab/laptop/queues/gap2-w-q2-p2-toolchains.json` at a27b47e, its `.ps1` holding every pin): under
    `C:\Users\alext\opt` go-1.27.3, meson-1.12.1, libevent-2.1.13-stable, rapidjson-1.1.0 (the wrap
