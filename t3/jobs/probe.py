@@ -14,7 +14,9 @@ session line must name the same sha256s.
 
 OUT/probe-summary.json is for planning only: the windows by verdict, every window that was not
 valid with its reasons, each arm's start-up seconds at m = 100,000, the mean seconds from one
-window's start to the next by size, and from those an estimate of the campaign's hours. It holds no
+window's start to the next by size, and from those an estimate of the campaign's hours; and the
+largest share of the other processes around a window (p2run's "others", recorded, judged by no
+rule yet: the frozen text decides whether and where it makes a window invalid). It holds no
 rate and no count of answers, and compares no arm with another: the probe's windows are pre-freeze,
 never analysed for H8 to H10 and never cited.
 
@@ -98,11 +100,16 @@ def summarize(rows: list, arms_per_system: int) -> dict:
             startup[key] = max(startup.get(key, 0.0), float(w["startup_s"]))
     gaps: dict = {}
     timed = [w for w in windows if started_s(w) is not None]
+    others = [w for w in windows if isinstance(w.get("others"), dict)]
     for a, b in zip(timed, timed[1:]):
         gaps.setdefault(a["m"], []).append(started_s(b) - started_s(a))
     if timed:
         out["startup_s_max_at_m100000"] = dict(sorted(startup.items()))
         out["seconds_start_to_start_mean"] = {str(m): round(statistics.mean(v), 2) for m, v in sorted(gaps.items())}
+        busiest = max(others, key=lambda w: w["others"]["sum_pct_of_one_cpu"], default=None)
+        out["others"] = {"windows_with": len(others), "windows_without": len(windows) - len(others),
+                         "max_sum_pct_of_one_cpu": busiest and busiest["others"]["sum_pct_of_one_cpu"],
+                         "max_at": busiest and {k: busiest.get(k) for k in ("seq", "program", "arm", "shape", "m")}}
         means = {m: statistics.mean(v) for m, v in gaps.items()}
         if 10 in means and 100000 in means:
             per_size = arms_per_system * CAMPAIGN["windows_per_arm"] * CAMPAIGN["shapes"] * CAMPAIGN["pairs"]

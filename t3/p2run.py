@@ -17,7 +17,8 @@ over the program's arms (a, b, ..., z, z, ..., b, a). A plan lists the arms once
 to z. A window is one arm of one round.
 
 Modes.
-  timed (no --count)  the real runs, on the laptop only. Samples the CPUs and the clock.
+  timed (no --count)  the real runs, on the laptop only. Samples the CPUs and the clock, and
+                      needs LAB_TOOLS, the lab job's tools folder (lab/laptop), for its labrec.py.
   --count N           the desktop's functional mode. p2gen runs with --count N. Nothing is
                       sampled and no time, rate, latency, duration or start-up time is read for
                       any output: the output file holds counts, ports, CPU numbers and verdicts.
@@ -64,12 +65,14 @@ Plan (JSON; keys starting with "_" are ignored; any other unknown key is an erro
     routes.txt and ring.txt are checked against data_root/manifest.tsv before the first window)
 
 Output, JSON lines. The first is {"type": "session", ...}: host, OS, CPU model, versions of the
-programs, hashes of the runner, p2gen and the programs, the plan, and in timed mode the session's
-clock. Then one {"type": "window", ...} per window, with the cell, program, arm, order index,
-port, the CPU masks read back from the OS, the probe, p2gen's own JSON line, the server's exit
-code and how it was stopped, the verdict ("status": valid, overloaded or invalid, and the
-reasons). Timed windows add the start-up seconds to readiness, the CPU busy shares and the mean
-clock. Failed windows keep the tail of the server's log.
+programs, hashes of the runner, p2gen and the programs, the plan, the lab job's LAB_JOB_ID and
+LAB_QUIET, and in timed mode the session's clock and labrec.py's hash. Then one {"type": "window",
+...} per window, with the cell, program, arm, order index, port, the CPU masks read back from the
+OS, the probe, p2gen's own JSON line, the server's exit code and how it was stopped, the verdict
+("status": valid, overloaded or invalid, and the reasons). Timed windows add the start-up seconds
+to readiness, the CPU busy shares, the mean clock, and "others": every other process's CPU from
+just before p2gen starts to just after it exits (lab/laptop's process_shares, in aa_trial.py's
+shape), recorded and not judged. Failed windows keep the tail of the server's log.
 
 Validity (timed), as lab/t1: the server started and answered the probe with 200 and the 13-byte
 body; at least one completed answer; errors at most 0.1% of the answers; the generator CPUs at
@@ -94,6 +97,7 @@ import argparse
 import dataclasses
 import functools
 import hashlib
+import importlib.util
 import json
 import math
 import os
@@ -129,6 +133,7 @@ TIMESTAMP = re.compile(r"\d{4}[-/]\d{2}[-/]\d{2}|\b\d{1,2}:\d{2}:\d{2}")
 GENERATOR_GRACE_S = 30.0  # p2gen may overrun warm-up plus window by this long (t1.py's value)
 SESSION_CLOCK_SAMPLES = 4
 SESSION_CLOCK_GAP_S = 0.5
+OTHERS_TOP = 6  # the busiest other processes a timed window keeps, as lab/laptop/aa_trial.py
 
 
 class PlanError(ValueError):
@@ -1141,15 +1146,44 @@ def file_signature(path: str) -> tuple[int, int] | None:
         return None
 
 
+def load_labrec() -> Any:
+    """lab/laptop's labrec.py from LAB_TOOLS, the lab job's tools folder: the lab's own record of the
+    other processes around each timed window (lab/laptop/README.md, the procedure per job)."""
+    path = Path(os.environ.get("LAB_TOOLS") or "") / "labrec.py"
+    if not os.environ.get("LAB_TOOLS") or not path.is_file():
+        raise PlanError("timed mode needs LAB_TOOLS, the lab's tools folder with labrec.py (lab/laptop)")
+    spec = importlib.util.spec_from_file_location("labrec", path)
+    module = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(module)
+    except Exception as e:  # noqa: BLE001 - any import failure refuses the run before its first window
+        raise PlanError(f"timed mode: {path} does not import: {e!r}") from e
+    for name in ("processes", "process_shares"):
+        if not callable(getattr(module, name, None)):
+            raise PlanError(f"timed mode: {path} has no {name}()")
+    return module
+
+
+def others_row(labrec: Any, start: list, end: list, wall_s: float, exclude: Sequence[int]) -> dict[str, Any]:
+    """Every other process's CPU between two snapshots, in aa_trial.py's shape: the sum in percent of
+    one CPU, the busiest few, and the busiest few that started in between. Recorded, never judged."""
+    shares = labrec.process_shares(start, end, wall_s, exclude_pids=tuple(exclude))
+    others = [p for p in shares["judged"] if p["cpu_percent"] > 0]
+    return {"sum_pct_of_one_cpu": round(sum(p["cpu_percent"] for p in others), 2), "top": others[:OTHERS_TOP],
+            "started": [p for p in others if p["how"] == "started"][:OTHERS_TOP],
+            "unattributed": len(shares["unattributed"]), "wall_s": round(wall_s, 3)}
+
+
 # ---------------------------------------------------------------- the runner
 
 
 class Runner:
     """Runs windows one at a time. In count mode (count is N) it samples nothing and records no time."""
 
-    def __init__(self, plan: Plan, workdir: Path, count: int | None, sampler: Any, session_mhz: float | None) -> None:
+    def __init__(self, plan: Plan, workdir: Path, count: int | None, sampler: Any, session_mhz: float | None,
+                 labrec: Any = None) -> None:
         self.plan, self.workdir, self.count = plan, workdir, count
-        self.sampler, self.session_mhz = sampler, session_mhz
+        self.sampler, self.session_mhz, self.labrec = sampler, session_mhz, labrec
         self.programs = {p.name: p for p in plan.programs}
         self._live: list[Spawned] = []
         # Every arm of a program runs from its one binary, and so must every window of the session.
@@ -1176,6 +1210,16 @@ class Runner:
                     HOST.kill(sp)
             self._live.clear()
         return row
+
+    def _processes(self, row: dict[str, Any]) -> list | None:
+        """A snapshot of every process for "others" (timed mode with labrec only), or None."""
+        if not self.timed or self.labrec is None:
+            return None
+        try:
+            return self.labrec.processes()
+        except Exception as e:  # noqa: BLE001 - kept in the row; the other processes' share is not judged
+            row.setdefault("others_errors", []).append(repr(e))
+            return None
 
     def _server_env(self, program: Program) -> dict[str, str]:
         return {**os.environ, **dict(program.env)}
@@ -1248,6 +1292,8 @@ class Runner:
         errlog = self.workdir / f"{w.seq:06d}.gen.err"
         taken: dict[str, Reading] = {}
         hooks = (self.sampler.begin, lambda: taken.__setitem__("r", self.sampler.end())) if self.timed else (None, None)
+        before = self._processes(row)
+        t0 = time.monotonic()
         with open(errlog, "wb") as err:
             gen = HOST.spawn(self._generator_cmd(port, cell, result), plan.generator_cpus, env=os.environ,
                              cwd=self.workdir, stdout=subprocess.PIPE, stderr=err)
@@ -1263,6 +1309,12 @@ class Runner:
             HOST.kill(gen)
             code = None
             row["generator_note"] = "p2gen killed at the limit" + ("" if not self.timed else f" of {limit:g} s")
+        if before is not None:
+            wall = time.monotonic() - t0
+            after = self._processes(row)
+            if after is not None:
+                mine = (os.getpid(), *(sp.proc.pid for sp in self._live))
+                row["others"] = others_row(self.labrec, before, after, wall, mine)
         reader.join(10)
         if not reader.is_alive():
             gen.proc.stdout.close()
@@ -1435,7 +1487,7 @@ def _public(obj: Any) -> Any:
 
 
 def session_line(plan: Plan, plan_text: bytes, count: int | None, clock: Mapping[str, Any] | None,
-                 smoke: Mapping[str, Sequence[Mapping[str, Any]]]) -> dict[str, Any]:
+                 smoke: Mapping[str, Sequence[Mapping[str, Any]]], labrec: Any = None) -> dict[str, Any]:
     counting = count is not None
     plan_json = _public(json.loads(plan_text))
     if counting:
@@ -1462,7 +1514,11 @@ def session_line(plan: Plan, plan_text: bytes, count: int | None, clock: Mapping
             "logical_cpus": HOST.cpu_count(), "windows": total_windows(plan), "plan": plan_json,
             "plan_sha256": hashlib.sha256(plan_text).hexdigest(),
             "p2gen": {"argv": list(plan.p2gen), "sha256": sha256_file(Path(gen_binary)) if Path(gen_binary).is_file() else None},
-            "programs": programs}
+            "programs": programs,
+            # the lab's word that the host was quiet when the job started: "passed:<LAB_JOB_ID>" or absent
+            "lab": {"job_id": os.environ.get("LAB_JOB_ID"), "quiet": os.environ.get("LAB_QUIET")}}
+    if labrec is not None:
+        line["lab"]["labrec_sha256"] = sha256_file(Path(labrec.__file__))
     if clock is not None:
         line["clock"] = dict(clock)
         line["started"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
@@ -1538,6 +1594,7 @@ def _run_windows(plan: Plan, runner: Runner, sink: Any) -> int:
 def run_all(plan: Plan, plan_text: bytes, out: Path, count: int | None, workdir: Path) -> int:
     if count is None and not plan.housekeeping_cpus:
         raise PlanError("timed mode needs housekeeping_cpus: the runner must not run on a server or generator CPU")
+    labrec = None if count is not None else load_labrec()
     if out.exists():
         raise PlanError(f"{out} exists; this runner does not append to or overwrite a record")
     HOST.prepare()
@@ -1547,7 +1604,7 @@ def run_all(plan: Plan, plan_text: bytes, out: Path, count: int | None, workdir:
     saved = _install_stop_handlers()
     try:
         clock = session_clock(plan, sampler) if sampler else None
-        session = session_line(plan, plan_text, count, clock, smoke)
+        session = session_line(plan, plan_text, count, clock, smoke, labrec)
         out.parent.mkdir(parents=True, exist_ok=True)
         try:
             sink = open(out, "x", encoding="utf-8", newline="\n")
@@ -1555,7 +1612,7 @@ def run_all(plan: Plan, plan_text: bytes, out: Path, count: int | None, workdir:
             raise PlanError(f"{out} exists; this runner does not append to or overwrite a record") from e
         with sink:
             sink.write(json.dumps(session) + "\n")
-            runner = Runner(plan, workdir, count, sampler, clock["session_mhz"] if clock else None)
+            runner = Runner(plan, workdir, count, sampler, clock["session_mhz"] if clock else None, labrec)
             return _run_windows(plan, runner, sink)
     finally:
         for sig, handler in saved.items():

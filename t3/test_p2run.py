@@ -28,6 +28,7 @@ import textwrap
 import time
 import unittest
 from pathlib import Path
+from typing import Any
 from unittest import mock
 
 HERE = Path(__file__).resolve().parent
@@ -496,6 +497,33 @@ class CommandTests(unittest.TestCase):
         self.assertNotIn("--duration", cmd)
 
 
+class FakeSampler:
+    def begin(self) -> None:
+        pass
+
+    def end(self) -> Reading:
+        return Reading(5.0, {0: 1.0}, 3000.0)
+
+
+class FakeLabrec:
+    """lab/laptop's labrec, as far as p2run uses it: the excluded ids are left out, as labrec does."""
+    SVC = {"name": "svc", "pid": 40, "cpu_percent": 3.5, "how": "both"}
+    UPD = {"name": "upd", "pid": 41, "cpu_percent": 1.25, "how": "started"}
+
+    def __init__(self) -> None:
+        self.excluded: list = []
+
+    def processes(self) -> list:
+        return [{"pid": 1}]
+
+    def process_shares(self, start: list, end: list, wall_s: float, exclude_pids=()) -> dict:
+        self.excluded.append(exclude_pids)
+        me = {"name": "me", "pid": os.getpid(), "cpu_percent": 9.0, "how": "both"}
+        idle = {"name": "quiet", "pid": 42, "cpu_percent": 0.0, "how": "both"}
+        return {"judged": [p for p in (me, self.SVC, self.UPD, idle) if p["pid"] not in exclude_pids],
+                "unattributed": [{"name": "gone", "pid": 43, "how": "gone"}]}
+
+
 class TimedPartsTests(unittest.TestCase):
     """The timed mode's pieces, one by one on synthetic values. No timed window runs here."""
 
@@ -535,6 +563,65 @@ class TimedPartsTests(unittest.TestCase):
                 parsed, code, reading = runner._run_generator(window, row, 1, cell)
         self.assertIsNone(reading)
         self.assertEqual(len(row["sampler_errors"]), 2)
+
+    def generator_run(self, runner: Any) -> dict:
+        """_run_generator with a stand-in p2gen that prints its markers and exits."""
+        with tempfile.TemporaryDirectory() as tmp:
+            runner.workdir = Path(tmp)
+            row: dict = {}
+            with mock.patch.object(runner, "_generator_cmd", return_value=[sys.executable, "-c",
+                                   "print('MEASURE_START 1', flush=True); print('MEASURE_END 2', flush=True)"]):
+                runner._run_generator(next(p2run.windows(runner.plan)), row, 1, Path(tmp))
+        return row
+
+    def test_others_holds_every_other_process_but_the_runners_own(self) -> None:
+        if os.cpu_count() < 2:
+            self.skipTest("needs two CPUs")
+        lab = FakeLabrec()
+        plan = p2run.parse_plan(plan_dict(cpus={"server": os.cpu_count() - 1, "generator": "0"}))
+        row = self.generator_run(p2run.Runner(plan, Path("w"), None, FakeSampler(), 3000.0, lab))
+        excluded = lab.excluded[0]
+        self.assertEqual((len(lab.excluded), excluded[0], len(excluded)), (1, os.getpid(), 2))  # the runner, p2gen
+        others = row["others"]
+        self.assertEqual({k: v for k, v in others.items() if k != "wall_s"},
+                         {"sum_pct_of_one_cpu": 4.75, "unattributed": 1,
+                          "top": [FakeLabrec.SVC, FakeLabrec.UPD], "started": [FakeLabrec.UPD]})
+
+    def test_others_is_left_out_in_count_mode_and_a_failed_snapshot_is_kept(self) -> None:
+        plan = p2run.parse_plan(plan_dict())
+        self.assertIsNone(p2run.Runner(plan, Path("w"), 100, None, None, FakeLabrec())._processes({}))
+        self.assertIsNone(p2run.Runner(plan, Path("w"), None, None, 3000.0)._processes({}))
+        lab, row = FakeLabrec(), {}
+        lab.processes = mock.Mock(side_effect=OSError("denied"))
+        self.assertIsNone(p2run.Runner(plan, Path("w"), None, None, 3000.0, lab)._processes(row))
+        self.assertEqual(row, {"others_errors": ["OSError('denied')"]})
+
+    def test_labrec_comes_from_lab_tools_or_the_timed_run_is_refused(self) -> None:
+        env = {k: v for k, v in os.environ.items() if k != "LAB_TOOLS"}
+        with mock.patch.dict(os.environ, env, clear=True), self.assertRaisesRegex(PlanError, "LAB_TOOLS"):
+            p2run.load_labrec()
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(os.environ, {"LAB_TOOLS": tmp}):
+            with self.assertRaisesRegex(PlanError, "LAB_TOOLS"):
+                p2run.load_labrec()
+            lab = Path(tmp) / "labrec.py"
+            lab.write_text("raise ImportError('broken')\n")
+            with self.assertRaisesRegex(PlanError, "does not import"):
+                p2run.load_labrec()
+            lab.write_text("def processes():\n    return []\n")
+            with self.assertRaisesRegex(PlanError, "process_shares"):
+                p2run.load_labrec()
+            lab.write_text("def processes():\n    return []\n\n\ndef process_shares(*a, **k):\n    return {}\n")
+            self.assertEqual(p2run.load_labrec().processes(), [])
+
+    def test_the_session_line_names_the_lab_job_and_labrec(self) -> None:
+        plan = p2run.parse_plan(plan_dict(programs=[
+            {"name": "p", "path": [sys.executable, "-c", "pass"], "arms": ["a"], "version": "startup-line"}]))
+        smoke = {"p": [{"arm": "a", "lines": ["up"], "ready": True}]}
+        lab = mock.Mock(__file__=str(Path(p2run.__file__)))
+        with mock.patch.dict(os.environ, {"LAB_JOB_ID": "j1", "LAB_QUIET": "passed:j1"}):
+            line = p2run.session_line(plan, json.dumps(plan_dict()).encode(), None, {"session_mhz": 1.0}, smoke, lab)
+        self.assertEqual(line["lab"], {"job_id": "j1", "quiet": "passed:j1",
+                                       "labrec_sha256": p2run.sha256_file(Path(p2run.__file__))})
 
     def test_samplers_forget_a_start_that_failed(self) -> None:
         if os.cpu_count() < 2:
@@ -812,6 +899,16 @@ class OrchestrationTests(unittest.TestCase):
             rc = p2run.main([str(self.plan("nohk", sizes=[10])), "--out", str(out)])  # no --count
         self.assertEqual((rc, out.exists()), (2, False))
         self.assertIn("housekeeping_cpus", err.getvalue())
+
+    def test_timed_mode_needs_the_labs_labrec(self) -> None:
+        err = io.StringIO()
+        out = self.root / "nolab.jsonl"
+        env = {k: v for k, v in os.environ.items() if k != "LAB_TOOLS"}
+        with mock.patch.dict(os.environ, env, clear=True), contextlib.redirect_stderr(err):
+            plan = self.plan("nolab", sizes=[10], cpus={"server": 2, "generator": "3"}, housekeeping_cpus="0")
+            rc = p2run.main([str(plan), "--out", str(out)])
+        self.assertEqual((rc, out.exists()), (2, False))
+        self.assertIn("LAB_TOOLS", err.getvalue())
 
     def test_a_binary_that_changes_makes_the_window_a_fault(self) -> None:
         script = self.root / "changing.py"

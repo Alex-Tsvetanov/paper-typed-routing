@@ -33,7 +33,8 @@ def window(seq: int, m: int, started: str | None, status: str = "valid", program
 class SummaryTests(unittest.TestCase):
     def test_timed_summary_has_verdicts_startups_and_spacing_but_no_rate(self) -> None:
         rows = [{"type": "session"},
-                window(1, 10, "2026-10-25T10:00:00+0200"), window(2, 10, "2026-10-25T10:00:06+0200"),
+                dict(window(1, 10, "2026-10-25T10:00:00+0200"), others={"sum_pct_of_one_cpu": 0.5}),
+                dict(window(2, 10, "2026-10-25T10:00:06+0200"), others={"sum_pct_of_one_cpu": 2.25}),
                 window(3, 100000, "2026-10-25T10:00:12+0200", startup=4.0),
                 window(4, 100000, "2026-10-25T10:00:24+0200", status="overloaded", arm="drogon", startup=5.5),
                 window(5, 10, "2026-10-25T10:00:36+0200")]
@@ -43,6 +44,9 @@ class SummaryTests(unittest.TestCase):
         self.assertEqual([n["arm"] for n in s["not_valid"]], ["drogon"])
         self.assertEqual(s["startup_s_max_at_m100000"], {"mserver/drogon": 5.5, "mserver/v2": 4.0})
         self.assertEqual(s["seconds_start_to_start_mean"], {"10": 6.0, "100000": 12.0})
+        self.assertEqual(s["others"], {"windows_with": 2, "windows_without": 3, "max_sum_pct_of_one_cpu": 2.25,
+                                       "max_at": {"seq": 2, "program": "mserver", "arm": "v2", "shape": "static",
+                                                  "m": 10}})
         per_size = 2 * 2 * 2 * 16
         self.assertEqual(s["campaign_estimate"]["windows"], per_size * 5)
         self.assertAlmostEqual(s["campaign_estimate"]["hours"], round(per_size * (4 * 6.0 + 12.0) / 3600, 2))
@@ -53,7 +57,7 @@ class SummaryTests(unittest.TestCase):
     def test_count_mode_summary_has_no_time(self) -> None:
         s = probe.summarize([window(1, 10, None), window(2, 100000, None)], arms_per_system=1)
         self.assertEqual(s["windows"], 2)
-        for key in ("startup_s_max_at_m100000", "seconds_start_to_start_mean", "campaign_estimate"):
+        for key in ("startup_s_max_at_m100000", "seconds_start_to_start_mean", "campaign_estimate", "others"):
             self.assertNotIn(key, s)
 
 
