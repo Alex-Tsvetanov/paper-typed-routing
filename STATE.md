@@ -147,12 +147,12 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
    binaries, refused unless their sha256s and the compiled sources equal 3ff814e's. First run of
    p2run's timed path and of its per-window record of other processes (`others`: lab/laptop's labrec
    from LAB_TOOLS; timed mode refuses without it). Desktop, count mode, c7153b3: 168 windows ran, binaries
-   matched, 6 invalid (Oat++ and actix-router at m = 100,000; every error a timeout at the 1 s stall
-   limit; timed p2gen exits 0 then, so the overload rule decides them). Hours: L 1,514 s (176 x H6's
-   6.30 s plus 88 start-ups of at most 4.6 s, round 2's table builds), W 1,415 s (168 x plan v2's
-   6.123 s plus 84 x 4.6 s), plus an unmeasured preflight and quiet check: about half an hour each;
-   timeout 7 h (the plan's limits, 116 s a window, preflight, 1,800 s quiet wait). W quiet hours: the
-   whole job, one calendar day. Pre-freeze: never analysed for H8 to H10, never cited.
+   matched, 6 invalid (Oat++ and actix-router at m = 100,000, every error a timeout; timed, the overload
+   rule decides them). Hours: L 1,514 s (176 x H6's 6.30 s plus 88 start-ups of at most 4.6 s, round 2's
+   table builds), W 1,415 s (168 x plan v2's 6.123 s plus 84 x 4.6 s), plus an unmeasured preflight and
+   quiet check. Pre-freeze: never analysed for H8 to H10, never cited. APPROVED by Alex (2026-10-25, via
+   the coordinator): chain A3 from 14:55 EET, p2r3-probe-w (gap14-w-q1, timeout 7 h, W quiet the whole
+   job), then before 22:15 Arch's p2r3-probe-l (gap14-a-q1, timeout 10,800 s, so W again by 01:30).
 6. The campaign after the freeze: L 22 arms x 2 windows x 160 pairs and sizes = 7,040 windows, 44,352 s
    = 12.32 h; W 21 arms, 6,720 windows, 41,147 s = 11.43 h; together 23.75 h, 1.21 calendar days at 19.68
    measuring hours a day, plus the A/A pilot, start-up (no basis) and H7's MSVC costs on W (0.33 h, plan v2).
