@@ -131,8 +131,9 @@ SYSTEMATIC = frozenset({"driver", "not_ready", "probe", "no_result", "generator_
                         "server_exit", "server_died", "clock_drift", "generator_busy"})
 TIMESTAMP = re.compile(r"\d{4}[-/]\d{2}[-/]\d{2}|\b\d{1,2}:\d{2}:\d{2}")
 GENERATOR_GRACE_S = 30.0  # p2gen may overrun warm-up plus window by this long (t1.py's value)
-SESSION_CLOCK_SAMPLES = 4
+SESSION_CLOCK_SAMPLES = 4  # Linux: /proc/cpuinfo read four times, 0.5 s apart
 SESSION_CLOCK_GAP_S = 0.5
+SESSION_CLOCK_PDH_S = 10.0  # Windows: one PDH interval, labrec's sample length (WindowsSampler.session_mhz)
 OTHERS_TOP = 6  # the busiest other processes a timed window keeps, as lab/laptop/aa_trial.py
 
 
@@ -559,6 +560,7 @@ class Reading:
     span_s: float
     busy_s: Mapping[int, float]  # per CPU, over the span
     mhz: float | None
+    cpus_counted: int | None = None  # Windows: the measured CPUs with PDH clock data in the span
 
 
 def generator_busy_pct(r: Reading, generator_cpus: Sequence[int]) -> float:
@@ -606,6 +608,20 @@ def parse_processor_performance(raw: bytes, count: int) -> dict[int, float]:
                               for k in range(3))
         out[c] = (kernel + user - idle) / 1e7
     return out
+
+
+def pdh_mean_mhz(perf: Mapping[str, float], freq: Mapping[str, float], cpus: Sequence[int]) -> tuple[float, int]:
+    """The mean clock over one PDH interval of the measured CPUs that have data in it, and how many do.
+    Processor Frequency times % Processor Performance is 0 for a CPU without data: over 0.5 s the laptop's
+    Windows gave 0 for 5 or 6 of 13 idle CPUs (p2r3-probe-w, 2026-10-25), and averaging those in made the
+    session's clock 1,892 MHz against the windows' 3,175. So a 0 is left out, never averaged in."""
+    keys = [f"0,{c}" for c in cpus]
+    if any(k not in perf or k not in freq for k in keys):
+        raise OSError("PDH has no % Processor Performance or Processor Frequency for a measured CPU")
+    ran = [v for v in (freq[k] * perf[k] / 100.0 for k in keys) if v > 0]
+    if not ran:
+        raise OSError("no measured CPU has PDH clock data in the interval")
+    return statistics.fmean(ran), len(ran)
 
 
 class LinuxSampler:
@@ -850,12 +866,14 @@ if IS_WINDOWS:
 
     class WindowsSampler:
         """Per-CPU busy time from NtQuerySystemInformation and the clock from PDH's
-        % Processor Performance times Processor Frequency, a mean over the window."""
+        % Processor Performance times Processor Frequency, a mean over the window of the CPUs with
+        data (pdh_mean_mhz). The session's clock is one PDH interval of SESSION_CLOCK_PDH_S."""
 
         def __init__(self, cpus: Sequence[int]) -> None:
             self.cpus = tuple(cpus)
             self._pdh = _Pdh([_PERF, _FREQ])
             self._start: tuple[float, dict[int, float]] | None = None
+            self.session_counted: int | None = None
 
         def _busy(self) -> dict[int, float]:
             n = _k32.GetActiveProcessorCount(0xFFFF)
@@ -866,12 +884,8 @@ if IS_WINDOWS:
                 raise OSError(f"NtQuerySystemInformation(SystemProcessorPerformanceInformation): {status & 0xFFFFFFFF:#x}")
             return parse_processor_performance(bytes(buf), got.value // 48)
 
-        def _mhz(self) -> float:
-            perf, freq = self._pdh.values(_PERF), self._pdh.values(_FREQ)
-            vals = [freq[f"0,{c}"] * perf[f"0,{c}"] / 100.0 for c in self.cpus if f"0,{c}" in perf and f"0,{c}" in freq]
-            if len(vals) != len(self.cpus):
-                raise OSError("PDH has no % Processor Performance or Processor Frequency for a measured CPU")
-            return statistics.fmean(vals)
+        def _mhz(self) -> tuple[float, int]:
+            return pdh_mean_mhz(self._pdh.values(_PERF), self._pdh.values(_FREQ), self.cpus)
 
         def begin(self) -> None:
             self._start = None
@@ -886,18 +900,18 @@ if IS_WINDOWS:
             t1 = time.monotonic()
             busy1 = self._busy()
             self._pdh.collect()
-            mhz = self._mhz()
+            mhz, counted = self._mhz()
             t0, busy0 = start
-            return Reading(t1 - t0, {c: busy1[c] - busy0[c] for c in self.cpus}, mhz)
+            return Reading(t1 - t0, {c: busy1[c] - busy0[c] for c in self.cpus}, mhz, counted)
 
         def session_mhz(self) -> list[float]:
-            out = []
+            """One interval as long as labrec's: over 10 s no idle CPU of the laptop lacked data (none of
+            about 11,000 labrec readings in 10 Windows jobs was 0), over 0.5 s five or six of 13 did."""
             self._pdh.collect()
-            for _ in range(SESSION_CLOCK_SAMPLES):
-                time.sleep(SESSION_CLOCK_GAP_S)
-                self._pdh.collect()
-                out.append(self._mhz())
-            return out
+            time.sleep(SESSION_CLOCK_PDH_S)
+            self._pdh.collect()
+            mhz, self.session_counted = self._mhz()
+            return [mhz]
 
         def close(self) -> None:
             self._pdh.close()
@@ -1285,6 +1299,8 @@ class Runner:
             drift = abs(clock - self.session_mhz) / self.session_mhz if clock and self.session_mhz else None
             row["clock"] = {"mhz": None if clock is None else round(clock, 1), "session_mhz": self.session_mhz,
                             "drift": None if drift is None else round(drift, 5)}
+            if reading.cpus_counted is not None:
+                row["clock"]["cpus_counted"] = reading.cpus_counted
         return Observed(ready, probe, generator, gen_exit, alive, server_exit, busy, clock, self.session_mhz, span)
 
     def _generator_cmd(self, port: int, cell: Path, result: Path) -> list[str]:
@@ -1539,8 +1555,12 @@ def session_clock(plan: Plan, sampler: Any) -> dict[str, Any]:
     if plan.session_clock_mhz is not None:
         return {"session_mhz": plan.session_clock_mhz, "source": "plan"}
     samples = sampler.session_mhz()
-    return {"session_mhz": round(statistics.fmean(samples), 1), "samples_mhz": [round(s, 1) for s in samples],
-            "source": "sampled at the session start"}
+    out = {"session_mhz": round(statistics.fmean(samples), 1), "samples_mhz": [round(s, 1) for s in samples],
+           "source": "sampled at the session start"}
+    counted = getattr(sampler, "session_counted", None)
+    if isinstance(counted, int):  # Windows: one PDH interval, and how many measured CPUs had data in it
+        out.update(cpus_counted=counted, interval_s=SESSION_CLOCK_PDH_S)
+    return out
 
 
 def dry_run(plan: Plan) -> int:

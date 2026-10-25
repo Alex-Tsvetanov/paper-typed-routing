@@ -640,10 +640,38 @@ class TimedPartsTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             s.end()
         s.begin()
-        s.end()
+        try:
+            s.end()
+        except OSError:  # Windows: a span this short can hold no PDH clock data at all (pdh_mean_mhz)
+            pass
         with self.assertRaises(RuntimeError):  # a second end() would reuse the first window's start
             s.end()
         s.close()
+
+    def test_pdh_clock_leaves_out_cpus_without_data(self) -> None:
+        perf = {"0,2": 99.2, "0,3": 0.0, "0,4": 99.2, "0,14": 99.2}
+        freq = {"0,2": 3201.0, "0,3": 3201.0, "0,4": 0.0, "0,14": 3201.0}
+        mhz, counted = p2run.pdh_mean_mhz(perf, freq, (2, 3, 4, 14))
+        self.assertEqual((round(mhz, 1), counted), (3175.4, 2))
+        with self.assertRaisesRegex(OSError, "no measured CPU"):
+            p2run.pdh_mean_mhz({"0,2": 0.0}, {"0,2": 3201.0}, (2,))
+        with self.assertRaisesRegex(OSError, "no % Processor Performance"):
+            p2run.pdh_mean_mhz(perf, freq, (2, 5))
+
+    def test_the_counted_cpus_go_into_the_window_and_the_session(self) -> None:
+        row: dict = {}
+        reading = Reading(5.0, {14: 4.9, **{c: 1.0 for c in range(2, 14)}}, 3175.4, 13)
+        self.runner(3175.0)._observed(True, PROBE_OK, gen_line(), 0, True, 0, reading, row)
+        self.assertEqual(row["clock"]["cpus_counted"], 13)
+
+        class Fake:
+            session_counted = 11
+
+            def session_mhz(self):
+                return [3175.0]
+
+        got = p2run.session_clock(p2run.parse_plan(plan_dict()), Fake())
+        self.assertEqual((got["session_mhz"], got["cpus_counted"], got["interval_s"]), (3175.0, 11, 10.0))
 
     def test_no_reading_is_a_sampler_failure(self) -> None:
         row: dict = {}
