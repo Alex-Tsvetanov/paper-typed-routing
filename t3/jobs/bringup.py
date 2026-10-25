@@ -133,10 +133,10 @@ def main() -> int:
         return fail("suite", tail(out / "suite.out"))
     ok("suite", tail(out / "suite.out"))
 
-    for test in ("test_p2run.py", "test_records.py"):
+    for test in ("test_p2run.py", "test_records.py", "test_probe.py"):
         if L.run([L.PY, L.T3 / test], out / f"{Path(test).stem}.log", env) != 0:
             return fail("runner", f"{test}; see {Path(test).stem}.log")
-    ok("runner", "test_p2run.py, test_records.py")
+    ok("runner", "test_p2run.py, test_records.py, test_probe.py")
 
     L.load_plan(out / "count-plan.json", L.exe(build / "t3" / "gen" / "p2gen"), sets,
                 [("mserver", mserver, arms, None), ("mserver-go", go_bin, GO_ARMS, None),
