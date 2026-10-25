@@ -51,32 +51,47 @@ def sha256(p: Path) -> str:
     return h.hexdigest()
 
 
+def binary_problems(want: dict) -> list:
+    """Each file of _expect_sha256 that is missing or has another sha256, or []."""
+    out = []
+    for path, sha in want.items():
+        f = Path(path)
+        if not f.is_file():
+            out.append(f"{path} is missing")
+        elif (got := sha256(f)) != sha:
+            out.append(f"{path} is not the bring-up's binary (sha256 {got[:12]}, want {sha[:12]})")
+    return out
+
+
 def refusals(plan: dict) -> list:
     """Why the probe must not time these binaries, or []."""
     commit = plan.get("_build_commit", "")
     want = plan.get("_expect_sha256") or {}
     if not commit or not want:
         return ["the plan names no _build_commit or _expect_sha256"]
-    out = []
+    out = ["the paper clone has local changes"] if L.git("status", "--porcelain") else []
     p = subprocess.run(["git", "-C", str(L.ROOT), "diff", "--quiet", commit, "HEAD", "--", *COMPILED])
-    if p.returncode != 0:
-        out.append(f"compiled sources differ between {commit[:9]} and this checkout (git diff exit {p.returncode})")
-    for path, sha in want.items():
-        f = Path(path)
-        if not f.is_file():
-            out.append(f"{path} is missing")
-        elif sha256(f) != sha:
-            out.append(f"{path} is not the bring-up's binary (sha256 {sha256(f)[:12]}, want {sha[:12]})")
-    return out
+    if p.returncode == 1:
+        out.append(f"compiled sources differ between {commit[:9]} and this checkout")
+    elif p.returncode != 0:
+        out.append(f"git could not compare {commit[:9]} with this checkout (git diff exit {p.returncode})")
+    return out + binary_problems(want)
+
+
+def same_file(path: str) -> str:
+    """A path as p2run records it (resolved), in one case on Windows."""
+    return os.path.normcase(str(Path(path).resolve()))
 
 
 def session_differs(session: dict, want: dict) -> list:
-    """Binaries the runner's session line names with another sha256 than the plan expects."""
-    named = {session.get("p2gen", {}).get("argv", [""])[0]: session.get("p2gen", {}).get("sha256")}
+    """Binaries the runner's session line names that the plan does not expect, or names with another sha256."""
+    named = {same_file(session.get("p2gen", {}).get("argv", [""])[0]): session.get("p2gen", {}).get("sha256")}
     for prog in session.get("programs", []):
-        named[(prog.get("argv") or [prog.get("path", "")])[0]] = prog.get("sha256")
-    return [f"{path}: session {named[path]}, want {sha}" for path, sha in want.items()
-            if path in named and named[path] != sha]
+        named[same_file((prog.get("argv") or [prog.get("path", "")])[0])] = prog.get("sha256")
+    expected = {same_file(p): sha for p, sha in want.items()}
+    return ([f"{path}: session {sha}, want {expected[path]}" for path, sha in named.items()
+             if path in expected and sha != expected[path]]
+            + [f"{path}: in the session, not in the plan's _expect_sha256" for path in named if path not in expected])
 
 
 def started_s(row: dict) -> float | None:
@@ -140,19 +155,21 @@ def main() -> int:
           f"paper {L.git('rev-parse', 'HEAD')}", flush=True)
     cmd = [L.PY, L.T3 / "p2run.py", a.plan.resolve(), "--out", out / "probe.jsonl", "--workdir", out / "probe.work",
            "--keep-logs"]
-    if a.count:
+    if a.count is not None:
         cmd += ["--count", str(a.count)]
     rc = L.run(cmd, out / "probe.out", dict(os.environ, PYTHONUTF8="1"))
     jsonl = out / "probe.jsonl"
     rows = [json.loads(l) for l in jsonl.read_text(encoding="utf-8").splitlines() if l.strip()] if jsonl.exists() else []
-    summary = {"p2run_exit": rc, "mode": "count" if a.count else "timed", "build_commit": plan["_build_commit"],
+    summary = {"p2run_exit": rc, "mode": "timed" if a.count is None else "count", "build_commit": plan["_build_commit"],
                "note": "planning only: pre-freeze probe windows, never analysed for H8 to H10 and never cited",
                **summarize(rows, sum(len(p["arms"]) for p in plan["programs"]))}
     session = next((r for r in rows if r.get("type") == "session"), None)
     summary["session_binaries_differ"] = session_differs(session, plan["_expect_sha256"]) if session else ["no session line"]
+    summary["binaries_after_run"] = binary_problems(plan["_expect_sha256"])  # p2v2.dll too, which no session line names
     (out / "probe-summary.json").write_text(json.dumps(summary, indent=1) + "\n", encoding="utf-8")
-    print(json.dumps({k: summary.get(k) for k in ("p2run_exit", "windows", "by_status", "session_binaries_differ")}))
-    return 2 if summary["session_binaries_differ"] else rc
+    print(json.dumps({k: summary.get(k) for k in ("p2run_exit", "windows", "by_status", "session_binaries_differ",
+                                                  "binaries_after_run")}))
+    return 2 if summary["session_binaries_differ"] or summary["binaries_after_run"] else rc
 
 
 if __name__ == "__main__":

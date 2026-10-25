@@ -584,8 +584,18 @@ class TimedPartsTests(unittest.TestCase):
         self.assertEqual((len(lab.excluded), excluded[0], len(excluded)), (1, os.getpid(), 2))  # the runner, p2gen
         others = row["others"]
         self.assertEqual({k: v for k, v in others.items() if k != "wall_s"},
-                         {"sum_pct_of_one_cpu": 4.75, "unattributed": 1,
+                         {"sum_pct_of_one_cpu": 4.75, "judged": 3, "unattributed": 1,
                           "top": [FakeLabrec.SVC, FakeLabrec.UPD], "started": [FakeLabrec.UPD]})
+
+    def test_a_failed_others_record_leaves_the_window_as_it_was(self) -> None:
+        if os.cpu_count() < 2:
+            self.skipTest("needs two CPUs")
+        lab = FakeLabrec()
+        lab.process_shares = mock.Mock(side_effect=KeyError("how"))
+        plan = p2run.parse_plan(plan_dict(cpus={"server": os.cpu_count() - 1, "generator": "0"}))
+        row = self.generator_run(p2run.Runner(plan, Path("w"), None, FakeSampler(), 3000.0, lab))
+        self.assertNotIn("others", row)
+        self.assertEqual((row["others_errors"], row["generator_exit"]), (["KeyError('how')"], 0))
 
     def test_others_is_left_out_in_count_mode_and_a_failed_snapshot_is_kept(self) -> None:
         plan = p2run.parse_plan(plan_dict())

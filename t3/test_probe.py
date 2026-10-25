@@ -7,6 +7,7 @@ summary, on synthetic rows and files. Untimed: no test runs a server or reads a 
 from __future__ import annotations
 
 import hashlib
+import json
 import sys
 import tempfile
 import unittest
@@ -78,6 +79,10 @@ class RefusalTests(unittest.TestCase):
                    "programs": [{"argv": ["/b/mserver"], "sha256": "b"}]}
         self.assertEqual(probe.session_differs(session, {"/b/p2gen": "a", "/b/mserver": "b"}), [])
         self.assertEqual(len(probe.session_differs(session, {"/b/p2gen": "a", "/b/mserver": "c"})), 1)
+        unexpected = probe.session_differs(session, {"/b/p2gen": "a"})  # a binary the plan does not pin
+        self.assertEqual(len(unexpected), 1)
+        self.assertIn("not in the plan", unexpected[0])
+        self.assertEqual(probe.session_differs(session, {"/b/./p2gen": "a", "/b/mserver": "b", "/b/p2v2.dll": "d"}), [])
 
 
 class PlanTests(unittest.TestCase):
@@ -87,6 +92,11 @@ class PlanTests(unittest.TestCase):
             plan, _ = p2run.load_plan(HERE / "plans" / name)
             self.assertEqual(p2run.total_windows(plan), windows)
             self.assertEqual(list(plan.sizes), [10, 100000])
+            raw = json.loads((HERE / "plans" / name).read_text(encoding="utf-8"))
+            pinned = raw["_expect_sha256"]
+            for path in (raw["p2gen"], *(p["path"] for p in raw["programs"])):
+                self.assertIn(path, pinned, f"{name}: {path} has no sha256 to check")
+            self.assertTrue(all(len(s) == 64 and int(s, 16) >= 0 for s in pinned.values()))
 
 
 if __name__ == "__main__":

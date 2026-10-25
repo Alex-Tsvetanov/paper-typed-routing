@@ -1171,7 +1171,7 @@ def others_row(labrec: Any, start: list, end: list, wall_s: float, exclude: Sequ
     others = [p for p in shares["judged"] if p["cpu_percent"] > 0]
     return {"sum_pct_of_one_cpu": round(sum(p["cpu_percent"] for p in others), 2), "top": others[:OTHERS_TOP],
             "started": [p for p in others if p["how"] == "started"][:OTHERS_TOP],
-            "unattributed": len(shares["unattributed"]), "wall_s": round(wall_s, 3)}
+            "judged": len(shares["judged"]), "unattributed": len(shares["unattributed"]), "wall_s": round(wall_s, 3)}
 
 
 # ---------------------------------------------------------------- the runner
@@ -1220,6 +1220,16 @@ class Runner:
         except Exception as e:  # noqa: BLE001 - kept in the row; the other processes' share is not judged
             row.setdefault("others_errors", []).append(repr(e))
             return None
+
+    def _others(self, row: dict[str, Any], before: list, after: list | None, wall_s: float) -> None:
+        """row["others"] from two snapshots; any failure goes to others_errors, never to the verdict."""
+        if after is None:
+            return
+        try:
+            mine = (os.getpid(), *(sp.proc.pid for sp in self._live))
+            row["others"] = others_row(self.labrec, before, after, wall_s, mine)
+        except Exception as e:  # noqa: BLE001 - recorded, not judged: the window keeps p2gen's result
+            row.setdefault("others_errors", []).append(repr(e))
 
     def _server_env(self, program: Program) -> dict[str, str]:
         return {**os.environ, **dict(program.env)}
@@ -1311,10 +1321,7 @@ class Runner:
             row["generator_note"] = "p2gen killed at the limit" + ("" if not self.timed else f" of {limit:g} s")
         if before is not None:
             wall = time.monotonic() - t0
-            after = self._processes(row)
-            if after is not None:
-                mine = (os.getpid(), *(sp.proc.pid for sp in self._live))
-                row["others"] = others_row(self.labrec, before, after, wall, mine)
+            self._others(row, before, self._processes(row), wall)
         reader.join(10)
         if not reader.is_alive():
             gen.proc.stdout.close()
