@@ -1,0 +1,57 @@
+{
+ "about": "P2 round 3's next laptop request (STATE.md, Laptop request 5): the timing probe before the freeze, one job per system, drafted in the lab queue's job format (lab/laptop/README.md) for the operator to copy into queues; not a queue itself. Commit: b325a3dfe34d58ed34196376d674ddc76aa95864 on branch round3 of p2-typed-routing/typed-routing (local; bundled from that checkout as before). It times the Release builds that p2r3-bringup-l and p2r3-bringup-w made at 3ff814e50 (gated green against the D5 records on 2026-10-25): t3/jobs/probe.py refuses (exit 2) before the first window unless each binary's sha256 is the bring-up's and no compiled source changed between 3ff814e50 and this commit (none did: only the runner, the probe job, its plans and tests). No build, no download. Pre-freeze: the windows are never analysed for H8 to H10 and never cited; probe-summary.json is for planning (verdicts, start-up seconds, spacing, the campaign's hours, the other processes' largest share) and holds no rate. First end-to-end run of p2run's timed path and of its per-window process record (labrec from LAB_TOOLS): the desktop checked count mode only (D7). Either system may go first; each job is quiet-checked at its start.",
+ "jobs": [
+  {
+   "id": "p2r3-probe-l",
+   "paper": "P2",
+   "os": "linux",
+   "repo": {
+    "name": "typed-routing",
+    "path": "p2-typed-routing/typed-routing"
+   },
+   "commit": "b325a3dfe34d58ed34196376d674ddc76aa95864",
+   "build": "",
+   "run": "\"$LAB_PYTHON\" \"$LAB_SRC/t3/jobs/probe.py\" \"$LAB_SRC/t3/plans/probe-L.json\" \"$LAB_OUT/probe\"",
+   "outputs": [
+    "out/probe/probe-summary.json",
+    "out/probe/probe.jsonl",
+    "out/probe/probe.out",
+    "record.json"
+   ],
+   "quiet": true,
+   "boost": false,
+   "poll_s": 300,
+   "expected_s": 1800,
+   "timeout_s": 25200,
+   "note": "176 windows: 22 arms x 2 windows (one mirrored round) x 2 sizes (10 and 100,000) x 2 shapes, the pair (111, 211), 64 connections, 1 s warm-up and 5 s window, server on CPU 14, p2gen on 2 to 13, the runner on 0 and 1 (the lab's placement); reads ~/lab/p2r3/build-3ff814e50, progs-3ff814e50 and sets, writes only in LAB_OUT; every server log and p2gen result kept in out/probe/probe.work. expected_s: 176 x 6.30 s (H6's laptop window) = 1,109 s, plus 88 start-ups at m = 100,000 of at most 4.6 s each (round 2's table builds) = 405 s, 1,514 s in all, rounded up for the preflight (every arm started once on a two-route table) and the quiet check, which have no measured basis. timeout_s: the plan's own limits, 176 x 116 s (ready 60, p2gen 1 + 5 + 30 grace, stop 20) = 20,416 s, plus 22 preflight starts x 80 s = 1,760 s, plus the 1,800 s quiet wait = 23,976 s, rounded up to 7 h. Boost off, the lab's default; the campaign's setting goes into the frozen text.",
+   "run_label": "P2 round 3 timing probe on Arch: t3/jobs/probe.py over t3/plans/probe-L.json, p2run timed, every arm at m = 10 and 100,000, both shapes, one mirrored round; pre-freeze, never cited",
+   "plain": "Time one short round of every P2 router on Arch, to plan the hours of the real measurement; these numbers are never published"
+  },
+  {
+   "id": "p2r3-probe-w",
+   "paper": "P2",
+   "os": "windows",
+   "repo": {
+    "name": "typed-routing",
+    "path": "p2-typed-routing/typed-routing"
+   },
+   "commit": "b325a3dfe34d58ed34196376d674ddc76aa95864",
+   "build": "",
+   "run": "\"%LAB_PYTHON%\" \"%LAB_SRC%\\t3\\jobs\\probe.py\" \"%LAB_SRC%\\t3\\plans\\probe-W.json\" \"%LAB_OUT%\\probe\"",
+   "outputs": [
+    "out/probe/probe-summary.json",
+    "out/probe/probe.jsonl",
+    "out/probe/probe.out",
+    "record.json"
+   ],
+   "quiet": true,
+   "boost": false,
+   "poll_s": 300,
+   "expected_s": 1800,
+   "timeout_s": 25200,
+   "note": "168 windows: 21 arms (no r3 on Windows) x 2 windows x 2 sizes x 2 shapes, as p2r3-probe-l; reads C:\\Users\\alext\\lab\\p2r3\\build-3ff814e50, progs-3ff814e50 (p2v2.dll beside mserver-go.exe) and sets, writes only in LAB_OUT. expected_s: 168 x 6.123 s (plan v2's window) = 1,029 s, plus 84 start-ups at m = 100,000 of at most 4.6 s = 386 s, 1,415 s in all, rounded up as on Arch. timeout_s: 168 x 116 s = 19,488 s, plus 21 x 80 s = 1,680 s, plus the 1,800 s quiet wait = 22,968 s, rounded up to 7 h. W quiet hours: the whole job, expected about half an hour, on one calendar day. Boost off, the lab's default.",
+   "run_label": "P2 round 3 timing probe on Windows: as p2r3-probe-l over t3/plans/probe-W.json",
+   "plain": "Time one short round of every P2 router on Windows, to plan the hours of the real measurement; these numbers are never published"
+  }
+ ]
+}

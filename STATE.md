@@ -1,6 +1,6 @@
 # P2 round 3, state digest
 
-Under 200 lines. Read this first. Updated 2026-10-24, late.
+Under 200 lines. Read this first. Updated 2026-10-25.
 
 ## What round 3 is
 
@@ -47,7 +47,8 @@ No timing on the desktop; no laptop access; nothing pushed; drafts only; no em o
 - `t3/`: `e2e_requests.cpp` and `make_requests.py` (160 cells: two shapes, five sizes, sixteen
   pairs; digests in `requests-manifest.tsv`), `check_server.py`, `run_checks.py`,
   `build_programs.py` (one Go and one Rust binary per system against a named C++ build, sha256s in
-  `build-info.json`), `gen/` (`p2gen`, the load generator), `p2run.py` (the window runner).
+  `build-info.json`), `gen/` (`p2gen`, the load generator), `p2run.py` (the window runner),
+  `jobs/probe.py` and `plans/probe-*.json` (the timing probe, `test_probe.py`).
 - `bench/cmake/isa.cmake`: MSVC (`/arch:AVX2`) and clang-cl (`-march=native`) branches.
 - D5 and the laptop jobs (`design/round3/end-to-end.md`, section 8), one Python code path for both
   systems: `t3/labsteps.py` (toolchains, configure, inputs, logs), `t3/sanitize.py` (one record:
@@ -113,20 +114,18 @@ windows. Not run on the desktop, by rule: any timed mode. Kernel features used: 
   requests explain them; `peer_closes` above 0 invalidates a window).
 - The overload edges: zero completions with timeouts is invalid; connect errors during overload make
   the window invalid.
+- Whether, and above what share, other processes' CPU (`others`) makes a window invalid; boost off.
 
 ## Laptop requests
 
-The coordinator schedules them. The next request is rows 0, 2, 3 and 4: four jobs drafted in the lab
-queue's format, with commands, outputs, times and `plain` sentences, in `t3/jobs/requests-2026-10-24.json`,
-at commit 3ff814e50. Untimed, none quiet-checked; on each system the bring-up comes before the records.
-0, 2, 3. Bring-up, `t3/jobs/bringup.py OUT` (p2r3-bringup-l, p2r3-bringup-w): the toolchains checked
-   (clang or clang-cl 22.1.8, Go 1.27.3, Rust 1.99.0), the Release build with every arm of the system,
-   CTest, the inputs hash, the Go and Rust programs, the request sets made there and checked (all 160
-   cells), the functional suite, the runner's and record tools' tests, a count-mode pass of p2run.
-   Expected 1 h each, timeout 4 h. Row 0's A/A check of p2gen against t1gen stays in the pilot.
-4. Records after each bring-up, `t3/jobs/records.py OUT` (p2r3-records-l, p2r3-records-w):
-   `t3/sanitize.py` under L ASan+UBSan, TSan and MSan and W clang-cl ASan; gaps in `t3/coverage.json`.
-   DONE on the laptop, 2026-10-25, at 3ff814e, every job exit 0 (as the coordinator reported; each
+The coordinator schedules them. Jobs drafted in the lab queue's format with `plain` sentences:
+`t3/jobs/requests-2026-10-24.json` (rows 0, 2 to 4, at 3ff814e50), `requests-2026-10-25.json` (row 5).
+0, 2, 3. Bring-up, `t3/jobs/bringup.py OUT` (p2r3-bringup-l, -w): toolchains checked, the Release build
+   with every arm, CTest, the inputs hash, the Go and Rust programs, the request sets (all 160 cells
+   checked), the suite, the runner's and record tools' tests, a count-mode pass of p2run. Row 0's A/A
+   check of p2gen against t1gen stays in the pilot.
+4. Records, `t3/jobs/records.py OUT` (p2r3-records-l, -w): L ASan+UBSan, TSan and MSan, W clang-cl ASan.
+   Rows 0, 2 to 4 DONE on the laptop, 2026-10-25, at 3ff814e, every job exit 0 (as the coordinator reported; each
    archive's sha256 checked by me, in `laptop-archive\gap9-w-q2-p2-a18f07bb\` and `gap9-a-q1-5b0f7b2a\`).
    W: p2r3-bringup-w 02:11:46 to 03:11:48 EEST, every step green (840 checks, 168 of 168 windows);
    p2r3-records-w 03:11:54 EEST to 03:41:56 EET: p2r3-3ff814e50-W-asan green, 0 reports, 5,270 s,
@@ -136,35 +135,38 @@ at commit 3ff814e50. Untimed, none quiet-checked; on each system the bring-up co
    and 2,582 s, filed in `lab/sanitizer-records/` (7fd305b), logs sha256 equal to the records'.
    Gates (`t3/check_records.py --host-tag W --records <Papers>/lab/sanitizer-records/laptop-w`, and
    L with `lab/sanitizer-records`) on each bring-up's build: green, W 21 targets with mserver-go's
-   gap, L 23 targets with Go's MSan and Rust's TSan and MSan gaps. (labrun polls at expected_s, so
-   the bring-ups may have ended before their hour.)
-1. Toolchains: done on both systems, 2026-10-24. W, four jobs exit 0, 01:06 to 01:19 (Papers
-   `lab/laptop/queues/gap2-w-q2-p2-toolchains.json` at a27b47e, its `.ps1` holding every pin): under
-   `C:\Users\alext\opt` go-1.27.3, meson-1.12.1, libevent-2.1.13-stable, rapidjson-1.1.0 (the wrap
-   files), boost-1.92.0, llvm-22.1.8; Rust 1.99.0 is P4's. L, job `a1-p2-toolchains-l` exit 0, ending
-   03:24:57: `~/opt/p2/go1.27.3` and Rust 1.99.0 in `~/opt/rustup` and `~/opt/cargo`, no pacman
-   change. meson 1.12.1 and libevent 2.1.13-stable were pinned on 2026-10-24 (latest stable; both
-   publish only a GPG signature, so the sha256s are GitHub's asset digests). No pkgconf needed.
-5. Timing probe before the freeze: every arm at m = 10 and 100,000, pair 111, both shapes, 2 windows
-   each: 176 windows on L (1,109 s at H6's 6.30 s per window), 168 on W (1,029 s at plan v2's
-   6.123 s), plus start-up at m = 100,000, no measured basis (round 2's table builds reach 4.6 s).
-6. The campaign after the freeze: L 22 arms x 2 windows x 160 pairs and sizes = 7,040 windows,
-   44,352 s = 12.32 h; W 21 arms, 6,720 windows, 41,147 s = 11.43 h. Together 23.75 h, 1.21 calendar
-   days at 19.68 measuring hours a day. Plus the A/A pilot and start-up (no measured basis), and H7's
-   MSVC costs on W, 0.33 h (plan v2's desktop basis).
+   gap, L 23 targets with Go's MSan and Rust's TSan and MSan gaps.
+1. Toolchains: done on both systems, 2026-10-24. W: Papers `lab/laptop/queues/gap2-w-q2-p2-toolchains.json`
+   at a27b47e, under `C:\Users\alext\opt` go-1.27.3, meson-1.12.1, libevent-2.1.13-stable, the
+   rapidjson-1.1.0 wrap files, boost-1.92.0, llvm-22.1.8, and P4's Rust 1.99.0. L: `a1-p2-toolchains-l`,
+   `~/opt/p2/go1.27.3`, Rust 1.99.0 in `~/opt/rustup` and `~/opt/cargo`, no pacman change. meson and
+   libevent publish only GPG signatures, so their sha256 pins are GitHub's asset digests.
+5. Timing probe before the freeze (p2r3-probe-l, -w: `t3/jobs/probe.py PLAN OUT` at b325a3d, quiet,
+   boost off): one mirrored round of every arm at m = 10 and 100,000, both shapes, pair (111, 211):
+   176 windows on L, 168 on W (`t3/plans/probe-L.json`, `probe-W.json`). It times the bring-ups'
+   binaries, refused unless their sha256s and the compiled sources equal 3ff814e's. First run of
+   p2run's timed path and of its per-window record of other processes (`others`: lab/laptop's labrec
+   from LAB_TOOLS; timed mode refuses without it). Desktop check, count mode: 168 windows ran, binaries
+   matched, 6 invalid (Oat++ and actix-router at m = 100,000; every error a timeout at the 1 s stall
+   limit; timed p2gen exits 0 then, so the overload rule decides them). Hours: L 1,514 s (176 x H6's
+   6.30 s plus 88 start-ups of at most 4.6 s, round 2's table builds), W 1,415 s (168 x plan v2's
+   6.123 s plus 84 x 4.6 s), plus an unmeasured preflight and quiet check: about half an hour each;
+   timeout 7 h (the plan's limits, 116 s a window, preflight, 1,800 s quiet wait). W quiet hours: the
+   whole job, one calendar day. Pre-freeze: never analysed for H8 to H10, never cited.
+6. The campaign after the freeze: L 22 arms x 2 windows x 160 pairs and sizes = 7,040 windows, 44,352 s
+   = 12.32 h; W 21 arms, 6,720 windows, 41,147 s = 11.43 h; together 23.75 h, 1.21 calendar days at 19.68
+   measuring hours a day, plus the A/A pilot, start-up (no basis) and H7's MSVC costs on W (0.33 h, plan v2).
 
 ## Lab requests
 
 1. Done 2026-10-23 (image 7f39a629ada0: Rust 1.98.1, Go 1.27.1, Boost 1.92.0). Wanted: Go 1.27.3 and
    Rust 1.99.0 side by side in the image (Alex, 2026-10-23); until then the container runs others.
-2. Done 2026-10-24 by me with the coordinator's yes: the lab's checked archives copied out of
-   `C:\Users\alext\lab\dl-gap1-p2-2026-10-24` and `dl-gap2-p2-2026-10-24` (read only), each sha256
-   checked against its MANIFEST.json, unpacked into `D:\Dev\worktrees\p2r3-build\tools\` by the
-   laptop script's methods, each tree equal to the laptop's (files and bytes): go-1.27.3 (f26081f4...),
-   meson-1.12.1 (ab0a6ca0...), libevent-2.1.13-stable (f7e9383b...), boost-1.92.0 (69370b3e...),
-   llvm-22.1.8 (d96c2cc1...), rapidjson-1.1.0 with its two wrap files packed (bf7ced29..., c1480d0e...).
-   Full digests in `tools\UNPACKED.txt`. Side effect, undone: a desktop run made rustup install a
-   1.98.1 toolchain (02:10); removed, and the jobs set RUSTUP_AUTO_INSTALL=0.
+2. Done 2026-10-24 by me with the coordinator's yes: the archives of `C:\Users\alext\lab\dl-gap1-p2-2026-10-24`
+   and `dl-gap2-p2-2026-10-24` (read only) copied out, each sha256 checked against its MANIFEST.json,
+   unpacked by the laptop script's methods into `D:\Dev\worktrees\p2r3-build\tools\`, each tree equal to
+   the laptop's: go-1.27.3 f26081f4, meson-1.12.1 ab0a6ca0, libevent-2.1.13-stable f7e9383b, boost-1.92.0
+   69370b3e, llvm-22.1.8 d96c2cc1, rapidjson-1.1.0 bf7ced29 with its wraps c1480d0e (full: `tools\UNPACKED.txt`).
+   A desktop rustup install of 1.98.1 (02:10) was removed; the jobs set RUSTUP_AUTO_INSTALL=0.
 3. Done 2026-10-25 by the coordinator: the records filed (7fd305b, 7e0e6a0); `lab/bin/test_report_pattern.sh`
    lists `t3/record.py` (skipped in the Papers checkout, which lacks round 3; this file's pattern checked).
 
@@ -176,9 +178,8 @@ Answered on 2026-10-23 (AskUserQuestion; details in `design/round3/decisions-for
 cost tested (H10). 6. Mixed-disjoint and static, five sizes each. 7. H8's margin from the A/A
 pilot. 8. The latest releases; then Crow's 1.3.5 pre-release and Go 1.27.3. 9. Boost headers added.
 10. Pistache's meson build on Windows. 11. Go routers as their libraries' handlers. 12. Push
-`round3` at the freeze. 13. (2026-10-24) Pistache's meson build with its logging installer patched
-out of the fetched copy (it would copy a DLL into Program Files, install an event-log manifest and
-write HKCU keys).
+`round3` at the freeze. 13. (2026-10-24) Pistache's logging installer patched out of the fetched
+meson build (it would write into Program Files, the event log and HKCU).
 
 Queue plan (Alex, 2026-10-23, Papers `lab/laptop/queue-plan-2026-10-draft.md` section 10): the gap
 block approved; D1 no pacman change on L until P4's Arch blocks end, versions side by side under
@@ -190,10 +191,9 @@ Open with Alex: none. The frozen-text items above go to him with the freeze prop
 
 1862c01 to 06adfe5 (servers, reviews 1 to 3, decisions, pins, v2 arms, generator, runner, final
 suites); a27b47e f9fc513 083b47c (Laptop request 1); 40e08db to 3ff814e (D5 tooling, laptop jobs,
-Windows Pistache and boost-url, review 4); and the commit of this update. `bench/` equals round 2's
-files except `isa.cmake`.
+Windows Pistache and boost-url, review 4); c7153b3 b325a3d (the probe, `others`); and the commit of
+this update. `bench/` equals round 2's files except `isa.cmake`.
 
 ## Next engineering
 
-The laptop's bring-up and records (the request above); the timing probe; then the freeze proposal
-with its hours and the frozen-text items above.
+The probe (Laptop request 5); row 6's hours from its summary; the freeze proposal and its hours.
