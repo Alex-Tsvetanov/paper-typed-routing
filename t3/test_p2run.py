@@ -425,10 +425,14 @@ class SamplerStructureTests(unittest.TestCase):
         self.assertIsInstance(r.mhz, float)
         self.assertGreater(r.mhz, 0.0)
         self.assertGreater(r.span_s, 0.0)
-        with mock.patch.object(p2run, "SESSION_CLOCK_SAMPLES", 1), mock.patch.object(p2run, "SESSION_CLOCK_GAP_S", 0.05):
+        with mock.patch.object(p2run, "SESSION_CLOCK_SAMPLES", 1), mock.patch.object(p2run, "SESSION_CLOCK_GAP_S", 0.05), \
+                mock.patch.object(p2run, "SESSION_CLOCK_PDH_S", 0.3):
             session = sampler.session_mhz()
         self.assertEqual(len(session), 1)
         self.assertGreater(session[0], 0.0)
+        if p2run.IS_WINDOWS:  # how many measured CPUs had PDH data, and over how long
+            self.assertTrue(1 <= sampler.session_counted <= len(cpus))
+            self.assertGreater(sampler.session_interval_s, 0.0)
         sampler.close()
 
     def test_this_host(self) -> None:
@@ -640,10 +644,13 @@ class TimedPartsTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             s.end()
         s.begin()
-        try:
+        if p2run.IS_WINDOWS:
+            try:
+                s.end()
+            except OSError as e:  # a span this short can hold no PDH clock data at all (pdh_mean_mhz)
+                self.assertIn("no measured CPU", str(e))
+        else:
             s.end()
-        except OSError:  # Windows: a span this short can hold no PDH clock data at all (pdh_mean_mhz)
-            pass
         with self.assertRaises(RuntimeError):  # a second end() would reuse the first window's start
             s.end()
         s.close()
@@ -665,7 +672,7 @@ class TimedPartsTests(unittest.TestCase):
         self.assertEqual(row["clock"]["cpus_counted"], 13)
 
         class Fake:
-            session_counted = 11
+            session_counted, session_interval_s = 11, 10.0004
 
             def session_mhz(self):
                 return [3175.0]

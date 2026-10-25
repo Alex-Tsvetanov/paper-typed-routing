@@ -874,6 +874,7 @@ if IS_WINDOWS:
             self._pdh = _Pdh([_PERF, _FREQ])
             self._start: tuple[float, dict[int, float]] | None = None
             self.session_counted: int | None = None
+            self.session_interval_s: float | None = None
 
         def _busy(self) -> dict[int, float]:
             n = _k32.GetActiveProcessorCount(0xFFFF)
@@ -908,8 +909,10 @@ if IS_WINDOWS:
             """One interval as long as labrec's: over 10 s no idle CPU of the laptop lacked data (none of
             about 11,000 labrec readings in 10 Windows jobs was 0), over 0.5 s five or six of 13 did."""
             self._pdh.collect()
+            t0 = time.monotonic()
             time.sleep(SESSION_CLOCK_PDH_S)
             self._pdh.collect()
+            self.session_interval_s = time.monotonic() - t0
             mhz, self.session_counted = self._mhz()
             return [mhz]
 
@@ -1559,7 +1562,8 @@ def session_clock(plan: Plan, sampler: Any) -> dict[str, Any]:
            "source": "sampled at the session start"}
     counted = getattr(sampler, "session_counted", None)
     if isinstance(counted, int):  # Windows: one PDH interval, and how many measured CPUs had data in it
-        out.update(cpus_counted=counted, interval_s=SESSION_CLOCK_PDH_S)
+        span = getattr(sampler, "session_interval_s", None)
+        out.update(cpus_counted=counted, interval_s=round(span, 3) if isinstance(span, float) else None)
     return out
 
 
@@ -1630,7 +1634,10 @@ def run_all(plan: Plan, plan_text: bytes, out: Path, count: int | None, workdir:
     sampler = None if count is not None else HOST.make_sampler((plan.server_cpu, *plan.generator_cpus))
     saved = _install_stop_handlers()
     try:
-        clock = session_clock(plan, sampler) if sampler else None
+        try:
+            clock = session_clock(plan, sampler) if sampler else None
+        except OSError as e:  # no clock to compare the windows with: refused before the first window
+            raise PlanError(f"the session clock: {e}") from e
         session = session_line(plan, plan_text, count, clock, smoke, labrec)
         out.parent.mkdir(parents=True, exist_ok=True)
         try:
