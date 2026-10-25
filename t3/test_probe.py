@@ -12,6 +12,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE / "jobs"))
@@ -63,9 +64,14 @@ class SummaryTests(unittest.TestCase):
 
 
 class RefusalTests(unittest.TestCase):
+    def clean(self, porcelain: str = ""):
+        """The clone as clean (or as dirty) as the test needs, whatever this checkout's state."""
+        real = labsteps.git
+        return mock.patch.object(probe.L, "git", side_effect=lambda *a: porcelain if a[0] == "status" else real(*a))
+
     def test_refuses_a_missing_or_other_binary_and_accepts_the_right_one(self) -> None:
         head = labsteps.git("rev-parse", "HEAD")
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp, self.clean():
             f = Path(tmp) / "mserver"
             f.write_bytes(b"binary")
             good = hashlib.sha256(b"binary").hexdigest()
@@ -73,6 +79,20 @@ class RefusalTests(unittest.TestCase):
             r = probe.refusals({"_build_commit": head, "_expect_sha256": {str(f): "0" * 64, str(f) + "x": good}})
             self.assertEqual(len(r), 2)
         self.assertEqual(len(probe.refusals({"_build_commit": "", "_expect_sha256": {}})), 1)
+
+    def test_refuses_a_dirty_clone_and_a_commit_git_cannot_find(self) -> None:
+        head = labsteps.git("rev-parse", "HEAD")
+        with tempfile.TemporaryDirectory() as tmp:
+            f = Path(tmp) / "mserver"
+            f.write_bytes(b"binary")
+            want = {str(f): hashlib.sha256(b"binary").hexdigest()}
+            with self.clean(" M STATE.md"):
+                self.assertEqual(probe.refusals({"_build_commit": head, "_expect_sha256": want}),
+                                 ["the paper clone has local changes"])
+            with self.clean():
+                r = probe.refusals({"_build_commit": "0" * 40, "_expect_sha256": want})
+        self.assertEqual(len(r), 1)
+        self.assertIn("git could not compare", r[0])
 
     def test_the_session_must_name_the_same_binaries(self) -> None:
         session = {"p2gen": {"argv": ["/b/p2gen"], "sha256": "a"},
