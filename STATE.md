@@ -165,8 +165,8 @@ at commit 3ff814e50. Untimed, none quiet-checked; on each system the bring-up co
    llvm-22.1.8 (d96c2cc1...), rapidjson-1.1.0 with its two wrap files packed (bf7ced29..., c1480d0e...).
    Full digests in `tools\UNPACKED.txt`. Side effect, undone: a desktop run made rustup install a
    1.98.1 toolchain (02:10); removed, and the jobs set RUSTUP_AUTO_INSTALL=0.
-3. After the laptop's records: copy them into `lab/sanitizer-records`; add `t3/record.py` to
-   `lab/bin/test_report_pattern.sh`'s list of record writers.
+3. Done 2026-10-25 by the coordinator: the records filed (7fd305b, 7e0e6a0); `lab/bin/test_report_pattern.sh`
+   lists `t3/record.py` (skipped in the Papers checkout, which lacks round 3; this file's pattern checked).
 
 ## Alex decides
 
