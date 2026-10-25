@@ -114,7 +114,8 @@ windows. Not run on the desktop, by rule: any timed mode. Kernel features used: 
   requests explain them; `peer_closes` above 0 invalidates a window).
 - The overload edges: zero completions with timeouts is invalid; connect errors during overload make
   the window invalid.
-- Whether, and above what share, other processes' CPU (`others`) makes a window invalid; boost off.
+- Whether, and above what share, other processes' CPU (`others`) makes a window invalid; boost off;
+  each system's clock reference (Arch's idle CPUs read 3,201 MHz, busy ones about 3,168: a 1% bias).
 
 ## Laptop requests
 
@@ -125,22 +126,18 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
    checked), the suite, the runner's and record tools' tests, a count-mode pass of p2run. Row 0's A/A
    check of p2gen against t1gen stays in the pilot.
 4. Records, `t3/jobs/records.py OUT` (p2r3-records-l, -w): L ASan+UBSan, TSan and MSan, W clang-cl ASan.
-   Rows 0, 2 to 4 DONE on the laptop, 2026-10-25, at 3ff814e, every job exit 0 (as the coordinator reported; each
-   archive's sha256 checked by me, in `laptop-archive\gap9-w-q2-p2-a18f07bb\` and `gap9-a-q1-5b0f7b2a\`).
-   W: p2r3-bringup-w 02:11:46 to 03:11:48 EEST, every step green (840 checks, 168 of 168 windows);
-   p2r3-records-w 03:11:54 EEST to 03:41:56 EET: p2r3-3ff814e50-W-asan green, 0 reports, 5,270 s,
-   filed in Papers `lab/sanitizer-records/laptop-w/` (7e0e6a0). L: p2r3-bringup-l 09:48:38 to
-   10:48:39 EET, every step green (880 checks, 176 of 176 windows); p2r3-records-l 10:48:41 to
-   13:48:43: -L-asan, -L-tsan and -L-msan green, 0 reports (MSan's first run anywhere), 1,615, 1,711
-   and 2,582 s, filed in `lab/sanitizer-records/` (7fd305b), logs sha256 equal to the records'.
-   Gates (`t3/check_records.py --host-tag W --records <Papers>/lab/sanitizer-records/laptop-w`, and
-   L with `lab/sanitizer-records`) on each bring-up's build: green, W 21 targets with mserver-go's
-   gap, L 23 targets with Go's MSan and Rust's TSan and MSan gaps.
-1. Toolchains: done on both systems, 2026-10-24. W: Papers `lab/laptop/queues/gap2-w-q2-p2-toolchains.json`
-   at a27b47e, under `C:\Users\alext\opt` go-1.27.3, meson-1.12.1, libevent-2.1.13-stable, the
-   rapidjson-1.1.0 wrap files, boost-1.92.0, llvm-22.1.8, and P4's Rust 1.99.0. L: `a1-p2-toolchains-l`,
-   `~/opt/p2/go1.27.3`, Rust 1.99.0 in `~/opt/rustup` and `~/opt/cargo`, no pacman change. meson and
-   libevent publish only GPG signatures, so their sha256 pins are GitHub's asset digests.
+   Rows 0, 2 to 4 DONE, 2026-10-25, at 3ff814e, every job exit 0 (archives `laptop-archive\gap9-w-q2-p2-a18f07bb\`
+   and `gap9-a-q1-5b0f7b2a\`, sha256 checked). W: bring-up 02:11:46 to 03:11:48 EEST (840 checks, 168 of 168
+   windows); records to 03:41:56 EET: p2r3-3ff814e50-W-asan green, 0 reports, 5,270 s, filed in Papers
+   `lab/sanitizer-records/laptop-w/` (7e0e6a0). L: bring-up 09:48:38 to 10:48:39 EET (880 checks, 176 of 176);
+   records to 13:48:43: -L-asan, -L-tsan, -L-msan green, 0 reports (MSan's first run), 1,615, 1,711 and 2,582
+   s, in `lab/sanitizer-records/` (7fd305b). Gates (`t3/check_records.py --host-tag W --records
+   <Papers>/lab/sanitizer-records/laptop-w`; L with `lab/sanitizer-records`): green, W 21 targets
+   (mserver-go's gap), L 23 (Go's MSan, Rust's TSan and MSan gaps).
+1. Toolchains: done on both systems, 2026-10-24. W (Papers `lab/laptop/queues/gap2-w-q2-p2-toolchains.json`,
+   a27b47e): under `C:\Users\alext\opt` go-1.27.3, meson-1.12.1, libevent-2.1.13-stable, rapidjson-1.1.0 wraps,
+   boost-1.92.0, llvm-22.1.8, P4's Rust 1.99.0. L (`a1-p2-toolchains-l`): `~/opt/p2/go1.27.3`, Rust 1.99.0 in
+   `~/opt/rustup` and `~/opt/cargo`, no pacman change. meson's and libevent's pins are GitHub's asset digests.
 5. Timing probe before the freeze (p2r3-probe-l, -w: `t3/jobs/probe.py PLAN OUT` at 25fbd22, quiet,
    boost off): one mirrored round of every arm at m = 10 and 100,000, both shapes, pair (111, 211):
    176 windows on L, 168 on W (`t3/plans/probe-L.json`, `probe-W.json`). It times the bring-ups'
@@ -151,8 +148,11 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
    rule decides them). Hours: L 1,514 s (176 x H6's 6.30 s plus 88 start-ups of at most 4.6 s, round 2's
    table builds), W 1,415 s (168 x plan v2's 6.123 s plus 84 x 4.6 s), plus an unmeasured preflight and
    quiet check. Pre-freeze: never analysed for H8 to H10, never cited. APPROVED by Alex (2026-10-25, via
-   the coordinator): chain A3 from 14:55 EET, p2r3-probe-w (gap14-w-q1, timeout 7 h, W quiet the whole
-   job), then before 22:15 Arch's p2r3-probe-l (gap14-a-q1, timeout 10,800 s, so W again by 01:30).
+   the coordinator), chain A3: p2r3-probe-w (gap14-w-q1) 14:55:38 to 15:25:40 EET, exit 3 after 8 windows,
+   each "clock_drift" 67.8% (archive sha256 2a94788d checked; binary checks empty): the windows read
+   3,175 MHz, labrec's boost-off clock, but the reference was 1,892, four 0.5 s PDH samples in which 5 or 6
+   of 13 idle CPUs read 0. Fixed in f5bf53e (one 10 s interval, zeros left out, `cpus_counted`); W rerun
+   to request. Then Arch's p2r3-probe-l (gap14-a-q1, timeout 10,800 s) from 15:26: running.
 6. The campaign after the freeze: L 22 arms x 2 windows x 160 pairs and sizes = 7,040 windows, 44,352 s
    = 12.32 h; W 21 arms, 6,720 windows, 41,147 s = 11.43 h; together 23.75 h, 1.21 calendar days at 19.68
    measuring hours a day, plus the A/A pilot, start-up (no basis) and H7's MSVC costs on W (0.33 h, plan v2).
