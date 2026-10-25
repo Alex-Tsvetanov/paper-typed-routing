@@ -102,8 +102,8 @@ windows. Not run on the desktop, by rule: any timed mode. Kernel features used: 
    /tmp check. Kept: crates in P4's CARGO_HOME (D2); RapidJSON by git tag on Linux (in each record). Then
    development found Rust's two leaked boxes (freed after the runtime), actix-router's deliberate leak
    (suppressed, ASan only), Rust ASan on Windows on Visual Studio's runtime (LLVM's now first on LIB).
-5. The timed path and the probe (Sonnet, 2026-10-25): 1 HIGH (a failed `others` record made the window
-   a driver fault), 1 MEDIUM (the post-run binary check could pass vacuously), 5 LOW; all but 1 LOW fixed.
+5. Timed path and probe (Sonnet, 2026-10-25): 1 HIGH (a failed `others` record made a driver fault), 1 MEDIUM
+   (a vacuous post-run binary check), 5 LOW; all but 1 LOW fixed. 6. The Windows clock (Sonnet): 5 LOW, 4 fixed.
 
 ## To settle in the frozen text (with the freeze proposal and its hours)
 
@@ -138,24 +138,24 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
    a27b47e): under `C:\Users\alext\opt` go-1.27.3, meson-1.12.1, libevent-2.1.13-stable, rapidjson-1.1.0 wraps,
    boost-1.92.0, llvm-22.1.8, P4's Rust 1.99.0. L (`a1-p2-toolchains-l`): `~/opt/p2/go1.27.3`, Rust 1.99.0 in
    `~/opt/rustup` and `~/opt/cargo`, no pacman change. meson's and libevent's pins are GitHub's asset digests.
-5. Timing probe before the freeze (p2r3-probe-l, -w: `t3/jobs/probe.py PLAN OUT` at 25fbd22, quiet,
-   boost off): one mirrored round of every arm at m = 10 and 100,000, both shapes, pair (111, 211):
-   176 windows on L, 168 on W (`t3/plans/probe-L.json`, `probe-W.json`). It times the bring-ups'
-   binaries, refused unless their sha256s and the compiled sources equal 3ff814e's. First run of
-   p2run's timed path and of its per-window record of other processes (`others`: lab/laptop's labrec
-   from LAB_TOOLS; timed mode refuses without it). Desktop, count mode, c7153b3: 168 windows ran, binaries
-   matched, 6 invalid (Oat++ and actix-router at m = 100,000, every error a timeout; timed, the overload
-   rule decides them). Hours: L 1,514 s (176 x H6's 6.30 s plus 88 start-ups of at most 4.6 s, round 2's
-   table builds), W 1,415 s (168 x plan v2's 6.123 s plus 84 x 4.6 s), plus an unmeasured preflight and
-   quiet check. Pre-freeze: never analysed for H8 to H10, never cited. APPROVED by Alex (2026-10-25, via
-   the coordinator), chain A3: p2r3-probe-w (gap14-w-q1) 14:55:38 to 15:25:40 EET, exit 3 after 8 windows,
-   each "clock_drift" 67.8% (archive sha256 2a94788d checked; binary checks empty): the windows read
-   3,175 MHz, labrec's boost-off clock, but the reference was 1,892, four 0.5 s PDH samples in which 5 or 6
-   of 13 idle CPUs read 0. Fixed in f5bf53e (one 10 s interval, zeros left out, `cpus_counted`); W rerun
-   to request. Then Arch's p2r3-probe-l (gap14-a-q1, timeout 10,800 s) from 15:26: running.
-6. The campaign after the freeze: L 22 arms x 2 windows x 160 pairs and sizes = 7,040 windows, 44,352 s
-   = 12.32 h; W 21 arms, 6,720 windows, 41,147 s = 11.43 h; together 23.75 h, 1.21 calendar days at 19.68
-   measuring hours a day, plus the A/A pilot, start-up (no basis) and H7's MSVC costs on W (0.33 h, plan v2).
+5. Timing probe before the freeze (`t3/jobs/probe.py PLAN OUT`, quiet, boost off; `t3/plans/probe-L.json`,
+   `probe-W.json`): one mirrored round of every arm at m = 10 and 100,000, both shapes, pair (111, 211), 176
+   windows on L and 168 on W, timing the bring-ups' binaries (refused unless their sha256s and the compiled
+   sources equal 3ff814e's). Pre-freeze: never analysed for H8 to H10, never cited. Approved by Alex
+   (2026-10-25, via the coordinator), chain A3, at 25fbd22. Archives' sha256 checked; binary checks empty.
+   W, p2r3-probe-w (gap14-w-q1), 14:55:38 to 15:25:40 EET: exit 3 after 8 windows, each "clock_drift" 67.8%:
+   the windows read 3,175 MHz, labrec's boost-off clock; the reference 1,892, four 0.5 s PDH samples in
+   which 5 or 6 of 13 idle CPUs read 0. Fixed in f5bf53e (one 10 s interval, zeros left out, `cpus_counted`),
+   reviewed (nothing above LOW, fixed in 39bf126). L, p2r3-probe-l (gap14-a-q1), 15:26:33 to 15:56:35 EET:
+   exit 0, quiet passed, 176 windows: 172 valid, 4 overloaded (Drogon and actix-router at m = 100,000,
+   mixed-disjoint, only the error share); reference 3,197.8 MHz, drift at most 0.96%; `others` in every
+   window, at most 1.99% of one CPU; start-up at m = 100,000 at most 5.0 s (Drogon); spacing 6.05 s at
+   m = 10, 6.56 s at 100,000. NEXT: p2r3-probe-w-2 at 39bf126 (`t3/jobs/requests-2026-10-25-w2.json`), about
+   20 min (Windows' 6.29 s spacing, plus 0.52 s at m = 100,000 as on L, 18 s start, the 10 s clock), timeout
+   10,800 s; slots today to 01:30 or Monday 2026-10-26 after 19:15.
+6. The campaign after the freeze: L 7,040 windows (22 arms x 2 x 160 pairs and sizes), 12.02 h at the L probe's
+   spacing; W 6,720 windows, 11.43 h at plan v2's 6.123 s until its probe; together 23.45 h, 1.19 calendar days
+   at 19.68 measuring hours a day, plus the A/A pilot and H7's MSVC costs on W (0.33 h, plan v2).
 
 ## Lab requests
 
@@ -191,9 +191,9 @@ Open with Alex: none. The frozen-text items above go to him with the freeze prop
 
 1862c01 to 06adfe5 (servers, reviews 1 to 3, decisions, pins, v2 arms, generator, runner, final
 suites); a27b47e f9fc513 083b47c (Laptop request 1); 40e08db to 3ff814e (D5 tooling, laptop jobs,
-Windows Pistache and boost-url, review 4); c7153b3 to 25fbd22 (the probe, `others`, review 5); and the
-commits of these updates. `bench/` equals round 2's files except `isa.cmake`.
+Windows Pistache and boost-url, review 4); c7153b3 to 25fbd22 (the probe, `others`, review 5); f5bf53e
+39bf126 (the Windows clock, review 6); and the commits of these updates. `bench/` equals round 2's files except `isa.cmake`.
 
 ## Next engineering
 
-The probe (Laptop request 5); row 6's hours from its summary; the freeze proposal and its hours.
+The Windows probe rerun (Laptop request 5); W's row 6 hours from it; the freeze proposal and its hours.

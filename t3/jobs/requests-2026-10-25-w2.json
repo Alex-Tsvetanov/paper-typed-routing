@@ -1,0 +1,31 @@
+{
+ "about": "P2 round 3's laptop request 5, the Windows rerun of the timing probe (STATE.md, Laptop request 5), drafted in the lab queue's job format for the operator to copy into a queue; not a queue itself. Commit: 39bf1267e1f6481172b136e791ea9701b6d41559 on branch round3 of p2-typed-routing/typed-routing (local; bundled from that checkout as before). p2r3-probe-w at 25fbd22 stopped after 8 windows on clock_drift: the windows read 3,175 MHz, labrec's boost-off clock, but p2run's Windows reference read 1,892 MHz, four 0.5 s PDH samples in which 5 or 6 of the 13 idle measured CPUs read 0. Fixed in f5bf53e (the reference is one 10 s PDH interval, the length labrec uses; a CPU without data is left out; each window and the session record cpus_counted) and reviewed (nothing above LOW; the LOWs fixed in 39bf126). Only the runner changed: the binaries and _build_commit (3ff814e50) are the same, so probe.py's sha256 and compiled-source checks still bind the run to the gated bring-up builds. p2r3-probe-l at 25fbd22 ran clean on Arch (exit 0, 176 windows, 172 valid, 4 overloaded, drift at most 0.96%). Pre-freeze: never analysed for H8 to H10 and never cited.",
+ "jobs": [
+  {
+   "id": "p2r3-probe-w-2",
+   "paper": "P2",
+   "os": "windows",
+   "repo": {
+    "name": "typed-routing",
+    "path": "p2-typed-routing/typed-routing"
+   },
+   "commit": "39bf1267e1f6481172b136e791ea9701b6d41559",
+   "build": "",
+   "run": "\"%LAB_PYTHON%\" \"%LAB_SRC%\\t3\\jobs\\probe.py\" \"%LAB_SRC%\\t3\\plans\\probe-W.json\" \"%LAB_OUT%\\probe\"",
+   "outputs": [
+    "out/probe/probe-summary.json",
+    "out/probe/probe.jsonl",
+    "out/probe/probe.out",
+    "record.json"
+   ],
+   "quiet": true,
+   "boost": false,
+   "poll_s": 300,
+   "expected_s": 1200,
+   "timeout_s": 10800,
+   "note": "168 windows, as p2r3-probe-w: 21 arms x 2 windows x 2 sizes x 2 shapes, pair (111, 211); reads C:\\Users\\alext\\lab\\p2r3\\build-3ff814e50, progs-3ff814e50 and sets, writes only in LAB_OUT. expected_s from the two probes' own spacing: 84 windows at m = 10 x 6.29 s (p2r3-probe-w's 7 gaps) = 528 s, plus 84 at m = 100,000 x 6.80 s (that plus the 0.52 s that m = 100,000 added on Arch: 6.05 s to 6.56 s) = 571 s, plus 18 s from the run's start to the first window (p2r3-probe-w) and the new 10 s session clock: 1,127 s, rounded up. timeout_s 10,800 as the coordinator set for p2r3-probe-l, so the job ends before 01:30. W quiet hours: the whole job, about 20 minutes, one calendar day. Boost off, the lab's default.",
+   "run_label": "P2 round 3 timing probe on Windows, rerun: t3/jobs/probe.py over t3/plans/probe-W.json with the Windows session clock fixed; pre-freeze, never cited",
+   "plain": "Time one short round of every P2 router on Windows again, now that the clock check is fixed, to plan the hours of the real measurement; these numbers are never published"
+  }
+ ]
+}
