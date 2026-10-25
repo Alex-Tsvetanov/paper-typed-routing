@@ -1,5 +1,5 @@
 {
- "about": "P2 round 3's next laptop request (STATE.md, Laptop request 5): the timing probe before the freeze, one job per system, drafted in the lab queue's job format (lab/laptop/README.md) for the operator to copy into queues; not a queue itself. Commit: b325a3dfe34d58ed34196376d674ddc76aa95864 on branch round3 of p2-typed-routing/typed-routing (local; bundled from that checkout as before). It times the Release builds that p2r3-bringup-l and p2r3-bringup-w made at 3ff814e50 (gated green against the D5 records on 2026-10-25): t3/jobs/probe.py refuses (exit 2) before the first window unless each binary's sha256 is the bring-up's and no compiled source changed between 3ff814e50 and this commit (none did: only the runner, the probe job, its plans and tests). No build, no download. Pre-freeze: the windows are never analysed for H8 to H10 and never cited; probe-summary.json is for planning (verdicts, start-up seconds, spacing, the campaign's hours, the other processes' largest share) and holds no rate. First end-to-end run of p2run's timed path and of its per-window process record (labrec from LAB_TOOLS): the desktop checked count mode only (D7). Either system may go first; each job is quiet-checked at its start.",
+ "about": "P2 round 3's next laptop request (STATE.md, Laptop request 5): the timing probe before the freeze, one job per system, drafted in the lab queue's job format (lab/laptop/README.md) for the operator to copy into queues; not a queue itself. Commit: 25fbd228df6f4c4d3dd38c09d238dfc491d1af15 on branch round3 of p2-typed-routing/typed-routing (local; bundled from that checkout as before). It times the Release builds that p2r3-bringup-l and p2r3-bringup-w made at 3ff814e50 (gated green against the D5 records on 2026-10-25): t3/jobs/probe.py refuses (exit 2) before the first window unless each binary's sha256 is the bring-up's and no compiled source changed between 3ff814e50 and this commit (none did: only the runner, the probe job, its plans and tests). No build, no download. Pre-freeze: the windows are never analysed for H8 to H10 and never cited; probe-summary.json is for planning (verdicts, start-up seconds, spacing, the campaign's hours, the other processes' largest share) and holds no rate. First end-to-end run of p2run's timed path and of its per-window process record (labrec from LAB_TOOLS): the desktop checked count mode only (D7). Either system may go first; each job is quiet-checked at its start.",
  "jobs": [
   {
    "id": "p2r3-probe-l",
@@ -9,7 +9,7 @@
     "name": "typed-routing",
     "path": "p2-typed-routing/typed-routing"
    },
-   "commit": "b325a3dfe34d58ed34196376d674ddc76aa95864",
+   "commit": "25fbd228df6f4c4d3dd38c09d238dfc491d1af15",
    "build": "",
    "run": "\"$LAB_PYTHON\" \"$LAB_SRC/t3/jobs/probe.py\" \"$LAB_SRC/t3/plans/probe-L.json\" \"$LAB_OUT/probe\"",
    "outputs": [
@@ -35,7 +35,7 @@
     "name": "typed-routing",
     "path": "p2-typed-routing/typed-routing"
    },
-   "commit": "b325a3dfe34d58ed34196376d674ddc76aa95864",
+   "commit": "25fbd228df6f4c4d3dd38c09d238dfc491d1af15",
    "build": "",
    "run": "\"%LAB_PYTHON%\" \"%LAB_SRC%\\t3\\jobs\\probe.py\" \"%LAB_SRC%\\t3\\plans\\probe-W.json\" \"%LAB_OUT%\\probe\"",
    "outputs": [

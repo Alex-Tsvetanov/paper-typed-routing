@@ -95,15 +95,15 @@ windows. Not run on the desktop, by rule: any timed mode. Kernel features used: 
 1. First diff (Opus): 0 CRITICAL, 3 HIGH, 3 MEDIUM, 10 LOW; HIGH and MEDIUM fixed, one LOW too.
 2. Generator and v2 arms (Opus): 0 CRITICAL, 1 HIGH (Go and Rust tied to the C++ v2 build), 3 MEDIUM;
    all fixed. 3. The runner: reviewed by a fresh agent in its own task.
-4. D5 tooling and the laptop jobs (Opus, 2026-10-24): 0 CRITICAL, 2 HIGH, 3 MEDIUM, 4 LOW. Fixed:
-   bare commands resolved on the job's PATH (Windows); records only on the laptop's host and CPU,
-   checked again by the gate; Go and Rust toolchains and found tool trees compared; no green record
-   without kept logs; the system's arms required; the arm list logged; no inherited sanitizer
-   options; p2v2.h in the Go hash; Go caches under P2R3; the /tmp check. Kept: crates in P4's shared
-   CARGO_HOME (Alex's D2); RapidJSON by git tag on Linux, as round 2 (listed in each record).
-   The development passes then found: Rust's two leaked boxes (now freed after the runtime) and
-   actix-router's deliberate leak (round 2's suppression, ASan builds only); Rust ASan on Windows
-   linked Visual Studio's runtime (LLVM's now first on LIB); libevent's and meson's checks under ASan.
+4. D5 tooling and the laptop jobs (Opus, 2026-10-24): 0 CRITICAL, 2 HIGH, 3 MEDIUM, 4 LOW. Fixed: bare
+   commands resolved on the job's PATH (Windows); records only on the laptop's host and CPU, checked again
+   by the gate; toolchains and found trees compared; no green record without kept logs; the system's arms
+   required and logged; no inherited sanitizer options; p2v2.h in the Go hash; Go caches under P2R3; the
+   /tmp check. Kept: crates in P4's CARGO_HOME (D2); RapidJSON by git tag on Linux (in each record). Then
+   development found Rust's two leaked boxes (freed after the runtime), actix-router's deliberate leak
+   (suppressed, ASan only), Rust ASan on Windows on Visual Studio's runtime (LLVM's now first on LIB).
+5. The timed path and the probe (Sonnet, 2026-10-25): 1 HIGH (a failed `others` record made the window
+   a driver fault), 1 MEDIUM (the post-run binary check could pass vacuously), 5 LOW; all but 1 LOW fixed.
 
 ## To settle in the frozen text (with the freeze proposal and its hours)
 
@@ -141,12 +141,12 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
    rapidjson-1.1.0 wrap files, boost-1.92.0, llvm-22.1.8, and P4's Rust 1.99.0. L: `a1-p2-toolchains-l`,
    `~/opt/p2/go1.27.3`, Rust 1.99.0 in `~/opt/rustup` and `~/opt/cargo`, no pacman change. meson and
    libevent publish only GPG signatures, so their sha256 pins are GitHub's asset digests.
-5. Timing probe before the freeze (p2r3-probe-l, -w: `t3/jobs/probe.py PLAN OUT` at b325a3d, quiet,
+5. Timing probe before the freeze (p2r3-probe-l, -w: `t3/jobs/probe.py PLAN OUT` at 25fbd22, quiet,
    boost off): one mirrored round of every arm at m = 10 and 100,000, both shapes, pair (111, 211):
    176 windows on L, 168 on W (`t3/plans/probe-L.json`, `probe-W.json`). It times the bring-ups'
    binaries, refused unless their sha256s and the compiled sources equal 3ff814e's. First run of
    p2run's timed path and of its per-window record of other processes (`others`: lab/laptop's labrec
-   from LAB_TOOLS; timed mode refuses without it). Desktop check, count mode: 168 windows ran, binaries
+   from LAB_TOOLS; timed mode refuses without it). Desktop, count mode, c7153b3: 168 windows ran, binaries
    matched, 6 invalid (Oat++ and actix-router at m = 100,000; every error a timeout at the 1 s stall
    limit; timed p2gen exits 0 then, so the overload rule decides them). Hours: L 1,514 s (176 x H6's
    6.30 s plus 88 start-ups of at most 4.6 s, round 2's table builds), W 1,415 s (168 x plan v2's
@@ -181,9 +181,9 @@ pilot. 8. The latest releases; then Crow's 1.3.5 pre-release and Go 1.27.3. 9. B
 `round3` at the freeze. 13. (2026-10-24) Pistache's logging installer patched out of the fetched
 meson build (it would write into Program Files, the event log and HKCU).
 
-Queue plan (Alex, 2026-10-23, Papers `lab/laptop/queue-plan-2026-10-draft.md` section 10): the gap
-block approved; D1 no pacman change on L until P4's Arch blocks end, versions side by side under
-`~/opt`; D2 P2 keeps Go 1.27.3 and takes P4's Rust 1.99.0; D4 P4's idle day: read-only jobs only.
+Queue plan (Alex, 2026-10-23, Papers `lab/laptop/queue-plan-2026-10-draft.md` section 10): gap block
+approved; D1 no pacman change on L until P4's Arch blocks end, versions side by side under `~/opt`;
+D2 P2 keeps Go 1.27.3 and takes P4's Rust 1.99.0; D4 P4's idle day: read-only jobs only.
 
 Open with Alex: none. The frozen-text items above go to him with the freeze proposal and its hours.
 
@@ -191,8 +191,8 @@ Open with Alex: none. The frozen-text items above go to him with the freeze prop
 
 1862c01 to 06adfe5 (servers, reviews 1 to 3, decisions, pins, v2 arms, generator, runner, final
 suites); a27b47e f9fc513 083b47c (Laptop request 1); 40e08db to 3ff814e (D5 tooling, laptop jobs,
-Windows Pistache and boost-url, review 4); c7153b3 b325a3d (the probe, `others`); and the commit of
-this update. `bench/` equals round 2's files except `isa.cmake`.
+Windows Pistache and boost-url, review 4); c7153b3 to 25fbd22 (the probe, `others`, review 5); and the
+commits of these updates. `bench/` equals round 2's files except `isa.cmake`.
 
 ## Next engineering
 
