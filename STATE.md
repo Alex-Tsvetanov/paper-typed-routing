@@ -190,11 +190,10 @@ Open with Alex: none (he quiets W himself; p2r3-pilot-w waits for the lab's chec
 
 ## Commits on `round3` (local, not pushed)
 
-1862c01 to 06adfe5 (servers, reviews 1 to 3, decisions, pins, v2 arms, generator, runner, final
-suites); a27b47e f9fc513 083b47c (Laptop request 1); 40e08db to 3ff814e (D5 tooling, laptop jobs,
-Windows Pistache and boost-url, review 4); c7153b3 to 25fbd22 (the probe, `others`, review 5); f5bf53e
-39bf126 (the Windows clock, review 6); 76baac8 to dec7e54 (the A/A pilot, review 7); and these updates. `bench/` equals round 2's files except `isa.cmake`.
+1862c01 to 06adfe5 (servers, reviews 1 to 3, generator, runner); a27b47e to 083b47c (request 1); 40e08db to
+3ff814e (D5, laptop jobs, review 4); c7153b3 to 39bf126 (probe, `others`, Windows clock, reviews 5, 6); 76baac8
+to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); docs. `bench/` is round 2's but `isa.cmake`.
 
 ## Next engineering
 
-The A/A pilot (row 7), then from it delta, H9's minimum and H10's margin; then the freeze proposal.
+Pilot (row 7) and t1gen check (row 8); then delta, H9's minimum, H10's margin; then the freeze proposal.
