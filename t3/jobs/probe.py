@@ -106,7 +106,8 @@ def summarize(rows: list, arms_per_system: int) -> dict:
     for w in windows:
         by_status[w.get("status", "?")] = by_status.get(w.get("status", "?"), 0) + 1
     out = {"windows": len(windows), "by_status": by_status,
-           "not_valid": [{k: w.get(k) for k in ("program", "arm", "shape", "m", "status", "reasons")}
+           "not_valid": [{k: w.get(k) for k in ("seq", "program", "arm", "entry", "shape", "m", "table_seed", "status",
+                                                "reasons")}
                          for w in windows if w.get("status") != "valid"]}
     startup: dict = {}
     for w in windows:
