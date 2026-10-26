@@ -178,14 +178,15 @@ cost tested (H10). 6. Mixed-disjoint and static, five sizes each. 7. H8's margin
 pilot. 8. The latest releases; then Crow's 1.3.5 pre-release and Go 1.27.3. 9. Boost headers added.
 10. Pistache's meson build on Windows. 11. Go routers as their libraries' handlers. 12. Push
 `round3` at the freeze. 13. (2026-10-24) Pistache's logging installer patched out of the fetched
-meson build (it would write into Program Files, the event log and HKCU).
+meson build (it would write into Program Files, the event log and HKCU). (2026-10-26) 14. The pilot in
+all three programs. 15. delta from each direction's 97.5th percentile. 16. "Shut those processes down"
+(Windows Update, Defender; the lab's to do; the 10% rule stays a guard). 17. The t1gen check reported only.
 
 Laptop time (Alex, 2026-10-26, Papers AGENTS.md bc1a76d): "Do not wait on me. Laptop is available 24/7
 so just carry on and use it." A request goes to the coordinator when final and is queued at once; a
 freeze proposal states its hours as information. Design, scope and pushes still go to Alex.
 
-Open with Alex (2026-10-26, decisions 14 to 17): the pilot's programs, the percentile's reading, the
-rule for other processes' CPU, the t1gen check. The pilot runs under the recommended options meanwhile.
+Open with Alex: none. With the coordinator: quieting Windows Update and Defender before p2r3-pilot-w.
 
 ## Commits on `round3` (local, not pushed)
 

@@ -240,7 +240,7 @@ window on Arch, 6.29 to 6.81 s on Windows; v2 starts fast, so these are upper bo
   delta measured in another server.
 
 **Recommendation.** (a). One delta is applied to all three servers' cells, so it should be measured
-in all three; laptop time no longer limits it.
+in all three; laptop time no longer limits it. **Answered by Alex on 2026-10-26 (AskUserQuestion): (a).**
 
 ## 15. The percentile that sets delta (2026-10-26)
 
@@ -256,7 +256,7 @@ the percentile by linear interpolation (numpy's default). The words allow two re
   in each tail; a larger delta than (a).
 
 **Recommendation.** (a). H8 tests one direction (is v2 slower) at 2.5%; (a) is the noise of that
-direction for either naming of the two entries.
+direction for either naming of the two entries. **Answered by Alex on 2026-10-26 (AskUserQuestion): (a).**
 
 ## 16. Other processes' CPU during a window (2026-10-26)
 
@@ -275,6 +275,10 @@ The rule also decides which pilot windows count, so it moves delta.
 **Recommendation.** (a). A window where other work took a tenth of a CPU is not the quiet host the
 method states. With R = 16 a cell of H8 can lose two pairs and still pass Holm (2^-14 = 6.1e-5 below
 8.06e-5), and the probes suggest about one such window in 170, all on Windows.
+**Answered by Alex on 2026-10-26 (AskUserQuestion), none of the options: "Shut those processes down."**
+Windows Update and Defender are to be quieted on the laptop's Windows for the runs, by the lab (his
+`alex-admin.ps1`), not by this session; passed to the coordinator. The 10% rule of (a) stays in the
+text and the analysis as a guard unless he says otherwise.
 
 ## 17. p2gen against t1gen on Arch (2026-10-26)
 
@@ -290,4 +294,4 @@ compare arms under one generator, so a bias common to both arms cancels in their
 - (c) Drop the check; the A/A pilot measures p2gen's own noise.
 
 **Recommendation.** (a). There is no basis for a threshold between two generators, and the tested
-ratios do not depend on a shared bias.
+ratios do not depend on a shared bias. **Answered by Alex on 2026-10-26 (AskUserQuestion): (a).**

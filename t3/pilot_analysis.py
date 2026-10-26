@@ -35,8 +35,8 @@ from collections import Counter
 from pathlib import Path
 
 DELTA_FLOOR = 1.02  # decision 7 (b)
-DELTA_READING = "a"  # decision 15, its recommended option until Alex answers
-OTHERS_MAX_PCT: float | None = 10.0  # decision 16 (a), its recommended option until Alex answers; None: no rule
+DELTA_READING = "a"  # decision 15, Alex's answer (2026-10-26)
+OTHERS_MAX_PCT: float | None = 10.0  # decision 16: a guard; Alex had the processes shut down instead (2026-10-26)
 AA_ARM = "v2"
 PLANS = Path(__file__).resolve().parent / "plans"
 SYSTEMS = {"linux": "pilot-L.json", "windows": "pilot-W.json"}

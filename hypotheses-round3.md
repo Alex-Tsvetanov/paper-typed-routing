@@ -38,8 +38,8 @@ into a sink, as round 2's timed loops do.
 R = 16 seed pairs, round 2's (table seeds 111 to 126, ring seeds 211 to 226). Per pair, size and
 system, one mirrored round per program, a fresh server per window, a 1 s warm-up and a 5 s window
 (lab/t1's window rules), and a window is invalid when other processes took more than 10% of one CPU
-over it, or when it has no record of them (decision 16, open). The A/A pilot and the timing probe
-come first.
+over it, or when it has no record of them (a guard; decision 16: the lab quiets Windows Update and
+Defender for the runs). The A/A pilot and the timing probe come first.
 
 ## 3a. The A/A pilot (fixed 2026-10-26, before it runs)
 
@@ -60,10 +60,9 @@ come first.
   four decimals.
 - Per system and program, the median and the 97.5th percentile of |d|: the A/A noise from which H9's
   minimum D_T0 and H10's margin are fixed before the freeze.
-- Code: `t3/pilot_analysis.py` (commit 716ac9b). Which programs (decision 14), the reading of the
-  percentile (15) and the 10% rule (16) are the recommended options, open with Alex. An answer before
-  the pilot runs changes this section first. An answer after it is a revision-log entry: for 15 or 16
-  the analysis runs again on the same rows; for 14 the pilot runs again.
+- Code: `t3/pilot_analysis.py` (commit 716ac9b). Alex chose all three programs (decision 14) and the
+  reading above (15) on 2026-10-26. On other processes (16) he chose no rule: "Shut those processes
+  down" (Windows Update and Defender, quieted by the lab); the 10% rule stays as a guard.
 
 ## 4. Hypotheses (proposed)
 
@@ -126,3 +125,4 @@ Alex answered the design questions on 2026-10-23 (`design/round3/decisions-for-a
 - 2026-10-23: first draft.
 - 2026-10-26: section 3a, the A/A pilot's procedure and rule, fixed before it runs. Before it, the
   timing probe ran on both systems (pre-freeze, never analysed for H8 to H10); no arm was compared.
+- 2026-10-26: Alex's answers to decisions 14 to 17 (sections 3 and 3a); the rule is unchanged.
