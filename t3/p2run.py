@@ -14,7 +14,8 @@ started in, because the programs run in the work directory.
 
 Sequence. For each shape, for each size, for each seed pair, for each program: one mirrored round
 over the program's arms (a, b, ..., z, z, ..., b, a). A plan lists the arms once, in the order a
-to z. A window is one arm of one round.
+to z, or one arm twice for an A/A round (v2, v2, v2, v2: entry 0 first and last). A window is one
+entry of one round.
 
 Modes.
   timed (no --count)  the real runs, on the laptop only. Samples the CPUs and the clock, and

@@ -90,15 +90,79 @@ class DeltaTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             A.delta(rs, "c")
 
-    def test_the_file_gives_delta_and_the_noise_table(self) -> None:
-        rows = [SESSION, *aa_round(100_000.0, 99_000.0), *aa_round(100_000.0, 101_000.0, pair=112)]
+    def test_delta_is_rounded_up(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            src, out = Path(tmp) / "l.jsonl", Path(tmp) / "r.json"
-            src.write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
-            self.assertEqual(A.main([str(src), "--out", str(out)]), 0)
-            got = json.loads(out.read_text(encoding="utf-8"))
-        self.assertEqual((got["replicates"], got["rule"]["delta_reading"]), (2, A.DELTA_READING))
-        self.assertEqual([(n["system"], n["program"], n["replicates"]) for n in got["noise"]], [("linux", "mserver", 2)])
+            got = run_files(Path(tmp), {"linux": [aa_round(100_000.0, 97_000.0)], "windows": [aa_round(1.0, 1.0)]})
+        self.assertEqual(got[0], 0)
+        exact = A.delta([100_000.0 / 97_000.0, 1.0])
+        self.assertGreaterEqual(got[1]["delta"], exact)
+        self.assertLess(got[1]["delta"] - exact, 1e-4)
+
+
+def pilot_file(system: str, rounds: list[list[dict]], **session) -> list[dict]:
+    """A complete synthetic pilot file of one system: its session line, then its rounds' windows in order."""
+    windows = [dict(w, seq=i) for i, w in enumerate(w for r in rounds for w in r)]
+    head = {"type": "session", "system": system, "mode": "timed", "plan": {"pilot": system}, "windows": len(windows)}
+    return [dict(head, **session), *windows]
+
+
+def run_files(tmp: Path, by_system: dict, **session) -> tuple[int, dict | None]:
+    """Writes synthetic pilot files and plans into tmp, runs main, returns its exit and result."""
+    plans = tmp / "plans"
+    plans.mkdir(exist_ok=True)
+    for system, name in A.SYSTEMS.items():
+        (plans / name).write_text(json.dumps({"pilot": system, "_comment": "x"}), encoding="utf-8")
+    files = []
+    for i, (system, rounds) in enumerate(by_system.items()):
+        rows = rounds if rounds and isinstance(rounds[0], dict) else pilot_file(system, rounds, **session)
+        files.append(tmp / f"{i}-{system}.jsonl")
+        files[-1].write_text("".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    out = tmp / "r.json"
+    rc = A.main([*map(str, files), "--out", str(out)], plans=plans)
+    return rc, json.loads(out.read_text(encoding="utf-8")) if out.exists() else None
+
+
+class FileTests(unittest.TestCase):
+    def test_both_systems_give_delta_and_the_noise_table(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            rc, got = run_files(Path(tmp), {"linux": [aa_round(100_000.0, 99_000.0), aa_round(1.0, 1.0, pair=112)],
+                                            "windows": [aa_round(90_000.0, 91_000.0, program="mserver-go")]})
+        self.assertEqual(rc, 0)
+        self.assertEqual((got["replicates"], got["rule"]["delta_reading"]), (3, A.DELTA_READING))
+        self.assertEqual([(n["system"], n["program"], n["replicates"]) for n in got["noise"]],
+                         [("linux", "mserver", 2), ("windows", "mserver-go", 1)])
+
+    def test_files_the_rule_does_not_accept_are_refused(self) -> None:
+        good = [aa_round(1.0, 1.0)]
+        cases = {
+            "one system": {"linux": good},
+            "count mode": {"linux": good, "windows": good, "_session": {"mode": "count"}},
+            "another plan": {"linux": good, "windows": good, "_session": {"plan": {"pilot": "other"}}},
+            "a window short": {"linux": pilot_file("linux", good)[:-1], "windows": good},
+            "a window twice": {"linux": [*pilot_file("linux", good), pilot_file("linux", good)[1]], "windows": good},
+            "no session": {"linux": pilot_file("linux", good)[1:], "windows": good},
+        }
+        for name, case in cases.items():
+            session = case.pop("_session", {})
+            with tempfile.TemporaryDirectory() as tmp:
+                self.assertEqual(run_files(Path(tmp), case, **session), (2, None), name)
+
+    def test_a_second_file_of_one_system_is_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            rc, _ = run_files(tmp, {"linux": [aa_round(1.0, 1.0)], "windows": [aa_round(1.0, 1.0)]})
+            self.assertEqual(rc, 0)
+            plans, files = tmp / "plans", sorted(tmp.glob("*.jsonl"))
+            self.assertEqual(A.main([*map(str, files), str(files[0]), "--out", str(tmp / "x.json")], plans=plans), 2)
+
+    def test_a_window_without_others_or_answers_does_not_count(self) -> None:
+        blind = aa_round(1.0, 1.0)
+        blind[1]["others"] = {}
+        empty = aa_round(1.0, 1.0, pair=112)
+        empty[3]["generator"]["measure"]["completed"] = 0
+        reps, dropped = A.replicates([SESSION, *blind, *empty])
+        self.assertEqual((reps, dict(dropped)), ([], {"no record of other processes": 1,
+                                                      "no timed generator line with a completed answer": 1}))
 
 
 class PlanTests(unittest.TestCase):
