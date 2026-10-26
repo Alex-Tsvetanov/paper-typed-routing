@@ -47,19 +47,15 @@ No timing on the desktop; no laptop access; nothing pushed; drafts only; no em o
 - `t3/`: `e2e_requests.cpp` and `make_requests.py` (160 cells: two shapes, five sizes, sixteen
   pairs; digests in `requests-manifest.tsv`), `check_server.py`, `run_checks.py`,
   `build_programs.py` (one Go and one Rust binary per system against a named C++ build, sha256s in
-  `build-info.json`), `gen/` (`p2gen`, the load generator), `p2run.py` (the window runner),
-  `jobs/probe.py` and `plans/probe-*.json` (the timing probe, `test_probe.py`).
+  `build-info.json`), `gen/` (`p2gen`, the load generator), `p2run.py` (the window runner); laptop
+  jobs `jobs/probe.py`, `pilot.py`, `gencheck.py` with `plans/*.json`; `pilot_analysis.py`, `gencheck_analysis.py`.
 - `bench/cmake/isa.cmake`: MSVC (`/arch:AVX2`) and clang-cl (`-march=native`) branches.
-- D5 and the laptop jobs (`design/round3/end-to-end.md`, section 8), one Python code path for both
-  systems: `t3/labsteps.py` (toolchains, configure, inputs, logs), `t3/sanitize.py` (one record:
-  build, CTest, inputs, programs, request-set cells, suite, count-mode load; name
-  `p2r3-<code>-<L|W>-<san>`; `--desktop` reads no time and names it `-desktop`), `t3/record.py`,
-  `t3/coverage.json` (round 3's gaps; round 2's `bench/coverage.json` untouched),
-  `t3/check_records.py` (the gate), `t3/source_hash.py` (Go and Rust inputs),
-  `t3/jobs/bringup.py`, `t3/jobs/records.py`, `t3/test_records.py`; `server/tests/test_p2v2.cpp`
-  (v2's C interface, static and DLL); `server/cmake/boost-headers/` (Boost on Windows,
-  `P2_BOOST_ROOT`); `server/cmake/pistache-windows.cmake` (`P2_MESON`, `P2_LIBEVENT_SRC`,
-  `P2_RAPIDJSON_WRAP`); clang-cl ASan links the driver's runtime (root `CMakeLists.txt`).
+- D5 (`end-to-end.md`, section 8), one Python code path for both systems: `t3/labsteps.py`, `t3/sanitize.py`
+  (one record `p2r3-<code>-<L|W>-<san>`: build, CTest, inputs, programs, request-set cells, suite, count-mode
+  load), `t3/record.py`, `t3/coverage.json` (round 3's gaps), `t3/check_records.py` (the gate),
+  `t3/source_hash.py` (Go and Rust inputs), `t3/jobs/bringup.py`, `records.py`; `server/tests/test_p2v2.cpp`
+  (v2's C interface, static and DLL); `server/cmake/boost-headers/` and `pistache-windows.cmake` (Windows);
+  clang-cl ASan links the driver's runtime (root `CMakeLists.txt`).
 
 ## Pins (Alex, 2026-10-23: the latest releases)
 
@@ -159,7 +155,7 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
    v2 against v2 in all three programs, one 4-window round at every H8 cell, 1,920 windows per system, the
    bring-ups' binaries. About 3.3 h on L and 3.4 h on W (the probes' spacing, upper bounds), timeout 7 h;
    W quiet the whole job. Desktop count check at 76baac8: 96 of 96 reduced windows; review 7 fixed. QUEUED
-   (2026-10-26): L gap17-a-q1 in Arch visit A4 (about 00:00), then W gap17-w-q1 after it.
+   (2026-10-26): L gap17-a-q1 in Arch visit A4 (about 00:00); W gap17-w-q1 after the quieting check passes.
 
 ## Lab requests
 
@@ -180,13 +176,14 @@ pilot. 8. The latest releases; then Crow's 1.3.5 pre-release and Go 1.27.3. 9. B
 10. Pistache's meson build on Windows. 11. Go routers as their libraries' handlers. 12. Push
 `round3` at the freeze. 13. (2026-10-24) Pistache's logging installer patched out of the fetched
 meson build (it would write into Program Files, the event log and HKCU). (2026-10-26) 14. The pilot in
-all three programs. 15. delta from each direction's 97.5th percentile. 16. "Shut those processes down"
-(Windows Update, Defender; the lab's to do; the 10% rule stays a guard). 17. The t1gen check reported only.
+all three programs. 15. delta from each direction's 97.5th percentile. 16. "Shut those processes down":
+Windows Update and Defender's real-time protection off on W for good (Alex runs Papers
+`lab/laptop/alex-admin-quiet.ps1`, e3dc740; a lab job checks it); the 10% rule stays a guard. 17. t1gen reported only.
 
 Laptop time (Alex, 2026-10-26, AGENTS.md bc1a76d): "Do not wait on me. Laptop is available 24/7 so just carry
 on and use it." Requests go to the coordinator when final; design, scope and pushes still go to Alex.
 
-Open with Alex: none. With the coordinator: quieting Windows Update and Defender before p2r3-pilot-w.
+Open with Alex: none (he quiets W himself; p2r3-pilot-w waits for the lab's check of it).
 
 ## Commits on `round3` (local, not pushed)
 
