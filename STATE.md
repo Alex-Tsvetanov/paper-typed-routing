@@ -95,15 +95,13 @@ windows. Not run on the desktop, by rule: any timed mode. Kernel features used: 
 1. First diff (Opus): 0 CRITICAL, 3 HIGH, 3 MEDIUM, 10 LOW; HIGH and MEDIUM fixed, one LOW too.
 2. Generator and v2 arms (Opus): 0 CRITICAL, 1 HIGH (Go and Rust tied to the C++ v2 build), 3 MEDIUM;
    all fixed. 3. The runner: reviewed by a fresh agent in its own task.
-4. D5 tooling and the laptop jobs (Opus, 2026-10-24): 0 CRITICAL, 2 HIGH, 3 MEDIUM, 4 LOW. Fixed: bare
-   commands resolved on the job's PATH (Windows); records only on the laptop's host and CPU, checked again
-   by the gate; toolchains and found trees compared; no green record without kept logs; the system's arms
-   required and logged; no inherited sanitizer options; p2v2.h in the Go hash; Go caches under P2R3; the
-   /tmp check. Kept: crates in P4's CARGO_HOME (D2); RapidJSON by git tag on Linux (in each record). Then
-   development found Rust's two leaked boxes (freed after the runtime), actix-router's deliberate leak
-   (suppressed, ASan only), Rust ASan on Windows on Visual Studio's runtime (LLVM's now first on LIB).
+4. D5 tooling and the laptop jobs (Opus, 2026-10-24): 0 CRITICAL, 2 HIGH, 3 MEDIUM, 4 LOW. Fixed: bare commands
+   on the job's PATH; records only on the laptop's host and CPU; toolchains and found trees compared; no green
+   record without kept logs; arms required and logged; no inherited sanitizer options; p2v2.h in the Go hash.
+   Development then found Rust's leaked boxes (freed), actix-router's leak (suppressed, ASan only), LLVM's runtime.
 5. Timed path and probe (Sonnet, 2026-10-25): 1 HIGH (a failed `others` record made a driver fault), 1 MEDIUM
    (a vacuous post-run binary check), 5 LOW; all but 1 LOW fixed. 6. The Windows clock (Sonnet): 5 LOW, 4 fixed.
+7. The A/A pilot (Sonnet, 2026-10-26): 2 HIGH (the analysis took incomplete or doubled files), 3 MEDIUM, 6 LOW; fixed.
 
 ## To settle in the frozen text (with the freeze proposal and its hours)
 
@@ -155,18 +153,19 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
      reference 3,169.8 MHz, 13 of 13 CPUs over 10.001 s, drift at most 0.34%; start-up at most 5.75 s; 6.29, 6.81 s.
 6. The campaign after the freeze, at the probes' spacing: L 7,040 windows (22 arms x 2 x 160 pairs and sizes),
    12.02 h; W 6,720 windows, 11.93 h, plus H7's MSVC costs (0.33 h, plan v2's desktop basis): together 24.28 h,
-   1.23 calendar days at 19.68 measuring hours a day; W quiet 12.26 h. Not in it: the A/A pilot (not sized).
+   1.23 calendar days at 19.68 measuring hours a day; W quiet 12.26 h. Not in it: the A/A pilot (row 7).
+7. A/A pilot (p2r3-pilot-l, -w at dec7e54, `t3/jobs/requests-2026-10-26-pilot.json`; `t3/jobs/pilot.py`,
+   `t3/plans/pilot-L.json`, `pilot-W.json`; rule in `hypotheses-round3.md` 3a, analysis `t3/pilot_analysis.py`):
+   v2 against v2 in all three programs, one 4-window round at every H8 cell, 1,920 windows per system, the
+   bring-ups' binaries. About 3.3 h on L and 3.4 h on W (the probes' spacing, upper bounds), timeout 7 h;
+   W quiet the whole job. Desktop count check at 76baac8: 96 of 96 reduced windows; review 7 fixed. SENT.
 
 ## Lab requests
 
-1. Done 2026-10-23 (image 7f39a629ada0: Rust 1.98.1, Go 1.27.1, Boost 1.92.0). Wanted: Go 1.27.3 and
-   Rust 1.99.0 side by side in the image (Alex, 2026-10-23); until then the container runs others.
+1. Done 2026-10-23 (image 7f39a629ada0: Rust 1.98.1, Go 1.27.1, Boost 1.92.0); Go 1.27.3 and Rust 1.99.0 wanted.
 2. Done 2026-10-24 by me with the coordinator's yes: the archives of `C:\Users\alext\lab\dl-gap1-p2-2026-10-24`
-   and `dl-gap2-p2-2026-10-24` (read only) copied out, each sha256 checked against its MANIFEST.json,
-   unpacked by the laptop script's methods into `D:\Dev\worktrees\p2r3-build\tools\`, each tree equal to
-   the laptop's: go-1.27.3 f26081f4, meson-1.12.1 ab0a6ca0, libevent-2.1.13-stable f7e9383b, boost-1.92.0
-   69370b3e, llvm-22.1.8 d96c2cc1, rapidjson-1.1.0 bf7ced29 with its wraps c1480d0e (full: `tools\UNPACKED.txt`).
-   A desktop rustup install of 1.98.1 (02:10) was removed; the jobs set RUSTUP_AUTO_INSTALL=0.
+   and `dl-gap2-...` (read only), sha256 checked against MANIFEST.json, unpacked into `D:\Dev\worktrees\p2r3-build\
+   tools\`, equal to the laptop's trees (digests in `tools\UNPACKED.txt`). A desktop rustup 1.98.1 was removed.
 3. Done 2026-10-25 by the coordinator: the records filed (7fd305b, 7e0e6a0); `lab/bin/test_report_pattern.sh`
    lists `t3/record.py` (skipped in the Papers checkout, which lacks round 3; this file's pattern checked).
 
@@ -181,19 +180,20 @@ pilot. 8. The latest releases; then Crow's 1.3.5 pre-release and Go 1.27.3. 9. B
 `round3` at the freeze. 13. (2026-10-24) Pistache's logging installer patched out of the fetched
 meson build (it would write into Program Files, the event log and HKCU).
 
-Queue plan (Alex, 2026-10-23, Papers `lab/laptop/queue-plan-2026-10-draft.md` section 10): gap block
-approved; D1 no pacman change on L until P4's Arch blocks end, versions side by side under `~/opt`;
-D2 P2 keeps Go 1.27.3 and takes P4's Rust 1.99.0; D4 P4's idle day: read-only jobs only.
+Laptop time (Alex, 2026-10-26, Papers AGENTS.md bc1a76d): "Do not wait on me. Laptop is available 24/7
+so just carry on and use it." A request goes to the coordinator when final and is queued at once; a
+freeze proposal states its hours as information. Design, scope and pushes still go to Alex.
 
-Open with Alex: none. The frozen-text items above go to him with the freeze proposal and its hours.
+Open with Alex (2026-10-26, decisions 14 to 17): the pilot's programs, the percentile's reading, the
+rule for other processes' CPU, the t1gen check. The pilot runs under the recommended options meanwhile.
 
 ## Commits on `round3` (local, not pushed)
 
 1862c01 to 06adfe5 (servers, reviews 1 to 3, decisions, pins, v2 arms, generator, runner, final
 suites); a27b47e f9fc513 083b47c (Laptop request 1); 40e08db to 3ff814e (D5 tooling, laptop jobs,
 Windows Pistache and boost-url, review 4); c7153b3 to 25fbd22 (the probe, `others`, review 5); f5bf53e
-39bf126 (the Windows clock, review 6); and the commits of these updates. `bench/` equals round 2's files except `isa.cmake`.
+39bf126 (the Windows clock, review 6); 76baac8 to dec7e54 (the A/A pilot, review 7); and these updates. `bench/` equals round 2's files except `isa.cmake`.
 
 ## Next engineering
 
-The freeze proposal: the frozen-text items above (the A/A pilot sized first), row 6's hours, then Alex.
+The A/A pilot (row 7), then from it delta, H9's minimum and H10's margin; then the freeze proposal.

@@ -1,0 +1,57 @@
+{
+ "about": "P2 round 3's Laptop request 7, the A/A pilot (STATE.md; hypotheses-round3.md section 3a), one job per system, drafted in the lab queue's job format for the operator to copy into queues; not a queue itself. Commit: dec7e545869c9b3eb7bf96edfdb4aba8824f8c3c on branch round3 of p2-typed-routing/typed-routing (local; bundled from that checkout as before). It times the Release builds of p2r3-bringup-l and p2r3-bringup-w at 3ff814e50, the builds the probes timed: t3/jobs/pilot.py refuses (exit 2) before the first window unless the clone is clean, each binary's sha256 is the bring-up's and no compiled source changed since 3ff814e50 (none did). No build, no download. A/A only: v2 against v2 in each of the three programs, so no arm is compared with another; its rows set H8's delta and the A/A noise for H9 and H10 by the rule fixed in section 3a before it runs. pilot-summary.json holds validity counts, other processes' largest share and spacing, no rate. Either system may go first; each is quiet-checked at its start.",
+ "jobs": [
+  {
+   "id": "p2r3-pilot-l",
+   "paper": "P2",
+   "os": "linux",
+   "repo": {
+    "name": "typed-routing",
+    "path": "p2-typed-routing/typed-routing"
+   },
+   "commit": "dec7e545869c9b3eb7bf96edfdb4aba8824f8c3c",
+   "build": "",
+   "run": "\"$LAB_PYTHON\" \"$LAB_SRC/t3/jobs/pilot.py\" \"$LAB_SRC/t3/plans/pilot-L.json\" \"$LAB_OUT/pilot\"",
+   "outputs": [
+    "out/pilot/pilot-summary.json",
+    "out/pilot/pilot.jsonl",
+    "out/pilot/pilot.out",
+    "record.json"
+   ],
+   "quiet": true,
+   "boost": false,
+   "poll_s": 600,
+   "expected_s": 12000,
+   "timeout_s": 25200,
+   "note": "1,920 windows: v2 against v2 in the C++ server, the Go program and the Rust program, one mirrored round of four windows at each of 2 shapes x 5 sizes x 16 pairs; server on CPU 14, p2gen on 2 to 13, the runner on 0 and 1; reads ~/lab/p2r3/build-3ff814e50, progs-3ff814e50 and sets, writes only in LAB_OUT. expected_s from p2r3-probe-l's measured spacing: 1,536 windows at m = 10 to 10,000 x 6.05 s = 9,293 s, plus 384 at m = 100,000 x 6.56 s = 2,519 s, plus 12 s to the first window: 11,824 s, rounded up; an upper basis, since v2 starts faster than the probe's slowest arms and sizes 1,000 and 10,000 were not probed. timeout_s about twice that. Boost off, the lab's default.",
+   "run_label": "P2 round 3 A/A pilot on Arch: t3/jobs/pilot.py over t3/plans/pilot-L.json, v2 against v2 in all three programs at every cell of H8",
+   "plain": "Run P2's routing library against itself on Arch, to measure how much two identical runs differ, which sets the margin for the real comparison"
+  },
+  {
+   "id": "p2r3-pilot-w",
+   "paper": "P2",
+   "os": "windows",
+   "repo": {
+    "name": "typed-routing",
+    "path": "p2-typed-routing/typed-routing"
+   },
+   "commit": "dec7e545869c9b3eb7bf96edfdb4aba8824f8c3c",
+   "build": "",
+   "run": "\"%LAB_PYTHON%\" \"%LAB_SRC%\\t3\\jobs\\pilot.py\" \"%LAB_SRC%\\t3\\plans\\pilot-W.json\" \"%LAB_OUT%\\pilot\"",
+   "outputs": [
+    "out/pilot/pilot-summary.json",
+    "out/pilot/pilot.jsonl",
+    "out/pilot/pilot.out",
+    "record.json"
+   ],
+   "quiet": true,
+   "boost": false,
+   "poll_s": 600,
+   "expected_s": 12400,
+   "timeout_s": 25200,
+   "note": "1,920 windows, as p2r3-pilot-l; reads C:\\Users\\alext\\lab\\p2r3\\build-3ff814e50, progs-3ff814e50 (p2v2.dll beside mserver-go.exe) and sets, writes only in LAB_OUT. expected_s from p2r3-probe-w-2's measured spacing: 1,536 windows x 6.29 s = 9,661 s, plus 384 x 6.81 s = 2,615 s, plus 30 s to the first window (18 s and the 10 s session clock): 12,306 s, rounded up; an upper basis as on Arch. timeout_s about twice that. W quiet hours: the whole job, about 3.4 h, on one calendar day. Boost off, the lab's default.",
+   "run_label": "P2 round 3 A/A pilot on Windows: t3/jobs/pilot.py over t3/plans/pilot-W.json, as p2r3-pilot-l",
+   "plain": "Run P2's routing library against itself on Windows, to measure how much two identical runs differ, which sets the margin for the real comparison"
+  }
+ ]
+}
