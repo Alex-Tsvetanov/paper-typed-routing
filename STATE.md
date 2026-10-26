@@ -155,19 +155,19 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
    v2 against v2 in all three programs, one 4-window round at every H8 cell, 1,920 windows per system, the
    bring-ups' binaries. About 3.3 h on L and 3.4 h on W (the probes' spacing, upper bounds), timeout 7 h;
    W quiet the whole job. Desktop count check at 76baac8: 96 of 96 reduced windows; review 7 fixed. QUEUED
-   (2026-10-26): L gap17-a-q1 in Arch visit A4 (about 00:00); W gap17-w-q1 after the quieting check passes.
+   (2026-10-26); moved to Tuesday 2026-10-27 after P4's 19:00 reading: W first (Alex quieted W at 22:45), then L.
 8. p2gen against t1gen on L (p2r3-gencheck-l at 606c59b, `t3/jobs/requests-2026-10-26-gencheck.json`;
    `gencheck.py`, `plans/gencheck-L.json`, `gencheck_analysis.py`; hypotheses 3b; decision 17): 64 windows,
-   about 7 min, timeout 1 h; t1gen equal to its records' 1eaee40c3; review 8 no HIGH. QUEUED gap20-a-q1, A4.
+   about 7 min, timeout 1 h; t1gen equal to its records' 1eaee40c3; review 8 no HIGH. DONE 2026-10-26, ending
+   23:53 EET, exit 0 (archive 9761e71f checked): 64 of 64 valid, t1gen's 7 self-tests passed, quiet passed, drift
+   at most 0.83%, others at most 1.16%. Median q = X_p2gen / X_t1gen 0.99805, [0.99439, 1.00309] (97.87%), 16 pairs.
 
 ## Lab requests
 
 1. Done 2026-10-23 (image 7f39a629ada0: Rust 1.98.1, Go 1.27.1, Boost 1.92.0); Go 1.27.3 and Rust 1.99.0 wanted.
-2. Done 2026-10-24 by me with the coordinator's yes: the archives of `C:\Users\alext\lab\dl-gap1-p2-2026-10-24`
-   and `dl-gap2-...` (read only), sha256 checked against MANIFEST.json, unpacked into `D:\Dev\worktrees\p2r3-build\
-   tools\`, equal to the laptop's trees (digests in `tools\UNPACKED.txt`). A desktop rustup 1.98.1 was removed.
-3. Done 2026-10-25 by the coordinator: the records filed (7fd305b, 7e0e6a0); `lab/bin/test_report_pattern.sh`
-   lists `t3/record.py` (skipped in the Papers checkout, which lacks round 3; this file's pattern checked).
+2. Done 2026-10-24 (coordinator's yes): the lab's checked archives (dl-gap1, dl-gap2, read only) unpacked into
+   `D:\Dev\worktrees\p2r3-build\tools\`, equal to the laptop's trees (`tools\UNPACKED.txt`); rustup 1.98.1 removed.
+3. Done 2026-10-25 by the coordinator: records filed (7fd305b, 7e0e6a0); test_report_pattern.sh lists `t3/record.py`.
 
 ## Alex decides
 
@@ -196,4 +196,4 @@ to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); docs.
 
 ## Next engineering
 
-Pilot (row 7) and t1gen check (row 8); then delta, H9's minimum, H10's margin; then the freeze proposal.
+The pilot (row 7, Tuesday evening); then delta, H9's minimum, H10's margin; then the freeze proposal.
