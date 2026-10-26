@@ -1,0 +1,31 @@
+{
+ "about": "P2 round 3's Laptop request 8, the check of p2gen against t1gen on Arch (STATE.md; hypotheses-round3.md section 3b; Alex's decision 17: reported only, no pass rule), drafted in the lab queue's job format for the operator to copy into a queue; not a queue itself. Commit: 606c59b9972dd456b9ae5c8a1ce0be47aa0f5ad0 on branch round3 of p2-typed-routing/typed-routing (local; bundled from that checkout as before). It times the bring-up's mserver and p2gen at 3ff814e50 (guards as the probe's: clean clone, sha256s, no compiled source changed) and builds lab/t1's t1gen from the lab's tools clone, Release with clang 22.1.8, refusing unless lab/t1/gen equals 1eaee40c3, the commit of its green sanitizer records (lab/sanitizer-records/t1gen-1eaee40c3.json; that record has no inputs hash, so its coverage rests on the equal sources, which the job enforces), then runs its CTest self-tests. No router arm is compared: the C++ server's null arm in an A/A round per pair, p2gen driving entry 0 and t1gen entry 1. First run of this job anywhere: t1gen is Linux only and any run of it is timed, so the desktop could only unit-test it (reviewed, nothing above LOW). A t1gen fault in every window would not trip the runner's consecutive-fault stop (p2gen's valid windows reset it), so a broken run costs its whole 64 windows, about 7 minutes.",
+ "jobs": [
+  {
+   "id": "p2r3-gencheck-l",
+   "paper": "P2",
+   "os": "linux",
+   "repo": {
+    "name": "typed-routing",
+    "path": "p2-typed-routing/typed-routing"
+   },
+   "commit": "606c59b9972dd456b9ae5c8a1ce0be47aa0f5ad0",
+   "build": "",
+   "run": "\"$LAB_PYTHON\" \"$LAB_SRC/t3/jobs/gencheck.py\" \"$LAB_SRC/t3/plans/gencheck-L.json\" \"$LAB_OUT/gencheck\"",
+   "outputs": [
+    "out/gencheck/gencheck-summary.json",
+    "out/gencheck/gencheck.jsonl",
+    "out/gencheck/t1gen-build.log",
+    "record.json"
+   ],
+   "quiet": true,
+   "boost": false,
+   "poll_s": 300,
+   "expected_s": 600,
+   "timeout_s": 3600,
+   "note": "64 windows: the C++ server's null arm, static m = 10, sixteen pairs, an A/A round of four windows per pair (p2gen on windows 1 and 4, t1gen on 2 and 3); server on CPU 14, generators on 2 to 13, the runner on 0 and 1; reads ~/lab/p2r3/build-3ff814e50 and sets, builds t1gen in LAB_OUT. expected_s from p2r3-probe-l's measured spacing at m = 10: 64 x 6.05 s = 387 s, plus 12 s to the first window, plus t1gen's build and self-tests (no measured basis; its records' sanitizer builds took 13 to 14 s on this laptop): about 7 minutes, rounded up to 10. timeout_s an hour. Boost off, the lab's default.",
+   "run_label": "P2 round 3 check of p2gen against t1gen on Arch: t3/jobs/gencheck.py over t3/plans/gencheck-L.json, the null arm driven by each generator in turn; reported only",
+   "plain": "Check on Arch that P2's own load generator measures a server the same way as the lab's older generator; the result is only reported"
+  }
+ ]
+}
