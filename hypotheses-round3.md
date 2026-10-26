@@ -64,6 +64,15 @@ Defender for the runs). The A/A pilot and the timing probe come first.
   reading above (15) on 2026-10-26. On other processes (16) he chose no rule: "Shut those processes
   down" (Windows Update and Defender, quieted by the lab); the 10% rule stays as a guard.
 
+## 3b. p2gen against t1gen (reported only; decision 17, fixed 2026-10-26 before it runs)
+
+On Arch, the C++ server's null arm in an A/A round per pair, entry 0 driven by p2gen and entry 1 by
+lab/t1's t1gen (sources equal to its green records' commit 1eaee40c3, Release, clang 22.1.8), static
+m = 10, sixteen pairs (`t3/plans/gencheck-L.json`, `t3/jobs/gencheck.py`), every window rule of the
+runner. Per pair q = X_p2gen / X_t1gen; reported: the median of q and its distribution-free interval
+from the order statistics (q_(4), q_(13) for sixteen pairs, 97.87%). No pass rule
+(`t3/gencheck_analysis.py`).
+
 ## 4. Hypotheses (proposed)
 
 H8. In the same server, v2 is not slower than each competitor.

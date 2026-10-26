@@ -55,8 +55,8 @@ def public(obj):
     return obj
 
 
-def load_pilot(path: Path, plans: Path = PLANS) -> tuple[str, list[dict]]:
-    """One system's pilot rows, refused unless complete, timed and from that system's committed plan."""
+def load_pilot(path: Path, plans: Path = PLANS, names: dict = SYSTEMS) -> tuple[str, list[dict]]:
+    """One system's rows, refused unless complete, timed and from that system's committed plan (names)."""
     try:
         rows = [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
     except (OSError, ValueError) as e:
@@ -65,11 +65,11 @@ def load_pilot(path: Path, plans: Path = PLANS) -> tuple[str, list[dict]]:
     if session is None:
         raise PilotError(f"{path}: no session line first")
     system = session.get("system")
-    if system not in SYSTEMS or session.get("mode") != "timed":
-        raise PilotError(f"{path}: a timed run on Linux or Windows wanted, got {system!r} {session.get('mode')!r}")
-    plan = json.loads((plans / SYSTEMS[system]).read_text(encoding="utf-8"))
+    if system not in names or session.get("mode") != "timed":
+        raise PilotError(f"{path}: a timed run on {' or '.join(names)} wanted, got {system!r} {session.get('mode')!r}")
+    plan = json.loads((plans / names[system]).read_text(encoding="utf-8"))
     if session.get("plan") != public(plan):
-        raise PilotError(f"{path}: its plan is not the committed {SYSTEMS[system]}")
+        raise PilotError(f"{path}: its plan is not the committed {names[system]}")
     windows = [r for r in rows if r.get("type") == "window"]
     seqs = [w.get("seq") for w in windows]
     if len(windows) != session.get("windows") or sorted(seqs) != list(range(len(windows))):

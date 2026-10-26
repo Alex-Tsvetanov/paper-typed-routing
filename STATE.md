@@ -158,7 +158,8 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
    `t3/plans/pilot-L.json`, `pilot-W.json`; rule in `hypotheses-round3.md` 3a, analysis `t3/pilot_analysis.py`):
    v2 against v2 in all three programs, one 4-window round at every H8 cell, 1,920 windows per system, the
    bring-ups' binaries. About 3.3 h on L and 3.4 h on W (the probes' spacing, upper bounds), timeout 7 h;
-   W quiet the whole job. Desktop count check at 76baac8: 96 of 96 reduced windows; review 7 fixed. SENT.
+   W quiet the whole job. Desktop count check at 76baac8: 96 of 96 reduced windows; review 7 fixed. QUEUED
+   (2026-10-26): L gap17-a-q1 in Arch visit A4 (about 00:00), then W gap17-w-q1 after it.
 
 ## Lab requests
 

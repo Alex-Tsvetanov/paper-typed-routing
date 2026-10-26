@@ -1,0 +1,108 @@
+{
+  "_comment": "STATE.md Laptop request 8, the check of p2gen against t1gen on the laptop's Arch (decision 17: reported only): the C++ server's null arm in an A/A round of four windows, entry 0 driven by p2gen (windows 1 and 4) and entry 1 by t1gen (windows 2 and 3), static m = 10, sixteen pairs: 64 windows, timed, with the campaign draft's window values. t3/jobs/gencheck.py builds t1gen from lab/t1/gen (Release, clang) and refuses unless its sources equal 1eaee40c3's (its green records) and the binaries here are the bring-up's. No router arm is compared.",
+  "_build_commit": "3ff814e50cd8b81e7d482a17206ea6fc31f128c8",
+  "_expect_sha256": {
+    "/home/alex/lab/p2r3/build-3ff814e50/t3/gen/p2gen": "8a4942ab5fc4eed3660a6695e6e76cf28f0f3e874ad1ca00031f6a109d60e249",
+    "/home/alex/lab/p2r3/build-3ff814e50/server/mserver": "986c66f9c2f1ea73429250d9aa53514a63c6afe2346fb2bfe2be747707a21c01"
+  },
+  "p2gen": "/home/alex/lab/p2r3/build-3ff814e50/t3/gen/p2gen",
+  "data_root": "/home/alex/lab/p2r3/sets",
+  "shapes": [
+    "static"
+  ],
+  "sizes": [
+    10
+  ],
+  "pairs": [
+    [
+      111,
+      211
+    ],
+    [
+      112,
+      212
+    ],
+    [
+      113,
+      213
+    ],
+    [
+      114,
+      214
+    ],
+    [
+      115,
+      215
+    ],
+    [
+      116,
+      216
+    ],
+    [
+      117,
+      217
+    ],
+    [
+      118,
+      218
+    ],
+    [
+      119,
+      219
+    ],
+    [
+      120,
+      220
+    ],
+    [
+      121,
+      221
+    ],
+    [
+      122,
+      222
+    ],
+    [
+      123,
+      223
+    ],
+    [
+      124,
+      224
+    ],
+    [
+      125,
+      225
+    ],
+    [
+      126,
+      226
+    ]
+  ],
+  "cpus": {
+    "server": 14,
+    "generator": "2-13"
+  },
+  "housekeeping_cpus": "0-1",
+  "connections": 64,
+  "warmup_s": 1.0,
+  "window_s": 5.0,
+  "timeout_ms": 1000,
+  "ready_timeout_s": 60,
+  "stop_timeout_s": 20,
+  "error_share_max": 0.001,
+  "generator_busy_max_pct": 90,
+  "clock_drift_max": 0.02,
+  "verify_sets": true,
+  "abort_after_consecutive": 8,
+  "programs": [
+    {
+      "name": "mserver",
+      "path": "/home/alex/lab/p2r3/build-3ff814e50/server/mserver",
+      "arms": [
+        "null",
+        "null"
+      ]
+    }
+  ]
+}

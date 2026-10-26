@@ -133,7 +133,7 @@ def main() -> int:
         return fail("suite", tail(out / "suite.out"))
     ok("suite", tail(out / "suite.out"))
 
-    tests = ("test_p2run.py", "test_records.py", "test_probe.py", "test_pilot.py")
+    tests = ("test_p2run.py", "test_records.py", "test_probe.py", "test_pilot.py", "test_gencheck.py")
     for test in tests:
         if L.run([L.PY, L.T3 / test], out / f"{Path(test).stem}.log", env) != 0:
             return fail("runner", f"{test}; see {Path(test).stem}.log")
