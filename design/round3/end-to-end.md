@@ -276,6 +276,12 @@ section 3.2). Arch 7,040 x 6.30 s = 44,352 s = 12.32 h. Windows 6,720 x 6.123 s 
 (section 9), the A/A pilot, the H7 MSVC costs on the laptop (plan v2 uses the desktop's 0.33 h as
 its estimate). A timing probe on the laptop replaces all of these before the freeze.
 
+Measured by the probe (2026-10-25, one mirrored round of every arm at m = 10 and 100,000; pre-freeze,
+never analysed): a window every 6.05 s at m = 10 and 6.56 s at m = 100,000 on Arch, 6.29 s and
+6.81 s on Windows, start-up included. The campaign then takes 12.02 h on Arch and 11.93 h on
+Windows. The A/A pilot (`hypotheses-round3.md`, section 3a) is 1,920 windows per system, at most
+3.3 h on Arch and 3.4 h on Windows at that spacing.
+
 ## Revision log
 
 - 2026-10-23: first draft.
@@ -292,3 +298,4 @@ its estimate). A timing probe on the laptop replaces all of these before the fre
   instruction sets of the Go and Rust programs; method answers, Windows stop signal and exit codes
   (section 5).
 - 2026-10-24: the D5 records, their declared gaps and the gate; the bring-up job (section 8).
+- 2026-10-26: the probe's measured spacing and the A/A pilot's size (section 11).

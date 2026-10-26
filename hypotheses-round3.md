@@ -39,6 +39,26 @@ R = 16 seed pairs, round 2's (table seeds 111 to 126, ring seeds 211 to 226). Pe
 system, one mirrored round per program, a fresh server per window, a 1 s warm-up and a 5 s window
 (lab/t1's window rules). The A/A pilot and the timing probe come first.
 
+## 3a. The A/A pilot (fixed 2026-10-26, before it runs)
+
+- Runs: v2 against v2 in each program (the C++ server, the Go program, the Rust program), one
+  mirrored round of four windows per cell (entry 0's windows 1 and 4, entry 1's windows 2 and 3), at
+  every cell of H8 (two shapes, five sizes, sixteen pairs), on both systems: 1,920 windows per
+  system (`t3/plans/pilot-L.json`, `pilot-W.json`), with the bring-up's gated builds and the
+  campaign's window values. A/A only: no arm is compared with another.
+- A window counts if it is valid by the runner's rules and other processes took at most 10% of one
+  CPU over it. A replicate (system, program, shape, size, pair) counts only if its four windows count.
+- Per replicate, X_e is the mean req/s (completed answers over the window's wall time) of entry e's
+  two windows; r = X_0 / X_1 and d = 1/X_0 - 1/X_1 in ns.
+- delta = the largest of 1.02, the 97.5th percentile of r and the 97.5th percentile of 1/r, over all
+  counted replicates of both systems; percentiles by linear interpolation (type 7).
+- Per system and program, the median and the 97.5th percentile of |d|: the A/A noise from which H9's
+  minimum D_T0 and H10's margin are fixed before the freeze.
+- Code: `t3/pilot_analysis.py` (commit 76baac8). Which programs (decision 14), the reading of the
+  percentile (15) and the 10% rule (16) are the recommended options, open with Alex: an answer
+  before the pilot runs changes this section first; an answer after it is a revision-log entry and
+  the pilot runs again under his rule.
+
 ## 4. Hypotheses (proposed)
 
 H8. In the same server, v2 is not slower than each competitor.
@@ -52,7 +72,7 @@ H8. In the same server, v2 is not slower than each competitor.
       1 / delta and the exact one-sided sign test passes at alpha = 0.025 after Holm over the
       family. With R = 16, 2^-16 = 1.53e-5 is below 0.025 / 310 = 8.06e-5 (D9).
     - delta is the larger of 1.02 and the A/A pilot's 97.5th percentile of the ratio of v2 to
-      itself (or its inverse), fixed in this file before the pilot runs (Alex, 2026-10-23).
+      itself (or its inverse), fixed in this file before the pilot runs (Alex, 2026-10-23): section 3a.
     - A competitor whose windows in a cell are invalid only by the error-share rule, because it
       cannot sustain the load, is reported as "does not sustain the load", with its completed
       requests and req/s, and leaves the family (Alex, 2026-10-23).
@@ -98,3 +118,5 @@ Alex answered the design questions on 2026-10-23 (`design/round3/decisions-for-a
 ## Revision log
 
 - 2026-10-23: first draft.
+- 2026-10-26: section 3a, the A/A pilot's procedure and rule, fixed before it runs. Before it, the
+  timing probe ran on both systems (pre-freeze, never analysed for H8 to H10); no arm was compared.
