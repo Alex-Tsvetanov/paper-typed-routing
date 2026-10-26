@@ -182,9 +182,8 @@ meson build (it would write into Program Files, the event log and HKCU). (2026-1
 all three programs. 15. delta from each direction's 97.5th percentile. 16. "Shut those processes down"
 (Windows Update, Defender; the lab's to do; the 10% rule stays a guard). 17. The t1gen check reported only.
 
-Laptop time (Alex, 2026-10-26, Papers AGENTS.md bc1a76d): "Do not wait on me. Laptop is available 24/7
-so just carry on and use it." A request goes to the coordinator when final and is queued at once; a
-freeze proposal states its hours as information. Design, scope and pushes still go to Alex.
+Laptop time (Alex, 2026-10-26, AGENTS.md bc1a76d): "Do not wait on me. Laptop is available 24/7 so just carry
+on and use it." Requests go to the coordinator when final; design, scope and pushes still go to Alex.
 
 Open with Alex: none. With the coordinator: quieting Windows Update and Defender before p2r3-pilot-w.
 
