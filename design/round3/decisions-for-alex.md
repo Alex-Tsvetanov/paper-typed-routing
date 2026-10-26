@@ -223,3 +223,71 @@ chose the meson build before this was known.
 - (c) Pistache absent on Windows: 10 cells fewer.
 
 **Recommendation.** (a). **Answered by Alex on 2026-10-24 (AskUserQuestion): (a).**
+
+## 14. The A/A pilot: which servers (2026-10-26)
+
+**What.** H8's delta (decision 7) comes from an A/A pilot: v2 against itself in a mirrored round of
+four windows (the first entry's windows 1 and 4 against the second entry's 2 and 3, the pattern of
+`lab/laptop/aa_trial.py`), at every cell of H8 (two shapes, five sizes, sixteen pairs), on both
+systems, with the bring-up's gated builds. One delta covers H8's cells in three servers: the C++
+server, the Go program and the Rust program. Hours at the probes' measured spacing (6.05 to 6.56 s a
+window on Arch, 6.29 to 6.81 s on Windows; v2 starts fast, so these are upper bounds).
+
+**Options.**
+- (a) v2 against v2 in all three programs: 1,920 windows per system, at most 3.3 h on Arch and 3.4 h
+  on Windows (Windows quiet for all of its half).
+- (b) The C++ server only: 640 windows per system, about 1.1 h each. The Go and Rust cells then get a
+  delta measured in another server.
+
+**Recommendation.** (a). One delta is applied to all three servers' cells, so it should be measured
+in all three; laptop time no longer limits it.
+
+## 15. The percentile that sets delta (2026-10-26)
+
+**What.** Decision 7 (b) reads "the A/A pilot's 97.5th percentile of the v2-against-v2 ratio (or its
+inverse)". Per pilot replicate (program, shape, size, pair, system), r = X_first / X_second, each X
+the mean req/s of that entry's two windows, as H8's ratio. Pooled over all replicates of both systems,
+the percentile by linear interpolation (numpy's default). The words allow two readings.
+
+**Options.**
+- (a) delta = the largest of 1.02, the 97.5th percentile of r, and the 97.5th percentile of 1/r: each
+  direction's one-sided 2.5% point, whichever entry is named first.
+- (b) delta = the larger of 1.02 and the 97.5th percentile of max(r, 1/r): the folded ratio, so 1.25%
+  in each tail; a larger delta than (a).
+
+**Recommendation.** (a). H8 tests one direction (is v2 slower) at 2.5%; (a) is the noise of that
+direction for either naming of the two entries.
+
+## 16. Other processes' CPU during a window (2026-10-26)
+
+**What.** p2run records per timed window the CPU of every other process, from just before p2gen
+starts to just after it exits (`others`, the lab's `labrec`). No rule uses it yet. The probes: on
+Arch at most 1.99% of one CPU in 176 windows; on Windows a median of 0.78%, 2 of 168 windows above
+5% (8.3% and 23.6%: Windows Update's MoUsoCoreWorker, svchost, Defender), no single process above 10%.
+The rule also decides which pilot windows count, so it moves delta.
+
+**Options.**
+- (a) A window is invalid when other processes together exceed 10% of one CPU (the lab's quiet check's
+  limit for one process, applied to their sum). In the probes: 1 window of 344.
+- (b) Record only, no rule; the share is reported beside the results.
+- (c) Invalid above 5%: 2 windows of 344.
+
+**Recommendation.** (a). A window where other work took a tenth of a CPU is not the quiet host the
+method states. With R = 16 a cell of H8 can lose two pairs and still pass Holm (2^-14 = 6.1e-5 below
+8.06e-5), and the probes suggest about one such window in 170, all on Windows.
+
+## 17. p2gen against t1gen on Arch (2026-10-26)
+
+**What.** The design says p2gen is "A/A-checked against t1gen on Linux before use (no arm compared)",
+with no pass rule. `t1gen` is lab/t1's generator, Linux only, not yet built on the laptop. H8 to H10
+compare arms under one generator, so a bias common to both arms cancels in their ratio.
+
+**Options.**
+- (a) Report only: on Arch, the C++ server's null arm driven by t1gen and by p2gen in alternation
+  (x y y x) over 16 rounds; the ratio of req/s and its interval reported, no pass rule.
+- (b) A pass rule: the ratio's 95% interval within [0.98, 1.02], or the campaign waits for an
+  explanation. The 2% is round 2's margin, not a measured basis for two generators.
+- (c) Drop the check; the A/A pilot measures p2gen's own noise.
+
+**Recommendation.** (a). There is no basis for a threshold between two generators, and the tested
+ratios do not depend on a shared bias.

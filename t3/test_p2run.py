@@ -138,7 +138,7 @@ class PlanTests(unittest.TestCase):
             plan_dict(programs=[{"path": "/b/mserver", "arms": [{"name": "v2", "path": "/other/mserver"}]}]),
             plan_dict(programs=[]),
             plan_dict(programs=[{"path": "a", "arms": []}]),
-            plan_dict(programs=[{"path": "a", "arms": ["x", "x"]}]),
+            plan_dict(programs=[{"path": "a", "arms": ["x", "x", "x"]}]),  # one name twice only (A/A)
             plan_dict(programs=[{"path": "a", "arms": ["x"], "extra": 1}]),
             plan_dict(programs=[{"path": "a", "arms": ["x"], "env": {"A": 1}}]),
             plan_dict(programs=[{"path": "a", "arms": ["x"], "version": "?"}]),
@@ -162,6 +162,19 @@ class SequenceTests(unittest.TestCase):
         self.assertEqual(p2run.mirrored(["a"]), ("a", "a"))
         with self.assertRaises(PlanError):
             p2run.mirrored([])
+
+    def test_an_aa_round_holds_one_arm_twice_and_names_its_entries(self) -> None:
+        plan = p2run.parse_plan(plan_dict(programs=[{"name": "p", "path": "p", "arms": ["v2", "v2"]}]))
+        ws = list(p2run.windows(plan))
+        self.assertEqual([(w.arm, w.index, w.entry) for w in ws], [("v2", 0, 0), ("v2", 1, 1), ("v2", 2, 1), ("v2", 3, 0)])
+        for arms in (["v2", "v2", "v2"], ["v2", "crow", "v2"], ["v2", "crow", "crow"]):
+            with self.assertRaisesRegex(PlanError, "one name twice"):
+                p2run.parse_plan(plan_dict(programs=[{"name": "p", "path": "p", "arms": arms}]))
+
+    def test_entries_of_distinct_arms_are_their_positions(self) -> None:
+        plan = p2run.parse_plan(plan_dict(programs=[{"name": "p", "path": "p", "arms": ["a", "b", "c"]}]))
+        self.assertEqual([(w.arm, w.entry) for w in p2run.windows(plan)],
+                         [("a", 0), ("b", 1), ("c", 2), ("c", 2), ("b", 1), ("a", 0)])
 
     def test_order_and_count(self) -> None:
         plan = p2run.parse_plan(plan_dict(
@@ -944,6 +957,15 @@ class OrchestrationTests(unittest.TestCase):
             rc = p2run.main([str(self.plan("nohk", sizes=[10])), "--out", str(out)])  # no --count
         self.assertEqual((rc, out.exists()), (2, False))
         self.assertIn("housekeeping_cpus", err.getvalue())
+
+    def test_an_aa_round_runs_its_one_arm_in_four_windows(self) -> None:
+        programs = [{"name": "fake", "path": [sys.executable, str(self.root / "server.py")], "arms": ["a", "a"],
+                     "version": "startup-line"}]
+        rc, rows, err = self.run_main(self.plan("aa", sizes=[10], programs=programs), "aa")
+        self.assertEqual(rc, 0, err)
+        self.assertEqual([(w["arm"], w["entry"], w["status"]) for w in rows[1:]],
+                         [("a", 0, "valid"), ("a", 1, "valid"), ("a", 1, "valid"), ("a", 0, "valid")])
+        self.assertEqual([s["arm"] for s in rows[0]["programs"][0]["starts"]], ["a"])  # started once in the preflight
 
     def test_timed_mode_needs_the_labs_labrec(self) -> None:
         err = io.StringIO()

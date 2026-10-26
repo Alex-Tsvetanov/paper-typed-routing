@@ -44,7 +44,9 @@ Plan (JSON; keys starting with "_" are ignored; any other unknown key is an erro
     "pairs"      [[111, 211], ...] explicit [table seed, ring seed]
     "programs"   [{"name": "mserver",            default: the file stem of "path"
                    "path": "BIN",                a string, or a list (command prefix)
-                   "arms": ["v2", "crow", "null"],   the first half of the mirrored round
+                   "arms": ["v2", "crow", "null"],   the first half of the mirrored round; distinct,
+                                                 or one arm twice (["v2", "v2"]: an A/A round, whose
+                                                 rows tell the two apart by "entry")
                    "env": {"P2V2_DLL": "..."},   optional, added to the environment
                    "version": "router-list" | "startup-line"}]
                  version: router-list also records BIN --router ?? (the C++ server lists its external
@@ -281,9 +283,11 @@ def _program(raw: Any) -> Program:
                         f"name, env, version (got {unknown}). A program is one binary and an arm is only a name")
     argv = _argv(raw["path"], "program path")
     arms = raw["arms"]
+    aa = isinstance(arms, list) and len(arms) == 2 and arms[0] == arms[1]  # an A/A round: one arm, two entries
     if not isinstance(arms, list) or not arms or not all(isinstance(a, str) and a for a in arms) \
-            or len(set(arms)) != len(arms):
-        raise PlanError(f"program {argv[0]}: arms want a non-empty list of distinct names, got {arms!r}")
+            or (len(set(arms)) != len(arms) and not aa):
+        raise PlanError(f"program {argv[0]}: arms want a non-empty list of distinct names, or one name twice "
+                        f"(an A/A round), got {arms!r}")
     env = raw.get("env", {})
     if not isinstance(env, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in env.items()):
         raise PlanError(f"program {argv[0]}: env wants an object of strings")
@@ -393,6 +397,11 @@ class Window:
     @property
     def cell(self) -> str:
         return f"{self.shape}/m{self.m}/t{self.table_seed}"
+
+    @property
+    def entry(self) -> int:
+        """The arm's position in the plan's list: what tells an A/A round's two entries of one arm apart."""
+        return self.index if self.half == 1 else self.round_length - 1 - self.index
 
 
 def mirrored(arms: Sequence[str]) -> tuple[str, ...]:
@@ -1214,7 +1223,7 @@ class Runner:
     def run_window(self, w: Window) -> dict[str, Any]:
         row: dict[str, Any] = {"type": "window", "seq": w.seq, "cell": w.cell, "shape": w.shape, "m": w.m,
                                "table_seed": w.table_seed, "ring_seed": w.ring_seed, "program": w.program,
-                               "arm": w.arm, "index": w.index, "half": w.half}
+                               "arm": w.arm, "entry": w.entry, "index": w.index, "half": w.half}
         if self.timed:
             row["started"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
         try:
@@ -1493,7 +1502,7 @@ def preflight(plan: Plan, workdir: Path, counting: bool) -> dict[str, list[dict[
         problems.extend(generator_problems(plan, workdir))
         for program in plan.programs:
             smoke[program.name] = []
-            for arm in program.arms:
+            for arm in dict.fromkeys(program.arms):  # an A/A round's one arm is started once
                 record = smoke_start(plan, program, arm, workdir, counting)
                 smoke[program.name].append(record)
                 problems.extend(smoke_problems(program, record))
