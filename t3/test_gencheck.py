@@ -55,7 +55,7 @@ class MappingTests(unittest.TestCase):
         m = g["measure"]
         self.assertEqual((m["completed"], m["errors_total"], m["timeouts"], m["connect_errors"], m["reconnects"]),
                          (1000, 15, 2, 6, 9))
-        self.assertEqual((m["errors"]["lost"], m["errors"]["status"], m["errors"]["framing"], m["peer_closes"]), (7, 1, 5, 0))
+        self.assertEqual((m["errors"]["lost"], m["errors"]["status"], m["errors"]["framing"], m["peer_closes"]), (7, 1, 5, 3))
         self.assertEqual((g["measure_wall_ns"], g["connections"], g["thread_failed"]), (5_000_123_456, 64, 0))
 
 
@@ -96,6 +96,14 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(row["generator_tool"], "t1gen")
         self.assertEqual(row["t1gen"], T1_LINE)
         self.assertEqual(row["generator"], gencheck.t1_as_p2gen(T1_LINE))
+
+    def test_a_window_that_fails_before_its_generator_still_names_it(self) -> None:
+        r = self.runner(["/lab/t1gen"])
+        failing = lambda w, row: (_ for _ in ()).throw(RuntimeError("no server"))  # noqa: E731
+        r._window = failing
+        rows = [r.run_window(w) for w in p2run.windows(r.plan)]
+        self.assertEqual([(row["entry"], row["generator_tool"], row["status"]) for row in rows],
+                         [(0, "p2gen", "invalid"), (1, "t1gen", "invalid"), (1, "t1gen", "invalid"), (0, "p2gen", "invalid")])
 
     def test_a_t1gen_line_the_mapping_does_not_know_leaves_no_result(self) -> None:
         row = self.run_window({"tool": "t1gen"})

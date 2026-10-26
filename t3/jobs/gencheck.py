@@ -42,14 +42,16 @@ T1_ENTRY = 1
 
 
 def t1_as_p2gen(t1: dict) -> dict:
-    """t1gen's result under the keys of p2gen's timed line that p2run's verdict reads. t1gen counts no
-    server close of an idle connection (p2gen's peer_closes), so that is 0 here; such a close still
-    makes a reconnect that no timeout explains, which the runner's reconnect rule sees."""
+    """t1gen's result under the keys of p2gen's timed line that p2run's verdict reads. At depth 1 a
+    server close with a request in flight is t1gen's eof_inflight, which p2gen counts as a peer close and
+    a lost request; a close of an idle connection t1gen does not count, but it makes a reconnect that no
+    timeout explains, which the runner's reconnect rule sees."""
     m = t1["measure"]
     return {"tool": "t1gen", "commit": t1.get("commit"), "connections": t1["connections"],
             "thread_failed": t1["thread_failed"], "measure_wall_ns": round(t1["measure_wall_s"] * 1e9),
             "measure": {"completed": m["completed"], "errors_total": m["errors_total"], "timeouts": m["timeouts"],
-                        "connect_errors": m["connect_errors"], "reconnects": m["reconnects"], "peer_closes": 0,
+                        "connect_errors": m["connect_errors"], "reconnects": m["reconnects"],
+                        "peer_closes": m["eof_inflight"],
                         "errors": {"status": m["non_2xx"], "framing": m["protocol_errors"],
                                    "lost": m["eof_inflight"] + m["socket_errors"]}}}
 
@@ -57,6 +59,11 @@ def t1_as_p2gen(t1: dict) -> dict:
 class GenCheckRunner(p2run.Runner):
     """p2run's runner, with the windows of entry T1_ENTRY driven by t1gen."""
     t1gen: list[str] = []
+
+    def run_window(self, w):
+        row = super().run_window(w)  # a window that failed before its generator ran still names it
+        row.setdefault("generator_tool", "t1gen" if w.entry == T1_ENTRY else "p2gen")
+        return row
 
     def _run_generator(self, w, row, port, cell):
         self._t1 = w.entry == T1_ENTRY
@@ -123,7 +130,10 @@ def main() -> int:
         return refuse(refused)
     env = L.tool_env()
     try:
-        compiler = L.versions(env)["compiler"]
+        compiler = (L.output(["clang", "--version"], env).splitlines() or [""])[0]  # t1gen is C, built by clang
+        want = os.environ.get("EXPECT_CLANG") or L.EXPECT["EXPECT_CLANG"]
+        if f"clang version {want}" not in compiler:
+            raise L.StepError(f"clang is not {want}, the compiler of t1gen's records: {compiler}")
         t1gen, tools_commit = build_t1gen(Path(os.environ["LAB_TOOLS"]).resolve().parent.parent, out, env)
     except L.StepError as e:
         return refuse([str(e)])
