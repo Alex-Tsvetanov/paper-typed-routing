@@ -37,7 +37,9 @@ into a sink, as round 2's timed loops do.
 
 R = 16 seed pairs, round 2's (table seeds 111 to 126, ring seeds 211 to 226). Per pair, size and
 system, one mirrored round per program, a fresh server per window, a 1 s warm-up and a 5 s window
-(lab/t1's window rules). The A/A pilot and the timing probe come first.
+(lab/t1's window rules), and a window is invalid when other processes took more than 10% of one CPU
+over it, or when it has no record of them (decision 16, open). The A/A pilot and the timing probe
+come first.
 
 ## 3a. The A/A pilot (fixed 2026-10-26, before it runs)
 
@@ -46,18 +48,22 @@ system, one mirrored round per program, a fresh server per window, a 1 s warm-up
   every cell of H8 (two shapes, five sizes, sixteen pairs), on both systems: 1,920 windows per
   system (`t3/plans/pilot-L.json`, `pilot-W.json`), with the bring-up's gated builds and the
   campaign's window values. A/A only: no arm is compared with another.
-- A window counts if it is valid by the runner's rules and other processes took at most 10% of one
-  CPU over it. A replicate (system, program, shape, size, pair) counts only if its four windows count.
+- The analysis takes exactly one file per system, both systems, each one complete timed run of that
+  system's committed pilot plan; it refuses anything else.
+- A window counts if it is valid by the runner's rules, has at least one completed answer, and has a
+  record of other processes showing at most 10% of one CPU over it (the campaign's rule, section 3).
+  A replicate (system, program, shape, size, pair) counts only if its four windows count.
 - Per replicate, X_e is the mean req/s (completed answers over the window's wall time) of entry e's
   two windows; r = X_0 / X_1 and d = 1/X_0 - 1/X_1 in ns.
 - delta = the largest of 1.02, the 97.5th percentile of r and the 97.5th percentile of 1/r, over all
-  counted replicates of both systems; percentiles by linear interpolation (type 7).
+  counted replicates of both systems; percentiles by linear interpolation (type 7); rounded up to
+  four decimals.
 - Per system and program, the median and the 97.5th percentile of |d|: the A/A noise from which H9's
   minimum D_T0 and H10's margin are fixed before the freeze.
-- Code: `t3/pilot_analysis.py` (commit 76baac8). Which programs (decision 14), the reading of the
-  percentile (15) and the 10% rule (16) are the recommended options, open with Alex: an answer
-  before the pilot runs changes this section first; an answer after it is a revision-log entry and
-  the pilot runs again under his rule.
+- Code: `t3/pilot_analysis.py` (commit 716ac9b). Which programs (decision 14), the reading of the
+  percentile (15) and the 10% rule (16) are the recommended options, open with Alex. An answer before
+  the pilot runs changes this section first. An answer after it is a revision-log entry: for 15 or 16
+  the analysis runs again on the same rows; for 14 the pilot runs again.
 
 ## 4. Hypotheses (proposed)
 

@@ -279,8 +279,8 @@ its estimate). A timing probe on the laptop replaces all of these before the fre
 Measured by the probe (2026-10-25, one mirrored round of every arm at m = 10 and 100,000; pre-freeze,
 never analysed): a window every 6.05 s at m = 10 and 6.56 s at m = 100,000 on Arch, 6.29 s and
 6.81 s on Windows, start-up included. The campaign then takes 12.02 h on Arch and 11.93 h on
-Windows. The A/A pilot (`hypotheses-round3.md`, section 3a) is 1,920 windows per system, at most
-3.3 h on Arch and 3.4 h on Windows at that spacing.
+Windows. The A/A pilot (`hypotheses-round3.md`, section 3a) is 1,920 windows per system, about
+3.3 h on Arch and 3.4 h on Windows at that spacing (sizes 1,000 and 10,000 were not probed).
 
 ## Revision log
 
