@@ -158,7 +158,7 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
    (2026-10-26): L gap17-a-q1 in Arch visit A4 (about 00:00); W gap17-w-q1 after the quieting check passes.
 8. p2gen against t1gen on L (p2r3-gencheck-l at 606c59b, `t3/jobs/requests-2026-10-26-gencheck.json`;
    `gencheck.py`, `plans/gencheck-L.json`, `gencheck_analysis.py`; hypotheses 3b; decision 17): 64 windows,
-   about 7 min, timeout 1 h. t1gen from lab/t1/gen equal to its records' 1eaee40c3. Review 8: no HIGH. SENT.
+   about 7 min, timeout 1 h; t1gen equal to its records' 1eaee40c3; review 8 no HIGH. QUEUED gap20-a-q1, A4.
 
 ## Lab requests
 
