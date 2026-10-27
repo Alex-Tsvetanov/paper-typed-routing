@@ -154,8 +154,9 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
    `t3/plans/pilot-L.json`, `pilot-W.json`; rule in `hypotheses-round3.md` 3a, analysis `t3/pilot_analysis.py`):
    v2 against v2 in all three programs, one 4-window round at every H8 cell, 1,920 windows per system, the
    bring-ups' binaries. About 3.3 h on L and 3.4 h on W (the probes' spacing, upper bounds), timeout 7 h;
-   W quiet the whole job. Desktop count check at 76baac8: 96 of 96 reduced windows; review 7 fixed. QUEUED
-   (2026-10-26); moved to Tuesday 2026-10-27 after P4's 19:00 reading: W first (Alex quieted W at 22:45), then L.
+   W quiet the whole job. Desktop count check at 76baac8: 96 of 96 reduced windows; review 7 fixed. W RUNNING
+   since 2026-10-27 03:13 (gap17-w-q1, tools ed917f3, in P4's 7 h gap; expected end about 06:40); L in
+   Tuesday evening's Arch visit after P4's c3 (gap17-a-q1, about 19:15).
 8. p2gen against t1gen on L (p2r3-gencheck-l at 606c59b, `t3/jobs/requests-2026-10-26-gencheck.json`;
    `gencheck.py`, `plans/gencheck-L.json`, `gencheck_analysis.py`; hypotheses 3b; decision 17): 64 windows,
    about 7 min, timeout 1 h; t1gen equal to its records' 1eaee40c3; review 8 no HIGH. DONE 2026-10-26, ending
@@ -186,7 +187,7 @@ Windows Update and Defender's real-time protection off on W for good (Alex runs 
 Laptop time (Alex, 2026-10-26, AGENTS.md bc1a76d): "Do not wait on me. Laptop is available 24/7 so just carry
 on and use it." Requests go to the coordinator when final; design, scope and pushes still go to Alex.
 
-Open with Alex: none (he quiets W himself; p2r3-pilot-w waits for the lab's check of it).
+Open with Alex: none.
 
 ## Commits on `round3` (local, not pushed)
 
@@ -196,4 +197,4 @@ to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); docs.
 
 ## Next engineering
 
-The pilot (row 7, Tuesday evening); then delta, H9's minimum, H10's margin; then the freeze proposal.
+The pilot (row 7: W now, L Tuesday evening); then delta, H9's minimum, H10's margin; then the freeze proposal.
