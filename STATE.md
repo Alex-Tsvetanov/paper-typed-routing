@@ -184,9 +184,10 @@ meson build (it would write into Program Files, the event log and HKCU). (2026-1
 all three programs. 15. delta from each direction's 97.5th percentile. 16. "Shut those processes down":
 Windows Update and Defender's real-time protection off on W for good (Alex runs Papers
 `lab/laptop/alex-admin-quiet.ps1`, e3dc740; a lab job checks it); the 10% rule stays a guard. 17. t1gen reported only.
+(2026-10-27) 18. Host-spoiled rounds rerun once at each system's end. 19. Alex quiets SvcRestartTask on W.
 
 Laptop time (Alex, 2026-10-26, AGENTS.md bc1a76d): "Do not wait on me. Laptop is available 24/7 so just carry
-on and use it." Requests go to the coordinator when final; design, scope and pushes still go to Alex. Open: 18, 19 (2026-10-27).
+on and use it." Requests go to the coordinator when final; design, scope and pushes still go to Alex. Open: none.
 
 ## Commits on `round3` (local, not pushed)
 

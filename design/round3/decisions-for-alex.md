@@ -321,6 +321,7 @@ and 3 or 4 PDH faults, Poisson) gives the chance that some competitor and cell k
 
 **Recommendation.** (a). It costs about half an hour and keeps every cell at 16 pairs in nearly every
 run. (b) still leaves one burst in a v2 window costing all of that round's competitors a pair.
+**Answered by Alex on 2026-10-27 (AskUserQuestion): (a).**
 
 ## 19. The Software Protection service on the laptop's Windows (2026-10-27)
 
@@ -336,3 +337,5 @@ burst (the coordinator's probe). Decision 16 quieted Windows Update and Defender
 
 **Recommendation.** (a), with decision 18 (a). Changing licensing tasks for a half hour of reruns is
 not worth an untested side effect.
+**Answered by Alex on 2026-10-27 (AskUserQuestion): (b).** He disables SvcRestartTask on the laptop's
+Windows for the runs by his own script; passed to the coordinator, who keeps the lab's quieting script.
