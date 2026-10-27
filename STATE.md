@@ -102,15 +102,14 @@ windows. Not run on the desktop, by rule: any timed mode. Kernel features used: 
 ## To settle in the frozen text (with the freeze proposal and its hours)
 
 - delta for H8 from the A/A pilot; the minimum D_T0 for H9; H10's margin in ns.
-- The runner's validity additions beyond lab/t1 (connect errors, server alive and exit 0, sample
-  span within 50 ms of the window, a missing generator key, the stop after 8 consecutive faults)
-  and its reconnect rule (reconnects allowed only as far as timeouts, connect errors and lost
-  requests explain them; `peer_closes` above 0 invalidates a window).
-- The overload edges: zero completions with timeouts is invalid; connect errors during overload make
-  the window invalid.
-- Whether, and above what share, other processes' CPU (`others`) makes a window invalid (probes: L at most
-  1.99% of one CPU; W median 0.78%, 2 of 168 windows above 5%, at most 23.6%, Windows Update and Defender);
-  boost off; each system's clock reference (Arch's idle CPUs read 3,201 MHz, busy ones about 3,168: 1% bias).
+- The runner's validity additions beyond lab/t1 (connect errors, server alive and exit 0, sample span within
+  50 ms of the window, a missing generator key, the stop after 8 consecutive faults), its reconnect rule
+  (reconnects only as far as timeouts, connect errors and lost requests explain them; `peer_closes` above 0
+  invalidates), and the overload edges (zero completions with timeouts, or connect errors: invalid).
+- What an invalid window costs in the campaign. Round 2 left out a whole round with any invalid window; at
+  the W pilot's rate (5 bursts in 3.5 h, 1 PDH fault in 1,920 windows) W's 12 h would lose about 20 rounds,
+  and a cell left with 13 pairs cannot pass Holm (2^-13 > 8.06e-5). Options: rerun such rounds, pairs per arm.
+- Boost off; each system's clock reference (Arch's idle CPUs read 3,201 MHz, busy ones about 3,168: 1% bias).
 
 ## Laptop requests
 
@@ -154,9 +153,11 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
    `t3/plans/pilot-L.json`, `pilot-W.json`; rule in `hypotheses-round3.md` 3a, analysis `t3/pilot_analysis.py`):
    v2 against v2 in all three programs, one 4-window round at every H8 cell, 1,920 windows per system, the
    bring-ups' binaries. About 3.3 h on L and 3.4 h on W (the probes' spacing, upper bounds), timeout 7 h;
-   W quiet the whole job. Desktop count check at 76baac8: 96 of 96 reduced windows; review 7 fixed. W RUNNING
-   since 2026-10-27 03:13 (gap17-w-q1, tools ed917f3, in P4's 7 h gap; expected end about 06:40); L in
-   Tuesday evening's Arch visit after P4's c3 (gap17-a-q1, about 19:15).
+   W quiet the whole job. Desktop count check at 76baac8: 96 of 96 reduced windows; review 7 fixed. W DONE
+   2026-10-27 03:13 to 06:40 (gap17-w-q1, tools ed917f3, exit 0, archive 6c1e18ba checked): 1,919 of 1,920
+   valid (seq 831: PDH status 0x800007d6 at its end, failed closed); drift at most 0.14%, 13 CPUs counted in
+   every window; others median 0.52%, 8 windows above 10% in 5 bursts (taskhostw.exe and sppsvc.exe start,
+   then System up to 37.8%: 03:31, 03:40, 04:28, 05:27, 06:18); 474 of 480 replicates count. L: gap17-a-q1.
 8. p2gen against t1gen on L (p2r3-gencheck-l at 606c59b, `t3/jobs/requests-2026-10-26-gencheck.json`;
    `gencheck.py`, `plans/gencheck-L.json`, `gencheck_analysis.py`; hypotheses 3b; decision 17): 64 windows,
    about 7 min, timeout 1 h; t1gen equal to its records' 1eaee40c3; review 8 no HIGH. DONE 2026-10-26, ending
