@@ -39,7 +39,15 @@ R = 16 seed pairs, round 2's (table seeds 111 to 126, ring seeds 211 to 226). Pe
 system, one mirrored round per program, a fresh server per window, a 1 s warm-up and a 5 s window
 (lab/t1's window rules), and a window is invalid when other processes took more than 10% of one CPU
 over it, or when it has no record of them (a guard; decision 16: the lab quiets Windows Update and
-Defender for the runs). The A/A pilot and the timing probe come first.
+Defender for the runs; decision 19: on Windows also the Software Protection restart task). The A/A
+pilot and the timing probe come first.
+
+A round with an invalid window counts for no arm. After a system's last planned window, each round
+(one program's mirrored round at one shape, size and pair) with a window invalid for a host reason
+runs once more, whole and in its order: other processes above 10% of one CPU or no record of them,
+or no CPU or clock sample over the window. The rerun replaces the round; the original rows stay in
+the record. A round whose invalid windows are all an arm's is not rerun, and a rerun is not rerun
+(decision 18; p2run's `rerun_host_faults`).
 
 ## 3a. The A/A pilot (fixed 2026-10-26, before it runs)
 
@@ -135,3 +143,6 @@ Alex answered the design questions on 2026-10-23 (`design/round3/decisions-for-a
 - 2026-10-26: section 3a, the A/A pilot's procedure and rule, fixed before it runs. Before it, the
   timing probe ran on both systems (pre-freeze, never analysed for H8 to H10); no arm was compared.
 - 2026-10-26: Alex's answers to decisions 14 to 17 (sections 3 and 3a); the rule is unchanged.
+- 2026-10-27: the W pilot ran (1,920 windows; 6 of 480 replicates dropped, 5 by the guard in 5 bursts
+  of the Software Protection service, 1 by a PDH fault). Alex's answers to decisions 18 and 19: the
+  rerun of host-spoiled rounds and the quieting of that service (section 3). The pilot's rule is unchanged.

@@ -66,6 +66,11 @@ Plan (JSON; keys starting with "_" are ignored; any other unknown key is an erro
     "error_share_max" (0.001)  "generator_busy_max_pct" (90)  "clock_drift_max" (0.02)
     "session_clock_mhz" (null: sampled at the session start)  "verify_sets" (true: every cell's
     routes.txt and ring.txt are checked against data_root/manifest.tsv before the first window)
+    "others_max_pct" (null: "others" recorded, not judged)  timed mode: a window is invalid when the
+                                other processes took more than this share of one CPU, or when it has no
+                                record of them (hypotheses-round3.md section 3)
+    "rerun_host_faults" (false)  rerun once, after the last window, every round with a window invalid
+                                for a host reason (RERUN_CODES); decision 18, see Reruns
 
 Output, JSON lines. The first is {"type": "session", ...}: host, OS, CPU model, versions of the
 programs, hashes of the runner, p2gen and the programs, the plan, the lab job's LAB_JOB_ID and
@@ -75,7 +80,11 @@ OS, the probe, p2gen's own JSON line, the server's exit code and how it was stop
 ("status": valid, overloaded or invalid, and the reasons). Timed windows add the start-up seconds
 to readiness, the CPU busy shares, the mean clock, and "others": every other process's CPU from
 just before p2gen starts to just after it exits (lab/laptop's process_shares, in aa_trial.py's
-shape), recorded and not judged. Failed windows keep the tail of the server's log.
+shape), judged only when the plan sets others_max_pct. Failed windows keep the tail of the server's log.
+With rerun_host_faults, a {"type": "rerun", ...} line follows the last planned window: the rounds
+rerun, each with the seqs and reason codes of its host faults, and how many windows follow. The rerun
+windows carry "rerun": true and continue the seq numbers. The session line's "windows" counts the
+planned windows only.
 
 Validity (timed), as lab/t1: the server started and answered the probe with 200 and the 13-byte
 body; at least one completed answer; errors at most 0.1% of the answers; the generator CPUs at
@@ -85,10 +94,19 @@ error and no connection the server closed (peer_closes); p2gen reconnects only a
 timeouts, connect errors and lost requests explain (each of those makes one reconnect, so a window
 with timeouts is not made invalid by them; where there are such errors, as many more reconnects as
 there are connections are allowed, for retries that fall across the window's edge); p2gen's line has
-every key the verdict reads; the runner's sample span equals p2gen's window to 50 ms.
+every key the verdict reads; the runner's sample span equals p2gen's window to 50 ms; with
+others_max_pct, the other processes' record exists and its sum is at most that share of one CPU.
 Overload rule (section 9): a window whose only failing rule is the error share,
 where every error is a timeout or a request lost to a reset or close, is "overloaded", not
 "invalid". A window that also fails another rule stays invalid.
+
+Reruns (rerun_host_faults; decision 18). After the last planned window, each round (one program's
+mirrored round at one shape, size and pair) with a window invalid for a host reason, a reason code in
+RERUN_CODES (other processes above others_max_pct or no record of them; no CPU or clock sample, or a
+sample span off p2gen's window), runs once more, whole and in the same order, in the order the rounds
+first ran. The rerun replaces the round in the analysis; the original rows stay in the record. A round
+whose invalid windows are all an arm's (error share, overload, a failed server) is not rerun, and a
+rerun round is never rerun. No reruns follow a run stopped by the consecutive-fault rule.
 
 Exit codes: 0 done (timed: every window ran, whatever its verdict); 1 count mode with a window
 that did not pass; 2 a bad plan, command line or preflight check; 3 stopped by the consecutive-fault
@@ -126,12 +144,15 @@ SEED_PAIRS_HELP = "[[111, 211], ...]"
 # Plan keys that are times or time limits. A count-mode session line does not echo them.
 TIME_KEYS = frozenset({"warmup_s", "window_s", "timeout_ms", "ready_timeout_s", "stop_timeout_s",
                        "count_limit_s", "session_clock_mhz", "error_share_max",
-                       "generator_busy_max_pct", "clock_drift_max"})
+                       "generator_busy_max_pct", "clock_drift_max", "others_max_pct"})
 SPAN_TOLERANCE_S = 0.05  # the runner's sample span may differ from p2gen's window by this much
 # Reason codes that point at the runner or the host, not at the arm. A run of them across windows
 # means the campaign is broken, so the runner stops (abort_after_consecutive).
 SYSTEMATIC = frozenset({"driver", "not_ready", "probe", "no_result", "generator_schema", "generator_failed", "sampler",
-                        "server_exit", "server_died", "clock_drift", "generator_busy"})
+                        "server_exit", "server_died", "clock_drift", "generator_busy", "others"})
+# Reason codes of a host fault that decision 18 reruns once (rerun_host_faults): other processes' CPU, and
+# the runner's own sampling. Never an arm's outcome.
+RERUN_CODES = frozenset({"others", "sampler"})
 TIMESTAMP = re.compile(r"\d{4}[-/]\d{2}[-/]\d{2}|\b\d{1,2}:\d{2}:\d{2}")
 GENERATOR_GRACE_S = 30.0  # p2gen may overrun warm-up plus window by this long (t1.py's value)
 SESSION_CLOCK_SAMPLES = 4  # Linux: /proc/cpuinfo read four times, 0.5 s apart
@@ -209,6 +230,7 @@ class Thresholds:
     error_share_max: float = 0.001
     generator_busy_max_pct: float = 90.0
     clock_drift_max: float = 0.02
+    others_max_pct: float | None = None  # None: other processes' CPU is recorded, not judged
 
 
 @dataclasses.dataclass(frozen=True)
@@ -234,6 +256,7 @@ class Plan:
     verify_sets: bool
     housekeeping_cpus: tuple[int, ...]
     abort_after: int
+    rerun_host_faults: bool = False
 
     @property
     def generator_threads(self) -> int:
@@ -246,7 +269,7 @@ _DEFAULTS: Mapping[str, Any] = {
     "ready_timeout_s": 60.0, "stop_timeout_s": 20.0, "count_limit_s": 600.0,
     "error_share_max": 0.001, "generator_busy_max_pct": 90.0, "clock_drift_max": 0.02,
     "session_clock_mhz": None, "verify_sets": True, "housekeeping_cpus": None,
-    "abort_after_consecutive": 8,
+    "abort_after_consecutive": 8, "others_max_pct": None, "rerun_host_faults": False,
 }
 
 
@@ -345,6 +368,10 @@ def parse_plan(raw: Any) -> Plan:
         raise PlanError("cpus: one server CPU, and the generator CPUs must not include it")
     if d["session_clock_mhz"] is not None:
         _number(d, "session_clock_mhz", 1.0)
+    if d["others_max_pct"] is not None:
+        _number(d, "others_max_pct", 0.0)
+    if not isinstance(d["rerun_host_faults"], bool):
+        raise PlanError(f"rerun_host_faults is true or false, got {d['rerun_host_faults']!r}")
     for key, lo in (("warmup_s", 0.0), ("window_s", 0.01), ("ready_timeout_s", 0.1), ("stop_timeout_s", 0.1),
                     ("count_limit_s", 1.0), ("error_share_max", 0.0), ("generator_busy_max_pct", 0.0),
                     ("clock_drift_max", 0.0)):
@@ -361,12 +388,13 @@ def parse_plan(raw: Any) -> Plan:
     housekeeping = () if d["housekeeping_cpus"] is None else parse_cpu_list(d["housekeeping_cpus"])
     if set(housekeeping) & (set(server) | set(generator)):
         raise PlanError("housekeeping_cpus must not include a server or generator CPU")
-    th = Thresholds(float(d["error_share_max"]), float(d["generator_busy_max_pct"]), float(d["clock_drift_max"]))
+    th = Thresholds(float(d["error_share_max"]), float(d["generator_busy_max_pct"]), float(d["clock_drift_max"]),
+                    None if d["others_max_pct"] is None else float(d["others_max_pct"]))
     return Plan(_argv(d["p2gen"], "p2gen"), str(Path(d["data_root"]).resolve()), tuple(shapes), tuple(sizes), _pairs(d["pairs"]), programs,
                 server[0], generator, d["connections"], d["threads"], float(d["warmup_s"]), float(d["window_s"]),
                 d["timeout_ms"], float(d["ready_timeout_s"]), float(d["stop_timeout_s"]), float(d["count_limit_s"]),
                 th, None if d["session_clock_mhz"] is None else float(d["session_clock_mhz"]), d["verify_sets"],
-                housekeeping, d["abort_after_consecutive"])
+                housekeeping, d["abort_after_consecutive"], d["rerun_host_faults"])
 
 
 def load_plan(path: Path) -> tuple[Plan, bytes]:
@@ -394,6 +422,11 @@ class Window:
     index: int  # position in the mirrored round, from 0
     half: int  # 1 for the first pass over the arms, 2 for the second
     round_length: int
+    rerun: bool = False  # a window of a round run again for a host fault (rerun_host_faults)
+
+    @property
+    def round_key(self) -> tuple[str, int, int, str]:
+        return self.shape, self.m, self.table_seed, self.program
 
     @property
     def cell(self) -> str:
@@ -412,17 +445,31 @@ def mirrored(arms: Sequence[str]) -> tuple[str, ...]:
     return tuple(arms) + tuple(reversed(arms))
 
 
+def _round(seq: int, shape: str, m: int, table_seed: int, ring_seed: int, program: Program,
+           rerun: bool = False) -> Iterator[Window]:
+    order = mirrored(program.arms)
+    for index, arm in enumerate(order):
+        half = 1 if index < len(program.arms) else 2
+        yield Window(seq + index, shape, m, table_seed, ring_seed, program.name, arm, index, half, len(order), rerun)
+
+
 def windows(plan: Plan) -> Iterator[Window]:
     seq = 0
     for shape in plan.shapes:
         for m in plan.sizes:
             for table_seed, ring_seed in plan.pairs:
                 for program in plan.programs:
-                    order = mirrored(program.arms)
-                    for index, arm in enumerate(order):
-                        half = 1 if index < len(program.arms) else 2
-                        yield Window(seq, shape, m, table_seed, ring_seed, program.name, arm, index, half, len(order))
-                        seq += 1
+                    yield from _round(seq, shape, m, table_seed, ring_seed, program)
+                    seq += 2 * len(program.arms)
+
+
+def rerun_windows(plan: Plan, rounds: Sequence[tuple[str, int, int, str]], first_seq: int) -> Iterator[Window]:
+    """The windows of each round in rounds, (shape, m, table seed, program), run again in that order."""
+    rings, programs = dict(plan.pairs), {p.name: p for p in plan.programs}
+    seq = first_seq
+    for shape, m, table_seed, name in rounds:
+        yield from _round(seq, shape, m, table_seed, rings[table_seed], programs[name], rerun=True)
+        seq += 2 * len(programs[name].arms)
 
 
 def total_windows(plan: Plan) -> int:
@@ -446,6 +493,7 @@ class Observed:
     clock_mhz: float | None = None
     session_mhz: float | None = None
     span_s: float | None = None  # the runner's sample span over the window
+    others_pct: float | None = None  # other processes' CPU in percent of one CPU, None without a record
 
 
 @dataclasses.dataclass(frozen=True)
@@ -512,6 +560,11 @@ def _timed_reasons(g: Mapping[str, Any], obs: Observed, th: Thresholds) -> list[
                                   f"errors and lost requests"))
     if g["thread_failed"] or obs.generator_exit != 0:
         out.append(("generator_failed", f"p2gen exit code {obs.generator_exit}, failed threads {g['thread_failed']}"))
+    if th.others_max_pct is not None:
+        if obs.others_pct is None:
+            out.append(("others", "no record of the other processes over the window"))
+        elif obs.others_pct > th.others_max_pct:
+            out.append(("others", f"other processes {obs.others_pct:g}% of one CPU > {th.others_max_pct:g}%"))
     if obs.generator_busy_pct is None or obs.clock_mhz is None or not obs.session_mhz:
         out.append(("sampler", "no CPU or clock sample over the window"))
         return out
@@ -1193,7 +1246,8 @@ def load_labrec() -> Any:
 
 def others_row(labrec: Any, start: list, end: list, wall_s: float, exclude: Sequence[int]) -> dict[str, Any]:
     """Every other process's CPU between two snapshots, in aa_trial.py's shape: the sum in percent of
-    one CPU, the busiest few, and the busiest few that started in between. Recorded, never judged."""
+    one CPU, the busiest few, and the busiest few that started in between. The verdict reads the sum
+    only when the plan sets others_max_pct."""
     shares = labrec.process_shares(start, end, wall_s, exclude_pids=tuple(exclude))
     others = [p for p in shares["judged"] if p["cpu_percent"] > 0]
     return {"sum_pct_of_one_cpu": round(sum(p["cpu_percent"] for p in others), 2), "top": others[:OTHERS_TOP],
@@ -1225,6 +1279,8 @@ class Runner:
         row: dict[str, Any] = {"type": "window", "seq": w.seq, "cell": w.cell, "shape": w.shape, "m": w.m,
                                "table_seed": w.table_seed, "ring_seed": w.ring_seed, "program": w.program,
                                "arm": w.arm, "entry": w.entry, "index": w.index, "half": w.half}
+        if w.rerun:
+            row["rerun"] = True
         if self.timed:
             row["started"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
         try:
@@ -1244,18 +1300,19 @@ class Runner:
             return None
         try:
             return self.labrec.processes()
-        except Exception as e:  # noqa: BLE001 - kept in the row; the other processes' share is not judged
+        except Exception as e:  # noqa: BLE001 - kept in the row; the window has no record of the others
             row.setdefault("others_errors", []).append(repr(e))
             return None
 
     def _others(self, row: dict[str, Any], before: list, after: list | None, wall_s: float) -> None:
-        """row["others"] from two snapshots; any failure goes to others_errors, never to the verdict."""
+        """row["others"] from two snapshots; a failure goes to others_errors and leaves no record, which
+        makes the window invalid only under others_max_pct."""
         if after is None:
             return
         try:
             mine = (os.getpid(), *(sp.proc.pid for sp in self._live))
             row["others"] = others_row(self.labrec, before, after, wall_s, mine)
-        except Exception as e:  # noqa: BLE001 - recorded, not judged: the window keeps p2gen's result
+        except Exception as e:  # noqa: BLE001 - the window keeps p2gen's result and lacks the record
             row.setdefault("others_errors", []).append(repr(e))
 
     def _server_env(self, program: Program) -> dict[str, str]:
@@ -1314,7 +1371,10 @@ class Runner:
                             "drift": None if drift is None else round(drift, 5)}
             if reading.cpus_counted is not None:
                 row["clock"]["cpus_counted"] = reading.cpus_counted
-        return Observed(ready, probe, generator, gen_exit, alive, server_exit, busy, clock, self.session_mhz, span)
+        others = (row.get("others") or {}).get("sum_pct_of_one_cpu")
+        others = others if isinstance(others, (int, float)) and not isinstance(others, bool) else None
+        return Observed(ready, probe, generator, gen_exit, alive, server_exit, busy, clock, self.session_mhz, span,
+                        others)
 
     def _generator_cmd(self, port: int, cell: Path, result: Path) -> list[str]:
         p = self.plan
@@ -1604,28 +1664,51 @@ def _install_stop_handlers() -> dict[int, Any]:
     return saved
 
 
+def host_faults(row: Mapping[str, Any]) -> list[str]:
+    """The reason codes of an invalid window that decision 18 reruns its round for, or []."""
+    return sorted(set(row.get("reason_codes") or []) & RERUN_CODES) if row.get("status") == "invalid" else []
+
+
 def _run_windows(plan: Plan, runner: Runner, sink: Any) -> int:
-    """The window loop. Returns 0, 1 (count mode: a window did not pass) or 3 (the run was stopped because
-    one systematic reason repeated in abort_after_consecutive windows in a row)."""
+    """The window loop, then (rerun_host_faults) one rerun of every round with a host fault. Returns 0, 1
+    (count mode: a window did not pass) or 3 (the run was stopped because one systematic reason repeated
+    in abort_after_consecutive windows in a row)."""
     tally: dict[str, int] = {}
     streak: dict[str, int] = {}
-    total = total_windows(plan)
-    code = 0
-    for w in windows(plan):
-        row = runner.run_window(w)
-        sink.write(json.dumps(row) + "\n")
+    faults: dict[tuple[str, int, int, str], dict[str, Any]] = {}  # round key -> its host faults, in run order
+
+    def run(ws: Iterator[Window], total: int, label: str) -> bool:
+        nonlocal streak
+        for n, w in enumerate(ws, 1):
+            row = runner.run_window(w)
+            sink.write(json.dumps(row) + "\n")
+            sink.flush()
+            tally[row["status"]] = tally.get(row["status"], 0) + 1
+            print(f"[{label}{n}/{total}] {w.cell} {w.program} {w.arm} {row['status']}"
+                  + (f": {'; '.join(row['reasons'])}" if row["reasons"] else ""), file=sys.stderr, flush=True)
+            if not w.rerun and (codes := host_faults(row)):
+                fault = faults.setdefault(w.round_key, {"seqs": [], "codes": set()})
+                fault["seqs"].append(w.seq)
+                fault["codes"].update(codes)
+            failing = set(row["reason_codes"]) & SYSTEMATIC if row["status"] == "invalid" else set()
+            streak = {c: streak.get(c, 0) + 1 for c in failing}
+            worst = max(streak, key=streak.get, default=None)
+            if plan.abort_after and worst and streak[worst] >= plan.abort_after:
+                print(f"p2run: stopped: {streak[worst]} windows in a row failed with {worst!r}; the record so far "
+                      f"is kept", file=sys.stderr)
+                return False
+        return True
+
+    planned = total_windows(plan)
+    code = 0 if run(windows(plan), planned, "") else 3
+    if code == 0 and plan.rerun_host_faults:
+        reruns = list(rerun_windows(plan, list(faults), planned))
+        rounds = [{"shape": k[0], "m": k[1], "table_seed": k[2], "program": k[3], "seqs": f["seqs"],
+                   "codes": sorted(f["codes"])} for k, f in faults.items()]
+        sink.write(json.dumps({"type": "rerun", "rounds": rounds, "windows": len(reruns)}) + "\n")
         sink.flush()
-        tally[row["status"]] = tally.get(row["status"], 0) + 1
-        print(f"[{w.seq + 1}/{total}] {w.cell} {w.program} {w.arm} {row['status']}"
-              + (f": {'; '.join(row['reasons'])}" if row["reasons"] else ""), file=sys.stderr, flush=True)
-        failing = set(row["reason_codes"]) & SYSTEMATIC if row["status"] == "invalid" else set()
-        streak = {c: streak.get(c, 0) + 1 for c in failing}
-        worst = max(streak, key=streak.get, default=None)
-        if plan.abort_after and worst and streak[worst] >= plan.abort_after:
-            print(f"p2run: stopped: {streak[worst]} windows in a row failed with {worst!r}; the record so far is kept",
-                  file=sys.stderr)
-            code = 3
-            break
+        print(f"p2run: rerunning {len(rounds)} rounds with a host fault, {len(reruns)} windows", file=sys.stderr)
+        code = 0 if run(iter(reruns), len(reruns), "rerun ") else 3
     print(f"p2run: {sum(tally.values())} windows, " + ", ".join(f"{k} {v}" for k, v in sorted(tally.items())), file=sys.stderr)
     if code == 0 and runner.count is not None and set(tally) - {"valid"}:
         code = 1

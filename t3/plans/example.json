@@ -1,5 +1,5 @@
 {
-  "_comment": "Example run plan for p2run.py: the laptop's Arch (L), the campaign grid of design/round3/end-to-end.md (two shapes, five sizes, sixteen seed pairs) with every arm that builds there: 22 arms, 7,040 windows (section 11). The paths are placeholders. On the laptop's Windows the arms of mserver lose r3 (and gain pistache only once its meson build exists), and the programs are .exe files. Placement: lab/laptop/README.md, one server core (CPU 14), generator on CPUs 2 to 13. Dry run: p2run.py example.json --dry-run. Count mode (the desktop, no timing): p2run.py PLAN --out FILE.jsonl --count 20000 with a plan whose CPUs exist on that host.",
+  "_comment": "Example run plan for p2run.py: the laptop's Arch (L), the campaign grid of design/round3/end-to-end.md (two shapes, five sizes, sixteen seed pairs) with every arm that builds there: 22 arms, 7,040 windows (section 11). The paths are placeholders. On the laptop's Windows the arms of mserver lose r3 (and gain pistache only once its meson build exists), and the programs are .exe files. Placement: lab/laptop/README.md, one server core (CPU 14), generator on CPUs 2 to 13. A window with other processes above 10% of one CPU, or without their record, is invalid, and a round with such a window or a sampler fault runs once more at the end (decision 18). Dry run: p2run.py example.json --dry-run. Count mode (the desktop, no timing): p2run.py PLAN --out FILE.jsonl --count 20000 with a plan whose CPUs exist on that host.",
   "p2gen": "/home/alex/lab/p2r3/build/t3/gen/p2gen",
   "data_root": "/home/alex/lab/p2r3/sets",
   "shapes": ["mixed-disjoint", "static"],
@@ -21,6 +21,8 @@
   "clock_drift_max": 0.02,
   "verify_sets": true,
   "abort_after_consecutive": 8,
+  "others_max_pct": 10,
+  "rerun_host_faults": true,
   "programs": [
     {
       "name": "mserver",
