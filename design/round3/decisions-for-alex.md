@@ -295,3 +295,44 @@ compare arms under one generator, so a bias common to both arms cancels in their
 
 **Recommendation.** (a). There is no basis for a threshold between two generators, and the tested
 ratios do not depend on a shared bias. **Answered by Alex on 2026-10-26 (AskUserQuestion): (a).**
+
+## 18. What a window spoiled by the host costs the campaign (2026-10-27)
+
+**What.** The A/A pilot on the laptop's Windows (03:13 to 06:40, 1,920 windows) lost 6 of 480
+replicates: 5 to the 10% guard of decision 16, 1 to a PDH fault at a window's end
+(PDH_CALC_NEGATIVE_DENOMINATOR; the window failed closed). The guard's 8 windows came in 5 bursts
+(03:31, 03:40, 04:28, 05:27, 06:18), each starting as sppsvc.exe starts (decision 19). Round 2's rule
+leaves out a whole round with any invalid window. In the campaign a round is one program's arms, twice
+(on Windows 20 windows for the C++ server, 12 for Go, 10 for Rust), so one burst costs every competitor
+of that program a pair. H8's first Holm step needs 14 of 16 pairs (2^-14 = 6.1e-5 below 0.025/310 =
+8.06e-5); a cell left with 13 passes only after 106 smaller p-values have passed. H10 tolerates 13
+(2^-13 = 1.22e-4 below 1.79e-4). A simulation at the pilot's rate over Windows' 11.93 h (about 17 bursts
+and 3 or 4 PDH faults, Poisson) gives the chance that some competitor and cell keeps 13 or fewer pairs.
+
+**Options.**
+- (a) Rerun once: each program round with a window invalid for a host reason (other processes above
+  10% of one CPU, or no CPU or clock sample) runs once more at the end of that system's campaign and
+  replaces the original, which stays in the record. Arm-caused faults are never rerun. About 22 rounds,
+  about 0.6 h more on Windows; runner code, a review and tests before the freeze. About 1 rerun in the
+  whole campaign is spoiled again, so a 3-pair loss in one cell is remote.
+- (b) Pairs per arm: the pair of v2 and competitor X counts when those four windows are valid. No
+  laptop time. Simulated chance of some competitor and cell with 13 or fewer pairs: 35%.
+- (c) Round 2's rule: 68%, about 8 such competitor-cells on average.
+
+**Recommendation.** (a). It costs about half an hour and keeps every cell at 16 pairs in nearly every
+run. (b) still leaves one burst in a v2 window costing all of that round's competitors a pair.
+
+## 19. The Software Protection service on the laptop's Windows (2026-10-27)
+
+**What.** Every burst of decision 18 began as sppsvc.exe (Windows' Software Protection Platform,
+licensing) started, mostly with taskhostw.exe; the window after showed System at up to 37.8% of one CPU.
+The task SoftwareProtectionPlatform\SvcRestartTask was rewritten at 06:18:55, seconds after the 06:18
+burst (the coordinator's probe). Decision 16 quieted Windows Update and Defender, not this.
+
+**Options.**
+- (a) Leave it running: the 10% guard drops its windows, and decision 18 decides their cost.
+- (b) Quiet it for the runs: Alex disables SvcRestartTask on the laptop's Windows by his own script.
+  It touches Windows licensing; the effect is not tested here.
+
+**Recommendation.** (a), with decision 18 (a). Changing licensing tasks for a half hour of reruns is
+not worth an untested side effect.
