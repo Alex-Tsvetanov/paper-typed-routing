@@ -369,3 +369,56 @@ small cells reported and not tested than (b) or (c). H10 (a) uses the noise of t
 tests and the percentile H8 uses; it is the most lenient of the three, (c) the strictest.
 **Not asked yet:** it waits on the scope question of 2026-10-27 (the new loop's 5 to 10 minute
 campaigns). Before asking, count from round 2's grid how many H9 cells each option leaves tested.
+
+## 21. Round 3 in the new loop: a 10 minute campaign per system (2026-10-27)
+
+**What.** Alex's rule of 2026-10-27, through the coordinator, covers every paper: campaigns of 5 to 10
+minutes, "median +/- std div for each of the contestants", noise measured once per OS by a fixed A/A run
+and reported, never tuned. It replaces D9's exact test with Holm for the new loop. Round 3 as drafted
+needs about 24.3 h on the laptop (L 7,040 windows, W 6,720, 6.05 to 6.81 s each) plus reruns. A
+10 minute campaign holds under 100 windows of that kind, fewer than the 22 contestants on Linux times 7
+rounds at one size. So a 10 minute design needs fewer cells and shorter windows, with servers kept
+running. The probes give the start-up cost that this saves: at m = 100,000 a fresh server takes up to
+5.0 s on Linux (Drogon) and 5.75 s on Windows (actix-router); starting every contestant once costs
+13.9 s and 18.8 s in total.
+
+**Options.**
+- (a) One campaign of about 10 minutes per system.
+  - Contestants: every arm of the three programs, 22 on Linux and 21 on Windows. The null arms stay:
+    each program's routing cost is its router's time per request minus its null's.
+  - Cells: mixed-disjoint (the shape with captured parameters) at m = 1,000 and m = 100,000, table pair
+    (111, 211). At m = 10 round 2's lookup gaps go down to about 18 ns (uWebSockets against v2), below
+    the A/A noise (97.5th percentile 76 ns on Linux, 155 ns on Windows), so a server cannot show them.
+  - Per cell: every contestant's server starts once and gets a 1 s warm-up; then 7 rounds, each giving
+    every contestant one 1.5 s window, in a new random order per round from a fixed seed. Idle servers
+    sleep on the server's core; their CPU time is recorded in every window, and the 10% guard and
+    decision 18's rerun still apply.
+  - Time per system: 462 s of windows on Linux (22 x 2 x 7 x 1.5 s), 441 s on Windows; warm-ups 44 s
+    and 42 s; start-ups at most about 28 s and 38 s. Under 10 minutes if the gap before each window
+    (the generator starts and opens 64 connections) stays under 0.2 s; the first run shows it.
+  - Noise: one fixed A/A run per OS, v2 twice in each program, same cells, rounds and windows: 126 s of
+    windows, about 3 minutes. Its spread is reported.
+  - Reported: per contestant and cell, the median req/s and its standard deviation over the 7 windows,
+    the time per request, each program's ranking and routing cost. With 7 rounds, up to six comparisons
+    named in advance can still carry an exact sign test (2^-7 = 0.0078, below 0.05/6), if a venue asks.
+  - Work before the first run: the runner keeps servers running and runs round-robin, a results script,
+    new plans, tests, a review, a desktop count-mode check (also the memory of 22 servers at m =
+    100,000). The server binaries do not change, so their sanitizer records still cover them.
+  - Laptop time: about 26 minutes in all, against about 24.3 h.
+  - What H8 to H10 lose. H8: no tested family, no delta and no control of false claims; "not slower"
+    becomes a ranking by median with its spread. Cells per competitor drop from 10 (2 shapes x 5
+    sizes) to 2: no static shape, no m = 10, 100 or 10,000. Tables drop from 16 seed pairs to 1, so
+    the spread shows run-to-run noise only, not how much results move between tables. H9: no
+    per-pair ratio with a BCa bound of 0.5; a point comparison of the two medians' time difference
+    with round 2's lookup difference. H10: no margin test; increments from medians, with spreads.
+    Decision 20 is moot. Windows drop from 5 s to 1.5 s, and their noise is unknown until the A/A
+    run. A server now serves all 7 of its windows, so start-up effects (memory layout, hash seeds) no
+    longer vary between windows, and the spread leaves that source out. H7's MSVC compile costs (about
+    20 minutes by round 2's procedure) do not fit: a short job of their own, or left out.
+- (b) Keep the 24 h design: H8 to H10 as drafted, frozen after decision 20, about 24.3 h plus reruns.
+  Add the median and spread per contestant to what is reported. It keeps every claim and its error
+  control, against Alex's 10 minute rule.
+
+**Recommendation.** (a). It answers the question Alex asks (who is fastest in each server, with what
+spread) in about 26 minutes of laptop time and fits the new loop. The claim narrows to one shape, two
+sizes and one table on each OS, and the paper says so. (b) only if a venue needs the tested family.

@@ -184,9 +184,9 @@ SvcRestartTask on W after P4's c3 (the coordinator's script; sppsvc may rewrite 
 
 Laptop time (Alex, 2026-10-26, AGENTS.md bc1a76d): "Do not wait on me. Laptop is available 24/7 so just carry
 on and use it." Requests go to the coordinator when final; design, scope and pushes still go to Alex.
-Relayed by the coordinator (2026-10-27, not yet in AGENTS.md), for "the new loop": campaigns of 5 to 10 minutes,
-results as the median and spread for each contestant. Open: whether it covers round 3 (row 6 plans 24 h; 10 min
-is about 100 windows against L's 7,040, which breaks D9 for H8's 310 cells): asked of the coordinator. Then 20.
+The new loop (Alex, 2026-10-27, via the coordinator; covers round 3): campaigns of 5 to 10 minutes, median and
+std dev per contestant, one fixed A/A run per OS, replacing D9's Holm test. Open: 21, round 3's scope (lead: one
+10 min campaign per system, 2 cells, 7 round-robin rounds of 1.5 s windows; or the 24 h design); the coordinator asks.
 
 ## Commits on `round3` (local, not pushed)
 
@@ -196,4 +196,4 @@ to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); 3caa3
 
 ## Next engineering
 
-The scope answer; if the design stays, decision 20 (with round 2's H9 cell counts), then the freeze proposal.
+Alex's answer to 21. (a): the runner's round-robin mode, plans, results script, review. (b): 20, then the freeze.
