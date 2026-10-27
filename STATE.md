@@ -185,8 +185,8 @@ SvcRestartTask on W after P4's c3 (the coordinator's script; sppsvc may rewrite 
 Laptop time (Alex, 2026-10-26, AGENTS.md bc1a76d): "Do not wait on me. Laptop is available 24/7 so just carry
 on and use it." Requests go to the coordinator when final; design, scope and pushes still go to Alex.
 The new loop (Alex, 2026-10-27, via the coordinator; covers round 3): campaigns of 5 to 10 minutes, median and
-std dev per contestant, one fixed A/A run per OS, replacing D9's Holm test. Open: 21, round 3's scope (lead: one
-10 min campaign per system, 2 cells, 7 round-robin rounds of 1.5 s windows; or the 24 h design); the coordinator asks.
+std dev per contestant, one fixed A/A run per OS, replacing D9's Holm test. Open: 21, round 3's scope (lead: 1.5 s
+windows, not the agreed 5 s, 2 cells, 7 round-robin rounds, about 10 min per system; 5 s variants; the 24 h design).
 
 ## Commits on `round3` (local, not pushed)
 
