@@ -43,10 +43,12 @@ Defender for the runs; decision 19: on Windows also the Software Protection rest
 pilot and the timing probe come first.
 
 A round with an invalid window counts for no arm. After a system's last planned window, each round
-(one program's mirrored round at one shape, size and pair) with a window invalid for a host reason
-runs once more, whole and in its order: other processes above 10% of one CPU or no record of them,
-or no CPU or clock sample over the window. The rerun replaces the round; the original rows stay in
-the record. A round whose invalid windows are all an arm's is not rerun, and a rerun is not rerun
+(one program's mirrored round at one shape, size and pair) with a window invalid only for host
+reasons runs once more, whole and in its order. Host reasons: other processes above 10% of one CPU
+or no record of them; no CPU or clock sample over the window, or a sample span more than 50 ms off
+the generator's window. The rerun replaces the round; the original rows stay in the record. A window
+that also failed for an arm's reason starts no rerun (a crashing server's error reporter is another
+process), a round whose invalid windows are all an arm's is not rerun, and a rerun is not rerun
 (decision 18; p2run's `rerun_host_faults`).
 
 ## 3a. The A/A pilot (fixed 2026-10-26, before it runs)

@@ -82,9 +82,11 @@ to readiness, the CPU busy shares, the mean clock, and "others": every other pro
 just before p2gen starts to just after it exits (lab/laptop's process_shares, in aa_trial.py's
 shape), judged only when the plan sets others_max_pct. Failed windows keep the tail of the server's log.
 With rerun_host_faults, a {"type": "rerun", ...} line follows the last planned window: the rounds
-rerun, each with the seqs and reason codes of its host faults, and how many windows follow. The rerun
-windows carry "rerun": true and continue the seq numbers. The session line's "windows" counts the
-planned windows only.
+rerun, each with the seqs and reason codes of its host faults, the windows of that round that failed
+for an arm's reason, and the first seq and the number of its rerun windows. The rerun windows carry
+"rerun": true and continue the seq numbers. The session line's "windows" counts the planned windows
+only. The last line, {"type": "end", ...}, gives the exit code and the windows run by status (and,
+with reruns, the rerun rounds that had a host fault again); a record without it did not finish.
 
 Validity (timed), as lab/t1: the server started and answered the probe with 200 and the 13-byte
 body; at least one completed answer; errors at most 0.1% of the answers; the generator CPUs at
@@ -95,18 +97,23 @@ timeouts, connect errors and lost requests explain (each of those makes one reco
 with timeouts is not made invalid by them; where there are such errors, as many more reconnects as
 there are connections are allowed, for retries that fall across the window's edge); p2gen's line has
 every key the verdict reads; the runner's sample span equals p2gen's window to 50 ms; with
-others_max_pct, the other processes' record exists and its sum is at most that share of one CPU.
+others_max_pct, the other processes' record exists and its sum, as recorded (two decimals), is at
+most that share of one CPU.
 Overload rule (section 9): a window whose only failing rule is the error share,
 where every error is a timeout or a request lost to a reset or close, is "overloaded", not
 "invalid". A window that also fails another rule stays invalid.
 
 Reruns (rerun_host_faults; decision 18). After the last planned window, each round (one program's
-mirrored round at one shape, size and pair) with a window invalid for a host reason, a reason code in
-RERUN_CODES (other processes above others_max_pct or no record of them; no CPU or clock sample, or a
-sample span off p2gen's window), runs once more, whole and in the same order, in the order the rounds
-first ran. The rerun replaces the round in the analysis; the original rows stay in the record. A round
-whose invalid windows are all an arm's (error share, overload, a failed server) is not rerun, and a
-rerun round is never rerun. No reruns follow a run stopped by the consecutive-fault rule.
+mirrored round at one shape, size and pair) with a window invalid only for host reasons, every reason
+code in RERUN_CODES (other processes above others_max_pct or no record of them; no CPU or clock
+sample, or a sample span off p2gen's window), runs once more, whole and in the same order, in the
+order the rounds first ran. The rerun replaces the round in the analysis; the original rows stay in
+the record. A window that also failed for an arm's reason starts no rerun: a server that crashes on
+Windows starts its error reporter, which shows as another process, and a rerun would give that arm a
+second draw. A round whose invalid windows are all an arm's (error share, overload, a failed server)
+is not rerun, and a rerun round is never rerun. No reruns follow a run stopped by the consecutive-fault
+rule. The rerun pass counts its own consecutive faults from zero; "others" is one of them, since a
+host busy for that many windows in a row is not the quiet host the method states.
 
 Exit codes: 0 done (timed: every window ran, whatever its verdict); 1 count mode with a window
 that did not pass; 2 a bad plan, command line or preflight check; 3 stopped by the consecutive-fault
@@ -563,7 +570,7 @@ def _timed_reasons(g: Mapping[str, Any], obs: Observed, th: Thresholds) -> list[
     if th.others_max_pct is not None:
         if obs.others_pct is None:
             out.append(("others", "no record of the other processes over the window"))
-        elif obs.others_pct > th.others_max_pct:
+        elif not obs.others_pct <= th.others_max_pct:  # a NaN fails too
             out.append(("others", f"other processes {obs.others_pct:g}% of one CPU > {th.others_max_pct:g}%"))
     if obs.generator_busy_pct is None or obs.clock_mhz is None or not obs.session_mhz:
         out.append(("sampler", "no CPU or clock sample over the window"))
@@ -1665,31 +1672,56 @@ def _install_stop_handlers() -> dict[int, Any]:
 
 
 def host_faults(row: Mapping[str, Any]) -> list[str]:
-    """The reason codes of an invalid window that decision 18 reruns its round for, or []."""
-    return sorted(set(row.get("reason_codes") or []) & RERUN_CODES) if row.get("status") == "invalid" else []
+    """The reason codes of an invalid window whose every reason is a host fault (RERUN_CODES), for which
+    decision 18 reruns its round; else []. A window that also failed for an arm's reason is the arm's."""
+    codes = set(row.get("reason_codes") or [])
+    return sorted(codes) if row.get("status") == "invalid" and codes and codes <= RERUN_CODES else []
+
+
+RoundKey = tuple[str, int, int, str]  # shape, m, table seed, program
+
+
+def _rerun_line(plan: Plan, failed: Mapping[RoundKey, list[dict[str, Any]]], first_seq: int) -> dict[str, Any]:
+    """The rounds to rerun, in the order they first ran: those with a window invalid only for host reasons,
+    each with its host faults, its windows that failed for an arm's reason, and its rerun's seqs."""
+    lengths = {p.name: 2 * len(p.arms) for p in plan.programs}
+    rounds, seq = [], first_seq
+    for key, bad in failed.items():
+        host = [b for b in bad if b["host"]]
+        if not host:
+            continue
+        rounds.append({"shape": key[0], "m": key[1], "table_seed": key[2], "program": key[3],
+                       "seqs": [b["seq"] for b in host], "codes": sorted({c for b in host for c in b["host"]}),
+                       "arm_faults": [{k: b[k] for k in ("seq", "status", "codes")} for b in bad if not b["host"]],
+                       "first_seq": seq, "windows": lengths[key[3]]})
+        seq += lengths[key[3]]
+    return {"type": "rerun", "rounds": rounds, "windows": seq - first_seq}
 
 
 def _run_windows(plan: Plan, runner: Runner, sink: Any) -> int:
-    """The window loop, then (rerun_host_faults) one rerun of every round with a host fault. Returns 0, 1
-    (count mode: a window did not pass) or 3 (the run was stopped because one systematic reason repeated
-    in abort_after_consecutive windows in a row)."""
-    tally: dict[str, int] = {}
-    streak: dict[str, int] = {}
-    faults: dict[tuple[str, int, int, str], dict[str, Any]] = {}  # round key -> its host faults, in run order
+    """The window loop, then (rerun_host_faults) one rerun of every round with a host fault, then the end
+    line. Returns 0, 1 (count mode: a window did not pass) or 3 (the run was stopped because one systematic
+    reason repeated in abort_after_consecutive windows in a row)."""
+    # per phase: the windows run by status, and each round's windows that did not pass, in run order
+    tallies: dict[str, dict[str, int]] = {"planned": {}, "rerun": {}}
+    failed: dict[str, dict[RoundKey, list[dict[str, Any]]]] = {"planned": {}, "rerun": {}}
 
-    def run(ws: Iterator[Window], total: int, label: str) -> bool:
-        nonlocal streak
+    def write(line: Mapping[str, Any]) -> None:
+        sink.write(json.dumps(line) + "\n")
+        sink.flush()
+
+    def run(ws: Iterator[Window], total: int, phase: str) -> bool:
+        streak: dict[str, int] = {}  # each phase counts its consecutive faults from zero
+        tally = tallies[phase]
         for n, w in enumerate(ws, 1):
             row = runner.run_window(w)
-            sink.write(json.dumps(row) + "\n")
-            sink.flush()
+            write(row)
             tally[row["status"]] = tally.get(row["status"], 0) + 1
-            print(f"[{label}{n}/{total}] {w.cell} {w.program} {w.arm} {row['status']}"
+            print(f"[{'rerun ' if w.rerun else ''}{n}/{total}] {w.cell} {w.program} {w.arm} {row['status']}"
                   + (f": {'; '.join(row['reasons'])}" if row["reasons"] else ""), file=sys.stderr, flush=True)
-            if not w.rerun and (codes := host_faults(row)):
-                fault = faults.setdefault(w.round_key, {"seqs": [], "codes": set()})
-                fault["seqs"].append(w.seq)
-                fault["codes"].update(codes)
+            if row["status"] != "valid":
+                failed[phase].setdefault(w.round_key, []).append(
+                    {"seq": w.seq, "status": row["status"], "codes": row["reason_codes"], "host": host_faults(row)})
             failing = set(row["reason_codes"]) & SYSTEMATIC if row["status"] == "invalid" else set()
             streak = {c: streak.get(c, 0) + 1 for c in failing}
             worst = max(streak, key=streak.get, default=None)
@@ -1700,18 +1732,24 @@ def _run_windows(plan: Plan, runner: Runner, sink: Any) -> int:
         return True
 
     planned = total_windows(plan)
-    code = 0 if run(windows(plan), planned, "") else 3
+    code = 0 if run(windows(plan), planned, "planned") else 3
+    end: dict[str, Any] = {"type": "end"}
     if code == 0 and plan.rerun_host_faults:
-        reruns = list(rerun_windows(plan, list(faults), planned))
-        rounds = [{"shape": k[0], "m": k[1], "table_seed": k[2], "program": k[3], "seqs": f["seqs"],
-                   "codes": sorted(f["codes"])} for k, f in faults.items()]
-        sink.write(json.dumps({"type": "rerun", "rounds": rounds, "windows": len(reruns)}) + "\n")
-        sink.flush()
-        print(f"p2run: rerunning {len(rounds)} rounds with a host fault, {len(reruns)} windows", file=sys.stderr)
-        code = 0 if run(iter(reruns), len(reruns), "rerun ") else 3
-    print(f"p2run: {sum(tally.values())} windows, " + ", ".join(f"{k} {v}" for k, v in sorted(tally.items())), file=sys.stderr)
-    if code == 0 and runner.count is not None and set(tally) - {"valid"}:
+        line = _rerun_line(plan, failed["planned"], planned)
+        write(line)
+        keys = [(r["shape"], r["m"], r["table_seed"], r["program"]) for r in line["rounds"]]
+        print(f"p2run: rerunning {len(keys)} rounds with a host fault, {line['windows']} windows", file=sys.stderr)
+        code = 0 if run(rerun_windows(plan, keys, planned), line["windows"], "rerun") else 3
+        again = sum(any(b["host"] for b in bad) for bad in failed["rerun"].values())
+        end["rerun"] = {"rounds": len(keys), "windows_run": sum(tallies["rerun"].values()),
+                        "by_status": tallies["rerun"], "rounds_with_host_faults": again}
+    everything = {k: tallies["planned"].get(k, 0) + tallies["rerun"].get(k, 0) for k in {*tallies["planned"], *tallies["rerun"]}}
+    print(f"p2run: {sum(everything.values())} windows, " + ", ".join(f"{k} {v}" for k, v in sorted(everything.items())),
+          file=sys.stderr)
+    if code == 0 and runner.count is not None and set(everything) - {"valid"}:
         code = 1
+    write({**end, "exit": code, "planned": {"windows": planned, "windows_run": sum(tallies["planned"].values()),
+                                            "by_status": tallies["planned"]}})
     return code
 
 

@@ -378,8 +378,15 @@ class TimedJudgeTests(unittest.TestCase):
         self.assertEqual(judge(obs(others_pct=None), TH).status, "valid")
         th = Thresholds(others_max_pct=10.0)
         self.assertEqual(judge(obs(others_pct=10.0), th).status, "valid")
+        self.assertEqual(judge(obs(others_pct=0.0), Thresholds(others_max_pct=0.0)).status, "valid")
+        self.assertEqual(codes(judge(obs(others_pct=0.01), Thresholds(others_max_pct=0.0))), ["others"])
         self.assertEqual(codes(judge(obs(others_pct=10.01), th)), ["others"])
+        for bad in (float("nan"), float("inf")):
+            self.assertEqual(codes(judge(obs(others_pct=bad), th)), ["others"], bad)
         self.assertEqual(codes(judge(obs(others_pct=None), th)), ["others"])  # no record of them
+        # count mode judges no sample and no other process
+        v = judge(obs(count_line(), generator_busy_pct=None, clock_mhz=None, session_mhz=None, others_pct=None), th, 20_000)
+        self.assertEqual(v.status, "valid")
         # the guard is checked even when the window has no CPU or clock sample
         self.assertEqual(codes(judge(obs(others_pct=None, generator_busy_pct=None), th)), ["others", "sampler"])
         # an overloaded arm in a busy host is invalid, not overloaded
@@ -796,56 +803,95 @@ class RerunTests(unittest.TestCase):
         return rc, [json.loads(line) for line in sink.getvalue().splitlines()], runner
 
     def test_host_faults_only_and_never_an_arms(self) -> None:
-        self.assertEqual(p2run.host_faults({"status": "invalid", "reason_codes": ["error_share", "sampler"]}), ["sampler"])
-        self.assertEqual(p2run.host_faults({"status": "invalid", "reason_codes": ["error_share", "server_died"]}), [])
+        self.assertEqual(p2run.host_faults({"status": "invalid", "reason_codes": ["sampler"]}), ["sampler"])
+        self.assertEqual(p2run.host_faults({"status": "invalid", "reason_codes": ["sampler", "others"]}), ["others", "sampler"])
+        # a window that also failed for an arm's reason is the arm's (a crashed server's error reporter is a process)
+        self.assertEqual(p2run.host_faults({"status": "invalid", "reason_codes": ["server_died", "others"]}), [])
+        self.assertEqual(p2run.host_faults({"status": "invalid", "reason_codes": ["error_share", "sampler"]}), [])
         self.assertEqual(p2run.host_faults({"status": "overloaded", "reason_codes": ["error_share"]}), [])
+        self.assertEqual(p2run.host_faults({"status": "invalid", "reason_codes": []}), [])
         self.assertEqual(p2run.host_faults({"status": "valid", "reason_codes": []}), [])
+
+    def test_the_window_sequence_is_unchanged(self) -> None:
+        plan = p2run.parse_plan(plan_dict(sizes=[10], programs=[
+            {"name": "mserver", "path": "mserver", "arms": ["v2", "null"]},
+            {"name": "mserver-go", "path": "mserver-go", "arms": ["v2", "v2"]}]))
+        got = [(w.seq, w.program, w.arm, w.index, w.half, w.entry, w.round_length, w.rerun) for w in p2run.windows(plan)]
+        self.assertEqual(got, [(0, "mserver", "v2", 0, 1, 0, 4, False), (1, "mserver", "null", 1, 1, 1, 4, False),
+                               (2, "mserver", "null", 2, 2, 1, 4, False), (3, "mserver", "v2", 3, 2, 0, 4, False),
+                               (4, "mserver-go", "v2", 0, 1, 0, 4, False), (5, "mserver-go", "v2", 1, 1, 1, 4, False),
+                               (6, "mserver-go", "v2", 2, 2, 1, 4, False), (7, "mserver-go", "v2", 3, 2, 0, 4, False)])
 
     def test_no_rerun_unless_the_plan_asks(self) -> None:
         rc, rows, _ = self.run_loop(self.plan(), {5: ("invalid", ["sampler"])})
-        self.assertEqual((rc, len(rows), [r for r in rows if r["type"] != "window"]), (0, 40, []))
+        self.assertEqual((rc, len(rows)), (0, 41))
+        self.assertEqual(rows[-1], {"type": "end", "exit": 0, "planned": {"windows": 40, "windows_run": 40,
+                                                                          "by_status": {"valid": 39, "invalid": 1}}})
 
     def test_rounds_with_a_host_fault_run_once_more_whole_and_in_order(self) -> None:
         plan = self.plan(rerun_host_faults=True)
         windows = list(p2run.windows(plan))
         self.assertEqual(len(windows), 40)
-        # seq 5 and 8 in the first Go round (seqs 4 to 9); seq 21 in the second size's first C++ round (20 to 23)
-        # has an arm's fault only; seq 36 in the last Go round (34 to 39); seq 1, the first C++ round, a host fault
-        script = {5: ("invalid", ["sampler"]), 8: ("invalid", ["others", "error_share"]),
-                  21: ("invalid", ["error_share"]), 36: ("invalid", ["others"]), 1: ("invalid", ["sampler"]),
+        # seq 1 in the first C++ round (seqs 0 to 3): a host fault. Seq 5 and 8 in the first Go round (4 to 9): a
+        # host fault, and an overload during a burst, which is the arm's. Seq 21 in the second size's first C++
+        # round (20 to 23): an arm's fault only. Seq 36 in the last Go round (34 to 39): a host fault.
+        script = {1: ("invalid", ["sampler"]), 5: ("invalid", ["sampler"]), 8: ("invalid", ["error_share", "others"]),
+                  21: ("invalid", ["error_share"]), 36: ("invalid", ["others"]),
                   ("rerun", 2): ("invalid", ["sampler"])}  # a host fault in a rerun is not rerun again
         rc, rows, runner = self.run_loop(plan, script)
         self.assertEqual(rc, 0)
-        line = rows[40]
+        line, reruns, end = rows[40], rows[41:-1], rows[-1]
         self.assertEqual(line["type"], "rerun")
-        self.assertEqual([(r["program"], r["m"], r["table_seed"], r["seqs"], r["codes"]) for r in line["rounds"]],
-                         [("mserver", 10, 111, [1], ["sampler"]),
-                          ("mserver-go", 10, 111, [5, 8], ["others", "sampler"]),
-                          ("mserver-go", 100, 112, [36], ["others"])])
-        reruns = rows[41:]
+        self.assertEqual([(r["program"], r["m"], r["table_seed"], r["seqs"], r["codes"], r["first_seq"], r["windows"])
+                          for r in line["rounds"]],
+                         [("mserver", 10, 111, [1], ["sampler"], 40, 4),
+                          ("mserver-go", 10, 111, [5], ["sampler"], 44, 6),
+                          ("mserver-go", 100, 112, [36], ["others"], 50, 6)])
+        self.assertEqual([r["arm_faults"] for r in line["rounds"]],
+                         [[], [{"seq": 8, "status": "invalid", "codes": ["error_share", "others"]}], []])
         self.assertEqual((line["windows"], len(reruns)), (16, 16))
-        self.assertTrue(all(r["rerun"] for r in reruns))
+        self.assertTrue(all(r["type"] == "window" and r["rerun"] for r in reruns))
         self.assertEqual([r["seq"] for r in reruns], list(range(40, 56)))
         self.assertEqual([r["arm"] for r in reruns[:4]], ["v2", "null", "null", "v2"])
         self.assertEqual([r["arm"] for r in reruns[4:10]], ["v2", "gin", "null", "null", "gin", "v2"])
         self.assertEqual([r["entry"] for r in reruns[4:10]], [0, 1, 2, 2, 1, 0])
-        self.assertEqual({(w.ring_seed, w.round_length) for w in runner.seen[50:]}, {(212, 6)})
-        self.assertFalse(any(r["type"] == "rerun" for r in rows[41:]))
+        self.assertEqual([(w.ring_seed, w.round_length) for w in runner.seen[40:]],
+                         [(211, 4)] * 4 + [(211, 6)] * 6 + [(212, 6)] * 6)
+        self.assertEqual(end, {"type": "end", "exit": 0,
+                               "rerun": {"rounds": 3, "windows_run": 16, "by_status": {"valid": 13, "invalid": 3},
+                                         "rounds_with_host_faults": 3},
+                               "planned": {"windows": 40, "windows_run": 40, "by_status": {"valid": 35, "invalid": 5}}})
+
+    def test_an_aa_round_reruns_with_both_entries(self) -> None:
+        plan = p2run.parse_plan(plan_dict(rerun_host_faults=True,
+                                          programs=[{"name": "mserver", "path": "mserver", "arms": ["v2", "v2"]}]))
+        rc, rows, _ = self.run_loop(plan, {2: ("invalid", ["others"])})
+        self.assertEqual([(r["arm"], r["entry"], r["seq"]) for r in rows[5:9]],
+                         [("v2", 0, 4), ("v2", 1, 5), ("v2", 1, 6), ("v2", 0, 7)])
 
     def test_a_stopped_run_has_no_reruns(self) -> None:
         plan = self.plan(rerun_host_faults=True, abort_after_consecutive=3)
         rc, rows, _ = self.run_loop(plan, {i: ("invalid", ["sampler"]) for i in range(3)})
-        self.assertEqual((rc, len(rows)), (3, 3))
+        self.assertEqual((rc, len(rows), rows[-1]["exit"], "rerun" in rows[-1]), (3, 4, 3, False))
 
     def test_the_consecutive_fault_rule_holds_in_the_reruns(self) -> None:
         plan = self.plan(rerun_host_faults=True, abort_after_consecutive=3)
         script = {0: ("invalid", ["sampler"]), **{("rerun", i): ("invalid", ["sampler"]) for i in range(4)}}
         rc, rows, _ = self.run_loop(plan, script)
-        self.assertEqual((rc, rows[40]["windows"], len(rows)), (3, 4, 44))
+        self.assertEqual((rc, rows[40]["windows"], len(rows), rows[-1]["exit"]), (3, 4, 45, 3))
+        self.assertEqual(rows[-1]["rerun"]["windows_run"], 3)
+
+    def test_the_rerun_pass_counts_consecutive_faults_from_zero(self) -> None:
+        plan = self.plan(rerun_host_faults=True, abort_after_consecutive=3)
+        # the last two planned windows and the first rerun window fail with one systematic reason
+        rc, rows, _ = self.run_loop(plan, {38: ("invalid", ["sampler"]), 39: ("invalid", ["sampler"]),
+                                           ("rerun", 0): ("invalid", ["sampler"])})
+        self.assertEqual((rc, rows[40]["windows"], rows[-1]["rerun"]["windows_run"]), (0, 6, 6))
 
     def test_count_mode_records_an_empty_rerun_pass(self) -> None:
         rc, rows, _ = self.run_loop(self.plan(rerun_host_faults=True), {}, count=100)
-        self.assertEqual((rc, rows[-1]), (0, {"type": "rerun", "rounds": [], "windows": 0}))
+        self.assertEqual((rc, rows[-2]), (0, {"type": "rerun", "rounds": [], "windows": 0}))
+        self.assertEqual(rows[-1]["rerun"], {"rounds": 0, "windows_run": 0, "by_status": {}, "rounds_with_host_faults": 0})
 
 
 # ---------------------------------------------------------------- orchestration in count mode
@@ -980,6 +1026,8 @@ class OrchestrationTests(unittest.TestCase):
         with mock.patch.dict(os.environ, env or {}), contextlib.redirect_stderr(err):
             rc = p2run.main([str(plan), "--out", str(out), "--count", "100", *extra])
         rows = [json.loads(line) for line in out.read_text().splitlines()] if out.exists() else []
+        self.end = rows.pop() if rows and rows[-1].get("type") == "end" else None  # every finished run has one
+        self.assertEqual(self.end is not None, rc in (0, 1, 3), (rc, self.end))
         return rc, rows, err.getvalue()
 
     def test_all_windows_pass_and_the_record_holds_no_time(self) -> None:
@@ -1005,8 +1053,10 @@ class OrchestrationTests(unittest.TestCase):
             self.assertEqual((w["generator"]["completed"], w["generator_exit"]), (100, 0))
             self.assertEqual(len(w["routes_sha256"]), 64)
             self.assertNotIn("sampler_errors", w)
+        self.assertEqual(self.end, {"type": "end", "exit": 0,
+                                    "planned": {"windows": 8, "windows_run": 8, "by_status": {"valid": 8}}})
         # count mode: no key that names a time, no clock or CPU sample, no float anywhere
-        for row in rows:
+        for row in [*rows, self.end]:
             for path, value in walk(row):
                 leaf = path.split(".")[-1]
                 self.assertIsNone(TIMEISH.search(leaf), path)
@@ -1042,6 +1092,8 @@ class OrchestrationTests(unittest.TestCase):
         self.assertEqual(rc, 3, err)
         self.assertEqual(len(rows) - 1, 3)  # of 8 windows
         self.assertIn("in a row failed with 'not_ready'", err)
+        self.assertEqual((self.end["exit"], self.end["planned"]), (3, {"windows": 8, "windows_run": 3,
+                                                                       "by_status": {"invalid": 3}}))
 
     def test_overload_and_other_measurement_outcomes_do_not_stop_the_run(self) -> None:
         self.assertNotIn("error_share", p2run.SYSTEMATIC)
@@ -1108,6 +1160,17 @@ class OrchestrationTests(unittest.TestCase):
         self.assertEqual((row["status"], row["reason_codes"]), ("invalid", ["driver"]))
         self.assertIn("binary changed", row["reasons"][0])
 
+    def test_a_rerun_window_runs_like_any_other_and_says_so(self) -> None:
+        plan = p2run.parse_plan(json.loads(self.plan("rr", sizes=[10]).read_text()))
+        runner = p2run.Runner(plan, self.root, 100, None, None)
+        w = next(p2run.rerun_windows(plan, [("mixed-disjoint", 10, 111, "fake")], 4))
+        row = runner.run_window(w)
+        self.assertEqual((row["seq"], row["rerun"], row["status"], row["arm"], row["ring_seed"]), (4, True, "valid", "a", 211))
+        self.assertFalse(list(self.root.glob("000004.*")))  # a valid window's work files are removed
+        with mock.patch.object(runner, "_window", side_effect=RuntimeError("boom")):
+            row = runner.run_window(w)
+        self.assertEqual((row["rerun"], row["reason_codes"]), (True, ["driver"]))
+
     def test_a_short_generator_run_is_invalid(self) -> None:
         rc, rows, _ = self.run_main(self.plan("short", sizes=[10]), "short", {"FAKE_GEN": "short"})
         self.assertEqual(rc, 1)
@@ -1151,7 +1214,8 @@ class OrchestrationTests(unittest.TestCase):
             os.chdir(here)
         self.assertEqual(rc, 0, err.getvalue())
         rows = [json.loads(line) for line in (self.root / "sub" / "rel-out.jsonl").read_text().splitlines()]
-        self.assertEqual({w["status"] for w in rows[1:]}, {"valid"})
+        self.assertEqual({w["status"] for w in rows[1:-1]}, {"valid"})
+        self.assertEqual(rows[-1]["type"], "end")
 
     def test_the_record_is_not_overwritten(self) -> None:
         plan = self.plan("again", sizes=[10])
