@@ -93,11 +93,12 @@ windows. Not run on the desktop, by rule: any timed mode. Kernel features used: 
    all fixed. 3. The runner: reviewed by a fresh agent in its own task.
 4. D5 tooling and the laptop jobs (Opus, 2026-10-24): 0 CRITICAL, 2 HIGH, 3 MEDIUM, 4 LOW. Fixed: bare commands
    on the job's PATH; records only on the laptop's host and CPU; toolchains and found trees compared; no green
-   record without kept logs; arms required and logged; no inherited sanitizer options; p2v2.h in the Go hash.
-   Development then found Rust's leaked boxes (freed), actix-router's leak (suppressed, ASan only), LLVM's runtime.
+   record without kept logs; arms required and logged; no inherited sanitizer options; p2v2.h in the Go hash
+   (then Rust's leaked boxes freed, actix-router's leak suppressed for ASan).
 5. Timed path and probe (Sonnet, 2026-10-25): 1 HIGH (a failed `others` record made a driver fault), 1 MEDIUM
    (a vacuous post-run binary check), 5 LOW; all but 1 LOW fixed. 6. The Windows clock (Sonnet): 5 LOW, 4 fixed.
 7. The A/A pilot (Sonnet, 2026-10-26): 2 HIGH (the analysis took incomplete or doubled files), 3 MEDIUM, 6 LOW; fixed.
+9. The rerun (Sonnet, 2026-10-27): no HIGH, 3 MEDIUM (streak across phases, rerun bookkeeping, an arm's second draw), 4 LOW; fixed.
 
 ## To settle in the frozen text (with the freeze proposal and its hours)
 
@@ -117,8 +118,7 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
 `t3/jobs/requests-2026-10-24.json` (rows 0, 2 to 4, at 3ff814e50), `requests-2026-10-25.json` (row 5).
 0, 2, 3. Bring-up, `t3/jobs/bringup.py OUT` (p2r3-bringup-l, -w): toolchains checked, the Release build
    with every arm, CTest, the inputs hash, the Go and Rust programs, the request sets (all 160 cells
-   checked), the suite, the runner's and record tools' tests, a count-mode pass of p2run. Row 0's A/A
-   check of p2gen against t1gen stays in the pilot.
+   checked), the suite, the runner's and record tools' tests, a count-mode pass of p2run.
 4. Records, `t3/jobs/records.py OUT` (p2r3-records-l, -w): L ASan+UBSan, TSan and MSan, W clang-cl ASan.
    Rows 0, 2 to 4 DONE, 2026-10-25, at 3ff814e, every job exit 0 (archives `laptop-archive\gap9-w-q2-p2-a18f07bb\`
    and `gap9-a-q1-5b0f7b2a\`, sha256 checked). W: bring-up 02:11:46 to 03:11:48 EEST (840 checks, 168 of 168
@@ -183,7 +183,8 @@ meson build (it would write into Program Files, the event log and HKCU). (2026-1
 all three programs. 15. delta from each direction's 97.5th percentile. 16. "Shut those processes down":
 Windows Update and Defender's real-time protection off on W for good (Alex runs Papers
 `lab/laptop/alex-admin-quiet.ps1`, e3dc740; a lab job checks it); the 10% rule stays a guard. 17. t1gen reported only.
-(2026-10-27) 18. Host-spoiled rounds rerun once at each system's end. 19. Alex quiets SvcRestartTask on W.
+(2026-10-27) 18. Host-spoiled rounds rerun once at each system's end (p2run 668f289). 19. Alex quiets
+SvcRestartTask on W after P4's c3 (the coordinator's script; sppsvc may rewrite it, -Check shows; reruns cover).
 
 Laptop time (Alex, 2026-10-26, AGENTS.md bc1a76d): "Do not wait on me. Laptop is available 24/7 so just carry
 on and use it." Requests go to the coordinator when final; design, scope and pushes still go to Alex. Open: none.
@@ -192,8 +193,8 @@ on and use it." Requests go to the coordinator when final; design, scope and pus
 
 1862c01 to 06adfe5 (servers, reviews 1 to 3, generator, runner); a27b47e to 083b47c (request 1); 40e08db to
 3ff814e (D5, laptop jobs, review 4); c7153b3 to 39bf126 (probe, `others`, Windows clock, reviews 5, 6); 76baac8
-to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); docs. `bench/` is round 2's but `isa.cmake`.
+to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); 3caa3c6 668f289 (rerun); docs. `bench/` is round 2's but `isa.cmake`.
 
 ## Next engineering
 
-Decision 18's rerun in p2run (review, tests); the L pilot; then delta, H9's minimum, H10's margin; the freeze proposal.
+The L pilot; then delta, H9's minimum, H10's margin; the freeze proposal.
