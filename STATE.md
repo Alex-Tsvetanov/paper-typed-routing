@@ -167,8 +167,7 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
 ## Lab requests
 
 1. Done 2026-10-23 (image 7f39a629ada0: Rust 1.98.1, Go 1.27.1, Boost 1.92.0); Go 1.27.3 and Rust 1.99.0 wanted.
-2. Done 2026-10-24 (coordinator's yes): the lab's checked archives (dl-gap1, dl-gap2, read only) unpacked into
-   `D:\Dev\worktrees\p2r3-build\tools\`, equal to the laptop's trees (`tools\UNPACKED.txt`); rustup 1.98.1 removed.
+2. Done 2026-10-24: the lab's checked archives unpacked into `D:\Dev\worktrees\p2r3-build\tools\` (`UNPACKED.txt`).
 3. Done 2026-10-25 by the coordinator: records filed (7fd305b, 7e0e6a0); test_report_pattern.sh lists `t3/record.py`.
 
 ## Alex decides
@@ -197,4 +196,4 @@ to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); docs.
 
 ## Next engineering
 
-The pilot (row 7: W now, L Tuesday evening); then delta, H9's minimum, H10's margin; then the freeze proposal.
+Decision 18's rerun in p2run (review, tests); the L pilot; then delta, H9's minimum, H10's margin; the freeze proposal.
