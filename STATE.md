@@ -1,6 +1,4 @@
-# P2 round 3, state digest
-
-Under 200 lines. Read this first. Updated 2026-10-25.
+# P2 round 3, state digest (under 200 lines; read this first; updated 2026-10-27)
 
 ## What round 3 is
 
