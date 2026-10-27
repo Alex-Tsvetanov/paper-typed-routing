@@ -1,0 +1,85 @@
+{
+ "_note": "The A/A pilot's analysis (hypotheses-round3.md 3a): t3/pilot_analysis.py over both pilot.jsonl files, run on the desktop on 2026-10-27; the output at 716ac9b (the commit section 3a cites) and at 7d57ebe is byte-identical. Pre-freeze, A/A only: no arm is compared with another.",
+ "inputs": [
+  {
+   "system": "windows",
+   "job": "p2r3-pilot-w",
+   "queue": "gap17-w-q1-p2-pilot-1c03a7e1",
+   "archive": "p2r3-pilot-w.tar.gz",
+   "archive_sha256": "6c1e18ba3d9ba123d2e786099856ec83338a6cc5e303d8f32aec07d46d1b6757",
+   "file": "out/pilot/pilot.jsonl",
+   "sha256": "78c50b330750eee467be8adbd700bdea5a6bdb4eb8bbc9cf3a81225b71c58e16"
+  },
+  {
+   "system": "linux",
+   "job": "p2r3-pilot-l",
+   "queue": "gap17-a-q1-p2-pilot-b506584b",
+   "archive": "p2r3-pilot-l.tar.gz",
+   "archive_sha256": "3058490f6fd7c1762e215a32c0ad2a798c9d42656c6d3f5e28b52e58b22c757b",
+   "file": "out/pilot/pilot.jsonl",
+   "sha256": "637c7f5e49a645c6819e438cba0042e512356dc1d2360a0dab25f5e388fd39da"
+  }
+ ],
+ "analysis": {
+  "rule": {
+   "delta_floor": 1.02,
+   "delta_reading": "a",
+   "others_max_pct": 10.0,
+   "percentile": "type 7 (linear interpolation)",
+   "delta_rounding": "up, to four decimals"
+  },
+  "replicates": 954,
+  "dropped": {
+   "windows": {
+    "other processes above 10% of one CPU": 5,
+    "status invalid": 1
+   },
+   "linux": {}
+  },
+  "delta": 1.02,
+  "noise": [
+   {
+    "system": "linux",
+    "program": "mserver",
+    "replicates": 160,
+    "abs_d_ns_median": 23.5,
+    "abs_d_ns_p975": 76.0
+   },
+   {
+    "system": "linux",
+    "program": "mserver-go",
+    "replicates": 160,
+    "abs_d_ns_median": 36.5,
+    "abs_d_ns_p975": 123.7
+   },
+   {
+    "system": "linux",
+    "program": "mserver-rs",
+    "replicates": 160,
+    "abs_d_ns_median": 28.0,
+    "abs_d_ns_p975": 92.7
+   },
+   {
+    "system": "windows",
+    "program": "mserver",
+    "replicates": 157,
+    "abs_d_ns_median": 45.7,
+    "abs_d_ns_p975": 154.6
+   },
+   {
+    "system": "windows",
+    "program": "mserver-go",
+    "replicates": 159,
+    "abs_d_ns_median": 77.1,
+    "abs_d_ns_p975": 315.0
+   },
+   {
+    "system": "windows",
+    "program": "mserver-rs",
+    "replicates": 158,
+    "abs_d_ns_median": 47.2,
+    "abs_d_ns_p975": 167.2
+   }
+  ]
+ }
+}

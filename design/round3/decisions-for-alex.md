@@ -339,3 +339,33 @@ burst (the coordinator's probe). Decision 16 quieted Windows Update and Defender
 not worth an untested side effect.
 **Answered by Alex on 2026-10-27 (AskUserQuestion): (b).** He disables SvcRestartTask on the laptop's
 Windows for the runs by his own script; passed to the coordinator, who keeps the lab's quieting script.
+
+## 20. H9's minimum D_T0 and H10's margin from the A/A noise (2026-10-27)
+
+**What.** Both A/A pilots ran (`design/round3/aa-pilot.json`): 954 of 960 replicates count, and delta
+for H8 is 1.02, the floor (pooled 97.5th percentiles: r 1.0106, 1/r 1.0104). Section 3a says H9's
+minimum D_T0 and H10's margin come from the noise table, |d| = |1/X_0 - 1/X_1| in ns per replicate, but
+not which statistic. The table, median and 97.5th percentile per system and program: Linux, the C++
+server 23.5 and 76.0, the Go program 36.5 and 123.7, the Rust program 28.0 and 92.7; Windows 45.7 and
+154.6, 77.1 and 315.0, 47.2 and 167.2. H9 (C++ server only) holds a cell when the lower bound of
+D_meas / D_T0 is at least 0.5. H10 tests I_v2 - I_r, where I_v2 comes from the C++ server and I_r from
+the router's own program, so its noise is both programs' noise.
+
+**Options for H9's minimum D_T0, per system.**
+- (a) Twice the C++ server's 97.5th percentile: Linux 152.0 ns, Windows 309.2 ns. At the minimum, half
+  of D_T0 (H9's bound) equals that percentile, so a cell is tested only where its bound stands above
+  the noise.
+- (b) The 97.5th percentile: 76.0 and 154.6 ns.
+- (c) The median: 23.5 and 45.7 ns.
+
+**Options for H10's margin, per system and router program.**
+- (a) Both programs' 97.5th percentiles added in quadrature (independent noise): Linux Go 145.2 ns,
+  Rust 119.9 ns; Windows Go 350.9 ns, Rust 227.7 ns. The same percentile as H8's delta.
+- (b) Both programs' medians added in quadrature: Linux 43.4 and 36.6 ns; Windows 89.6 and 65.7 ns.
+- (c) The C++ server's 97.5th percentile alone: 76.0 and 154.6 ns.
+
+**Recommendation.** H9 (a) and H10 (a). H9 (a) keeps H9's 0.5 bound out of the noise; it leaves more
+small cells reported and not tested than (b) or (c). H10 (a) uses the noise of the very difference it
+tests and the percentile H8 uses; it is the most lenient of the three, (c) the strictest.
+**Not asked yet:** it waits on the scope question of 2026-10-27 (the new loop's 5 to 10 minute
+campaigns). Before asking, count from round 2's grid how many H9 cells each option leaves tested.

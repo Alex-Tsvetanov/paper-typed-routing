@@ -11,8 +11,7 @@ Windows. Round 2 is the prior study; its frozen files are never edited.
 
 - `D:\Dev\worktrees\p2-round3`, branch `round3`, from 801aa8c: the committed gitlink and `main`.
   The manuscript branch (d38847f) adds only `paper/` changes, so round 3 stays off it.
-- Worktree links are relative (`git worktree repair --relative-paths`); that also rewrote
-  `D:\Dev\GitHub\paper-arms-e`'s link, which still resolves.
+- Worktree links are relative (`git worktree repair --relative-paths`; paper-arms-e's link still resolves).
 - Outside the repository: request sets `D:\Dev\worktrees\p2r3-data\sets\<shape>\m<m>\t<seed>\`,
   builds `D:\Dev\worktrees\p2r3-build\`, container trees in the docker volume `p2r3-home`.
 
@@ -86,9 +85,8 @@ windows. Not run on the desktop, by rule: any timed mode. Kernel features used: 
 
 ## Reviews
 
-1. First diff (Opus): 0 CRITICAL, 3 HIGH, 3 MEDIUM, 10 LOW; HIGH and MEDIUM fixed, one LOW too.
-2. Generator and v2 arms (Opus): 0 CRITICAL, 1 HIGH (Go and Rust tied to the C++ v2 build), 3 MEDIUM;
-   all fixed. 3. The runner: reviewed by a fresh agent in its own task.
+1. First diff (Opus): 3 HIGH, 3 MEDIUM, 10 LOW; HIGH, MEDIUM, one LOW fixed. 2. Generator and v2 arms (Opus):
+   1 HIGH (Go and Rust tied to the C++ v2 build), 3 MEDIUM; fixed. 3. The runner: a fresh agent in its own task.
 4. D5 tooling and the laptop jobs (Opus, 2026-10-24): 0 CRITICAL, 2 HIGH, 3 MEDIUM, 4 LOW. Fixed: bare commands
    on the job's PATH; records only on the laptop's host and CPU; toolchains and found trees compared; no green
    record without kept logs; arms required and logged; no inherited sanitizer options; p2v2.h in the Go hash
@@ -100,14 +98,12 @@ windows. Not run on the desktop, by rule: any timed mode. Kernel features used: 
 
 ## To settle in the frozen text (with the freeze proposal and its hours)
 
-- delta for H8 from the A/A pilot; the minimum D_T0 for H9; H10's margin in ns.
+- delta for H8: 1.02 (the pilot, row 7); the minimum D_T0 for H9 and H10's margin in ns: decision 20.
 - The runner's validity additions beyond lab/t1 (connect errors, server alive and exit 0, sample span within
   50 ms of the window, a missing generator key, the stop after 8 consecutive faults), its reconnect rule
   (reconnects only as far as timeouts, connect errors and lost requests explain them; `peer_closes` above 0
   invalidates), and the overload edges (zero completions with timeouts, or connect errors: invalid).
-- What an invalid window costs in the campaign. Round 2 left out a whole round with any invalid window; at
-  the W pilot's rate (5 bursts in 3.5 h, 1 PDH fault in 1,920 windows) W's 12 h would lose about 20 rounds,
-  and a cell left with 13 pairs cannot pass Holm (2^-13 > 8.06e-5). Options: rerun such rounds, pairs per arm.
+- What an invalid window costs: decision 18's rerun (about 22 rounds, about 0.6 h more on W at its pilot's rate).
 - Boost off; each system's clock reference (Arch's idle CPUs read 3,201 MHz, busy ones about 3,168: 1% bias).
 
 ## Laptop requests
@@ -135,9 +131,8 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
    timing the bring-ups' binaries (refused unless their sha256s and compiled sources equal 3ff814e's).
    Pre-freeze: never analysed for H8 to H10, never cited. Approved by Alex (2026-10-25, via the coordinator).
    DONE on both. Every archive's sha256 checked, every binary check empty, quiet passed:
-   - W at 25fbd22 (p2r3-probe-w, 14:55 EET): exit 3 after 8 windows on "clock_drift" 67.8%: the reference
-     averaged 0 for the idle CPUs without PDH data in 0.5 s (1,892 MHz against the windows' 3,175). Fixed
-     in f5bf53e and 39bf126 (one 10 s interval, zeros left out, `cpus_counted`).
+   - W at 25fbd22 (p2r3-probe-w): exit 3 after 8 windows, "clock_drift" 67.8% (idle CPUs without PDH data
+     read 0 in 0.5 s); fixed in f5bf53e and 39bf126 (one 10 s interval, zeros left out, `cpus_counted`).
    - L at 25fbd22 (p2r3-probe-l, 15:26 to 15:56 EET, archive 022e401c): exit 0, 176 windows, 172 valid, 4
      overloaded on the error share only (Drogon, actix-router; m = 100,000, mixed-disjoint); reference 3,197.8
      MHz, drift at most 0.96%; start-up at m = 100,000 at most 5.0 s; spacing 6.05 s at m = 10, 6.56 s at 100,000.
@@ -150,12 +145,16 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
 7. A/A pilot (p2r3-pilot-l, -w at dec7e54, `t3/jobs/requests-2026-10-26-pilot.json`; `t3/jobs/pilot.py`,
    `t3/plans/pilot-L.json`, `pilot-W.json`; rule in `hypotheses-round3.md` 3a, analysis `t3/pilot_analysis.py`):
    v2 against v2 in all three programs, one 4-window round at every H8 cell, 1,920 windows per system, the
-   bring-ups' binaries. About 3.3 h on L and 3.4 h on W (the probes' spacing, upper bounds), timeout 7 h;
-   W quiet the whole job. Desktop count check at 76baac8: 96 of 96 reduced windows; review 7 fixed. W DONE
+   bring-ups' binaries; desktop count check 96 of 96 reduced windows; review 7 fixed. W DONE
    2026-10-27 03:13 to 06:40 (gap17-w-q1, tools ed917f3, exit 0, archive 6c1e18ba checked): 1,919 of 1,920
    valid (seq 831: PDH status 0x800007d6 at its end, failed closed); drift at most 0.14%, 13 CPUs counted in
    every window; others median 0.52%, 8 windows above 10% in 5 bursts (taskhostw.exe and sppsvc.exe start,
-   then System up to 37.8%: 03:31, 03:40, 04:28, 05:27, 06:18); 474 of 480 replicates count. L: gap17-a-q1.
+   then System up to 37.8%: 03:31, 03:40, 04:28, 05:27, 06:18); 474 of 480 replicates count. L DONE 2026-10-27
+   19:48 to 23:03 (gap17-a-q1, tools 3200992, exit 0, archive 3058490f checked, Papers 3c075c3): 1,920 of 1,920
+   valid, drift at most 0.95%, others median 0.66% and at most 1.83%; 480 of 480 count. Analysis of both
+   (`design/round3/aa-pilot.json`; 716ac9b's code and HEAD's give the same bytes): 954 replicates, pooled
+   q97.5 of r 1.0106 and of 1/r 1.0104, so delta = 1.02, the floor. |d| median and q97.5 in ns: L C++ 23.5,
+   76.0; Go 36.5, 123.7; Rust 28.0, 92.7; W 45.7, 154.6; 77.1, 315.0; 47.2, 167.2. H9 and H10 from it: decision 20.
 8. p2gen against t1gen on L (p2r3-gencheck-l at 606c59b, `t3/jobs/requests-2026-10-26-gencheck.json`;
    `gencheck.py`, `plans/gencheck-L.json`, `gencheck_analysis.py`; hypotheses 3b; decision 17): 64 windows,
    about 7 min, timeout 1 h; t1gen equal to its records' 1eaee40c3; review 8 no HIGH. DONE 2026-10-26, ending
@@ -164,9 +163,8 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
 
 ## Lab requests
 
-1. Done 2026-10-23 (image 7f39a629ada0: Rust 1.98.1, Go 1.27.1, Boost 1.92.0); Go 1.27.3 and Rust 1.99.0 wanted.
-2. Done 2026-10-24: the lab's checked archives unpacked into `D:\Dev\worktrees\p2r3-build\tools\` (`UNPACKED.txt`).
-3. Done 2026-10-25 by the coordinator: records filed (7fd305b, 7e0e6a0); test_report_pattern.sh lists `t3/record.py`.
+1 to 3 done (2026-10-23 to 25): image 7f39a629ada0; the lab's archives unpacked into `p2r3-build\tools\`
+(`UNPACKED.txt`); records filed (7fd305b, 7e0e6a0), test_report_pattern.sh lists `t3/record.py`.
 
 ## Alex decides
 
@@ -185,7 +183,10 @@ Windows Update and Defender's real-time protection off on W for good (Alex runs 
 SvcRestartTask on W after P4's c3 (the coordinator's script; sppsvc may rewrite it, -Check shows; reruns cover).
 
 Laptop time (Alex, 2026-10-26, AGENTS.md bc1a76d): "Do not wait on me. Laptop is available 24/7 so just carry
-on and use it." Requests go to the coordinator when final; design, scope and pushes still go to Alex. Open: none.
+on and use it." Requests go to the coordinator when final; design, scope and pushes still go to Alex.
+Relayed by the coordinator (2026-10-27, not yet in AGENTS.md), for "the new loop": campaigns of 5 to 10 minutes,
+results as the median and spread for each contestant. Open: whether it covers round 3 (row 6 plans 24 h; 10 min
+is about 100 windows against L's 7,040, which breaks D9 for H8's 310 cells): asked of the coordinator. Then 20.
 
 ## Commits on `round3` (local, not pushed)
 
@@ -195,4 +196,4 @@ to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); 3caa3
 
 ## Next engineering
 
-The L pilot; then delta, H9's minimum, H10's margin; the freeze proposal.
+The scope answer; if the design stays, decision 20 (with round 2's H9 cell counts), then the freeze proposal.

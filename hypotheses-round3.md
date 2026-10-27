@@ -73,6 +73,8 @@ process), a round whose invalid windows are all an arm's is not rerun, and a rer
 - Code: `t3/pilot_analysis.py` (commit 716ac9b). Alex chose all three programs (decision 14) and the
   reading above (15) on 2026-10-26. On other processes (16) he chose no rule: "Shut those processes
   down" (Windows Update and Defender, quieted by the lab); the 10% rule stays as a guard.
+- Result (2026-10-27, both systems; `design/round3/aa-pilot.json`): 954 of 960 replicates count;
+  delta = 1.02, the floor (pooled 97.5th percentiles: r 1.0106, 1/r 1.0104).
 
 ## 3b. p2gen against t1gen (reported only; decision 17, fixed 2026-10-26 before it runs)
 
@@ -97,6 +99,7 @@ H8. In the same server, v2 is not slower than each competitor.
       family. With R = 16, 2^-16 = 1.53e-5 is below 0.025 / 310 = 8.06e-5 (D9).
     - delta is the larger of 1.02 and the A/A pilot's 97.5th percentile of the ratio of v2 to
       itself (or its inverse), fixed in this file before the pilot runs (Alex, 2026-10-23): section 3a.
+      The pilot gave delta = 1.02.
     - A competitor whose windows in a cell are invalid only by the error-share rule, because it
       cannot sustain the load, is reported as "does not sustain the load", with its completed
       requests and req/s, and leaves the family (Alex, 2026-10-23).
@@ -148,3 +151,6 @@ Alex answered the design questions on 2026-10-23 (`design/round3/decisions-for-a
 - 2026-10-27: the W pilot ran (1,920 windows; 6 of 480 replicates dropped, 5 by the guard in 5 bursts
   of the Software Protection service, 1 by a PDH fault). Alex's answers to decisions 18 and 19: the
   rerun of host-spoiled rounds and the quieting of that service (section 3). The pilot's rule is unchanged.
+- 2026-10-27: the L pilot ran (1,920 of 1,920 windows valid, 480 of 480 replicates count). The analysis
+  of both pilots (716ac9b's code; the current code gives the same output, byte for byte): delta = 1.02
+  (section 3a). H9's minimum and H10's margin: decision 20, open.
