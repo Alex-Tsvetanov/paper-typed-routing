@@ -1,0 +1,2286 @@
+{
+ "_note": "The new loop's analysis (decision 21 (a)): t3/rr_results.py at ed3b7e0 over p2r3-rr-w's aa.jsonl and rr.jsonl (chain A15), run on the desktop on 2026-10-28. Host-spoiled rounds ran again once (decision 18): 2 A/A rounds and 7 campaign rounds; a rerun replaces its round for every contestant. The bring-up's Release binaries at 3ff814e50, covered by p2r3-3ff814e50-W-asan.",
+ "inputs": [
+  {
+   "system": "windows",
+   "job": "p2r3-rr-w",
+   "queue": "gap33-w-q1-p2-rr-90a590ef",
+   "archive": "p2r3-rr-w.tar.gz",
+   "archive_sha256": "589aa1d5a1891653540049a95754c9934561c34b7bf27f04c86bd66c7245eaab",
+   "file": "out/rr/aa.jsonl",
+   "sha256": "cf437b7a79623ea1ece6eb000af480b2ce70c67670a29795bd1f62357be80b11"
+  },
+  {
+   "system": "windows",
+   "job": "p2r3-rr-w",
+   "queue": "gap33-w-q1-p2-rr-90a590ef",
+   "archive": "p2r3-rr-w.tar.gz",
+   "archive_sha256": "589aa1d5a1891653540049a95754c9934561c34b7bf27f04c86bd66c7245eaab",
+   "file": "out/rr/rr.jsonl",
+   "sha256": "9288dccd41bcbae9b9842863f5b5fb39832e1f9ecd0de9a6e1170c6739021843"
+  }
+ ],
+ "analysis": {
+  "rule": "t3/rr_results.py's docstring (decision 21 (a))",
+  "systems": {
+   "windows": {
+    "aa": {
+     "session": {
+      "host": "DESKTOP-A1RHS5R",
+      "os": "Windows-11-10.0.26200-SP0",
+      "cpu_model": "AMD Ryzen 7 5800H with Radeon Graphics",
+      "started": "2026-10-28T12:10:47+0200",
+      "plan_sha256": "2cd033139d3fae7ff65a7be3665afa379cce84431624e3ca6e68034639f82af0",
+      "runner_sha256": "73ff9b8f9839ac8db674590f7928ed15d8368c7b4a36e721241e3b9f7b608c7e"
+     },
+     "cells": {
+      "mixed-disjoint/m1000/t111": {
+       "m": 1000,
+       "rounds": 7,
+       "others_max_pct_of_one_cpu": 5.76,
+       "idle_server_max_pct_of_one_cpu": 0.0,
+       "programs": {
+        "mserver": {
+         "entries": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 90632.49142352637,
+            "sd": 2378.535519199881,
+            "min": 86068.38878742358,
+            "max": 91441.50178481953
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 11033.570679713435,
+            "sd": 302.3871187831975,
+            "min": 10935.953374357341,
+            "max": 11618.667597808235
+           },
+           "peak_resident_kib": 9984
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 88772.25463144739,
+            "sd": 2483.934666788318,
+            "min": 85715.57915536016,
+            "max": 91414.73272026826
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 11264.780917772838,
+            "sd": 317.29532380831955,
+            "min": 10939.155760155521,
+            "max": 11666.490617621474
+           },
+           "peak_resident_kib": 9984
+          }
+         ],
+         "r": {
+          "n": 7,
+          "median": 1.0057159562430216,
+          "sd": 0.009417505668311019,
+          "min": 0.999256973581025,
+          "max": 1.0215055835203035
+         },
+         "d_ns": {
+          "n": 7,
+          "median": -66.30614684593093,
+          "sd": 105.11730974219483,
+          "min": -243.20135744341314,
+          "max": 8.134125601294727
+         }
+        },
+        "mserver-go": {
+         "entries": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 40982.98364589927,
+            "sd": 1555.8905952730188,
+            "min": 37989.552010100095,
+            "max": 41142.42851620912
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 24400.37086221416,
+            "sd": 993.6151765301956,
+            "min": 24305.8087736854,
+            "max": 26323.026913666552
+           },
+           "peak_resident_kib": 17096
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 40357.30193990954,
+            "sd": 1133.8086888083037,
+            "min": 38365.63517409534,
+            "max": 41276.682049373245
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 24778.66338758129,
+            "sd": 717.4878445691729,
+            "min": 24226.753468310428,
+            "max": 26064.992680616553
+           },
+           "peak_resident_kib": 17164
+          }
+         ],
+         "r": {
+          "n": 7,
+          "median": 0.996747472749783,
+          "sd": 0.018291494599957575,
+          "min": 0.9582506163260015,
+          "max": 1.015503556380487
+         },
+         "d_ns": {
+          "n": 7,
+          "median": 79.0553053749718,
+          "sd": 471.53106577500677,
+          "min": -378.292525367131,
+          "max": 1090.5190410720388
+         }
+        },
+        "mserver-rs": {
+         "entries": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 70954.58146667824,
+            "sd": 1313.4259705041645,
+            "min": 69428.40743849482,
+            "max": 72233.1327184251
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 14093.52263559783,
+            "sd": 261.5702081245996,
+            "min": 13844.062445666596,
+            "max": 14403.326201683067
+           },
+           "peak_resident_kib": 6636
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 71445.79298121465,
+            "sd": 1169.517028204098,
+            "min": 69057.02290425089,
+            "max": 71731.41799374283
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 13996.62538930643,
+            "sd": 236.16547722160252,
+            "min": 13940.892679512213,
+            "max": 14480.786427566136
+           },
+           "peak_resident_kib": 6628
+          }
+         ],
+         "r": {
+          "n": 7,
+          "median": 1.0056065268848726,
+          "sd": 0.008376053589927749,
+          "min": 0.9911896657131877,
+          "max": 1.0110200993558496
+         },
+         "d_ns": {
+          "n": 7,
+          "median": -77.72422664054466,
+          "sd": 117.92710021316509,
+          "min": -152.56294363983397,
+          "max": 124.56043364718789
+         }
+        }
+       }
+      },
+      "mixed-disjoint/m100000/t111": {
+       "m": 100000,
+       "rounds": 7,
+       "others_max_pct_of_one_cpu": 4.8,
+       "idle_server_max_pct_of_one_cpu": 0.0,
+       "programs": {
+        "mserver": {
+         "entries": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 90579.59541958425,
+            "sd": 1097.6341153400163,
+            "min": 88170.8869592154,
+            "max": 91626.38435723928
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 11040.01398292611,
+            "sd": 136.22795270221872,
+            "min": 10913.886944410366,
+            "max": 11341.612118097022
+           },
+           "peak_resident_kib": 41436
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 90983.21529749718,
+            "sd": 543.5193197496623,
+            "min": 89929.6074531039,
+            "max": 91534.64628362938
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 10991.038256124462,
+            "sd": 66.07958751405552,
+            "min": 10924.825086463967,
+            "max": 11119.808351453948
+           },
+           "peak_resident_kib": 41456
+          }
+         ],
+         "r": {
+          "n": 7,
+          "median": 0.9974064013958611,
+          "sd": 0.015257767653453488,
+          "min": 0.9677380020884847,
+          "max": 1.014681469719138
+         },
+         "d_ns": {
+          "n": 7,
+          "median": 28.538309479279633,
+          "sd": 171.11139254974972,
+          "min": -160.2319006924572,
+          "max": 365.90306646726276
+         }
+        },
+        "mserver-go": {
+         "entries": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 40892.919838415226,
+            "sd": 148.67047953716866,
+            "min": 40588.58737352157,
+            "max": 41001.55910001933
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 24454.110979392324,
+            "sd": 89.33635625451664,
+            "min": 24389.316454054755,
+            "max": 24637.467443677564
+           },
+           "peak_resident_kib": 68548
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 40840.96576825352,
+            "sd": 171.830197801666,
+            "min": 40497.492374476955,
+            "max": 40980.006914153535
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 24485.21922019091,
+            "sd": 103.48015356755344,
+            "min": 24402.143271835892,
+            "max": 24692.88692625911
+           },
+           "peak_resident_kib": 68984
+          }
+         ],
+         "r": {
+          "n": 7,
+          "median": 1.0020988874275947,
+          "sd": 0.0055088419659241475,
+          "min": 0.9904485242901027,
+          "max": 1.006323617680069
+         },
+         "d_ns": {
+          "n": 7,
+          "median": -51.28407927393346,
+          "sd": 135.29529434717384,
+          "min": -154.22871273365672,
+          "max": 235.32417184167207
+         }
+        },
+        "mserver-rs": {
+         "entries": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 71458.68351915467,
+            "sd": 247.15886575503006,
+            "min": 71215.03079234177,
+            "max": 71911.4051488566
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 13994.100517286295,
+            "sd": 48.27480289849637,
+            "min": 13906.000000000002,
+            "max": 14041.979465204931
+           },
+           "peak_resident_kib": 67848
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 71832.24753008684,
+            "sd": 249.45818701370922,
+            "min": 71264.5874962098,
+            "max": 72050.78565462847
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 13921.324118128858,
+            "sd": 48.61934510942327,
+            "min": 13879.099178646651,
+            "max": 14032.214808697025
+           },
+           "peak_resident_kib": 68232
+          }
+         ],
+         "r": {
+          "n": 7,
+          "median": 0.996809330806581,
+          "sd": 0.0032252813332801166,
+          "min": 0.9914075257427167,
+          "max": 1.0011493986891975
+         },
+         "d_ns": {
+          "n": 7,
+          "median": 44.65054541011523,
+          "sd": 45.30533162866615,
+          "min": -16.110092388578778,
+          "max": 120.65534707607367
+         }
+        }
+       }
+      }
+     }
+    },
+    "rr": {
+     "session": {
+      "host": "DESKTOP-A1RHS5R",
+      "os": "Windows-11-10.0.26200-SP0",
+      "cpu_model": "AMD Ryzen 7 5800H with Radeon Graphics",
+      "started": "2026-10-28T12:14:04+0200",
+      "plan_sha256": "01d2ac12a95f011b76fe7ab5a244a9d3b2c67cff7aa5a9a1a620d38af0bd2068",
+      "runner_sha256": "73ff9b8f9839ac8db674590f7928ed15d8368c7b4a36e721241e3b9f7b608c7e"
+     },
+     "cells": {
+      "mixed-disjoint/m1000/t111": {
+       "m": 1000,
+       "rounds": 7,
+       "others_max_pct_of_one_cpu": 6.7,
+       "idle_server_max_pct_of_one_cpu": 0.957,
+       "programs": {
+        "mserver": {
+         "contestants": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 91225.36016244804,
+            "sd": 620.6447136911563,
+            "min": 90365.37181308774,
+            "max": 92194.67827790142
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 10961.8640937045,
+            "sd": 74.5110870557912,
+            "min": 10846.6130440383,
+            "max": 11066.185862305816
+           },
+           "peak_resident_kib": 10032
+          },
+          {
+           "arm": "crow",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 79061.82827264724,
+            "sd": 372.4254388642413,
+            "min": 78693.04557701944,
+            "max": 79719.27045589668
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 12648.328806051235,
+            "sd": 59.38719496632633,
+            "min": 12544.018457284214,
+            "max": 12707.603228054855
+           },
+           "peak_resident_kib": 10848
+          },
+          {
+           "arm": "drogon",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 32531.307277268177,
+            "sd": 43.72611932374383,
+            "min": 32445.14182186908,
+            "max": 32562.60592295704
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 30739.619268198534,
+            "sd": 41.39776944912869,
+            "min": 30710.072847547734,
+            "max": 30821.255320448854
+           },
+           "peak_resident_kib": 11236
+          },
+          {
+           "arm": "oatpp",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 12710.063674315757,
+            "sd": 50.03435026867943,
+            "min": 12575.933956628365,
+            "max": 12714.470342993907
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 78677.81197829716,
+            "sd": 313.0142401429846,
+            "min": 78650.54328047829,
+            "max": 79516.95702671312
+           },
+           "peak_resident_kib": 11032
+          },
+          {
+           "arm": "pistache",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 6,
+            "median": 80669.72077413002,
+            "sd": 461.24585927553557,
+            "min": 80095.93384412257,
+            "max": 81431.0233430183
+           },
+           "ns_per_request": {
+            "n": 6,
+            "median": 12396.229729019107,
+            "sd": 70.70619088762537,
+            "min": 12280.331978484679,
+            "max": 12485.028290526385
+           },
+           "peak_resident_kib": 11888
+          },
+          {
+           "arm": "boost-url",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 83496.20385013284,
+            "sd": 734.1139528392804,
+            "min": 82587.85813734641,
+            "max": 84750.665698538
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 11976.592394486555,
+            "sd": 104.93500408075442,
+            "min": 11799.317347630587,
+            "max": 12108.317403473111
+           },
+           "peak_resident_kib": 10416
+          },
+          {
+           "arm": "uwebsockets",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 89296.92670592428,
+            "sd": 819.6151910009667,
+            "min": 88005.89707135524,
+            "max": 90625.47377008952
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 11198.593690611933,
+            "sd": 102.79576573999493,
+            "min": 11034.425072766295,
+            "max": 11362.874912679992
+           },
+           "peak_resident_kib": 10352
+          },
+          {
+           "arm": "glaze",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 81434.53746174215,
+            "sd": 205.63171988786834,
+            "min": 81061.60377131349,
+            "max": 81676.85489396795
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 12279.802049220196,
+            "sd": 31.055508993816527,
+            "min": 12243.37055213732,
+            "max": 12336.296760438452
+           },
+           "peak_resident_kib": 12772
+          },
+          {
+           "arm": "cpp-httplib",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 51489.369769294935,
+            "sd": 150.1088365230381,
+            "min": 51211.37009594858,
+            "max": 51673.58859465788
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 19421.48456041771,
+            "sd": 56.72066647957321,
+            "min": 19352.2460350931,
+            "max": 19526.91361559787
+           },
+           "peak_resident_kib": 10548
+          },
+          {
+           "arm": "null",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 93385.36945070424,
+            "sd": 459.4460280054519,
+            "min": 92897.68913878525,
+            "max": 94147.91153302656
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 10708.315508971398,
+            "sd": 52.48649566120496,
+            "min": 10621.58452287288,
+            "max": 10764.530412656895
+           },
+           "peak_resident_kib": 10124
+          }
+         ],
+         "ranking": [
+          "v2",
+          "uwebsockets",
+          "boost-url",
+          "glaze",
+          "pistache",
+          "crow",
+          "cpp-httplib",
+          "drogon",
+          "oatpp"
+         ],
+         "not_ranked": [],
+         "routing_cost_ns_per_request": {
+          "v2": {
+           "n": 7,
+           "median": 257.31816172417166,
+           "sd": 106.44537396334701,
+           "min": 125.51843068078597,
+           "max": 444.6013394329366
+          },
+          "crow": {
+           "n": 7,
+           "median": 1927.2341926937206,
+           "sd": 97.54813129130774,
+           "min": 1812.2694739699255,
+           "max": 2061.5441159083493
+          },
+          "drogon": {
+           "n": 7,
+           "median": 20112.939811477456,
+           "sd": 74.29586636751506,
+           "min": 19974.978101669607,
+           "max": 20139.58224583418
+          },
+          "oatpp": {
+           "n": 7,
+           "median": 68011.60406067397,
+           "sd": 289.1285475626188,
+           "min": 67943.84427230601,
+           "max": 68752.42661405622
+          },
+          "pistache": {
+           "n": 6,
+           "median": 1695.5847506857035,
+           "sd": 94.05675707395503,
+           "min": 1559.2373651271646,
+           "max": 1820.3913434728365
+          },
+          "boost-url": {
+           "n": 7,
+           "median": 1345.5834901485414,
+           "sd": 119.13483934988766,
+           "min": 1121.1170788229429,
+           "max": 1434.2827251054277
+          },
+          "uwebsockets": {
+           "n": 7,
+           "median": 508.9164647841626,
+           "sd": 98.11971548603366,
+           "min": 356.2248039586502,
+           "max": 631.125929365704
+          },
+          "glaze": {
+           "n": 7,
+           "median": 1578.7352621141763,
+           "sd": 66.66363654865859,
+           "min": 1511.6215688230313,
+           "max": 1703.0984745015612
+          },
+          "cpp-httplib": {
+           "n": 7,
+           "median": 8686.600794081436,
+           "sd": 76.46383379377042,
+           "min": 8644.21290519686,
+           "max": 8818.598106626472
+          }
+         },
+         "v2_above_competitor_in_rounds": {
+          "crow": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "drogon": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "oatpp": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "pistache": {
+           "v2_above": 6,
+           "rounds_both_count": 6
+          },
+          "boost-url": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "uwebsockets": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "glaze": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "cpp-httplib": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          }
+         }
+        },
+        "mserver-go": {
+         "contestants": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 40882.61477570841,
+            "sd": 175.64411375917038,
+            "min": 40559.737819555696,
+            "max": 41057.63717559437
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 24460.27499674945,
+            "sd": 105.42701963214677,
+            "min": 24356.00460209687,
+            "max": 24654.991717373836
+           },
+           "peak_resident_kib": 17064
+          },
+          {
+           "arm": "httprouter",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 40212.501975018204,
+            "sd": 243.19513096990326,
+            "min": 39749.901251457144,
+            "max": 40540.09597526615
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 24867.888116517708,
+            "sd": 150.96662658893993,
+            "min": 24666.93716290431,
+            "max": 25157.295201163353
+           },
+           "peak_resident_kib": 16696
+          },
+          {
+           "arm": "gin",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 39818.392347446126,
+            "sd": 113.77070580107181,
+            "min": 39553.25030830203,
+            "max": 39917.538147992644
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 25114.02246665888,
+            "sd": 72.11167400601018,
+            "min": 25051.645126323692,
+            "max": 25282.37230076905
+           },
+           "peak_resident_kib": 16928
+          },
+          {
+           "arm": "nethttp",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 38311.21590118579,
+            "sd": 356.25284709520093,
+            "min": 37415.428232611805,
+            "max": 38492.10211796319
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 26102.016771779057,
+            "sd": 247.9761534924245,
+            "min": 25979.355373613846,
+            "max": 26726.942527103998
+           },
+           "peak_resident_kib": 17360
+          },
+          {
+           "arm": "chi",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 36794.05082307705,
+            "sd": 259.83434772633893,
+            "min": 36280.985555196035,
+            "max": 36898.08129711744
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 27178.306754221387,
+            "sd": 194.1092041970757,
+            "min": 27101.680218752248,
+            "max": 27562.647064221866
+           },
+           "peak_resident_kib": 17060
+          },
+          {
+           "arm": "null",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 6,
+            "median": 42058.312620614095,
+            "sd": 660.100268509291,
+            "min": 40479.166124288175,
+            "max": 42175.693586413625
+           },
+           "ns_per_request": {
+            "n": 6,
+            "median": 23776.520229316702,
+            "sd": 387.21487400905585,
+            "min": 23710.339177969974,
+            "max": 24704.066208517652
+           },
+           "peak_resident_kib": 16808
+          }
+         ],
+         "ranking": [
+          "v2",
+          "httprouter",
+          "gin",
+          "nethttp",
+          "chi"
+         ],
+         "not_ranked": [],
+         "routing_cost_ns_per_request": {
+          "v2": {
+           "n": 6,
+           "median": 637.694134898662,
+           "sd": 411.0044343089335,
+           "min": -220.97665410781337,
+           "max": 943.629969219648
+          },
+          "httprouter": {
+           "n": 6,
+           "median": 1083.2771697508051,
+           "sd": 383.913427901336,
+           "min": 283.5513618595651,
+           "max": 1445.9334530091655
+          },
+          "gin": {
+           "n": 6,
+           "median": 1332.6703105768574,
+           "sd": 408.6691773058196,
+           "min": 407.9927032147134,
+           "max": 1571.0105526148618
+          },
+          "nethttp": {
+           "n": 6,
+           "median": 2369.717786221481,
+           "sd": 499.27530169427916,
+           "min": 1397.9505632614055,
+           "max": 2936.9547332451148
+          },
+          "chi": {
+           "n": 6,
+           "median": 3440.6179627674865,
+           "sd": 447.2130694534719,
+           "min": 2412.689886408345,
+           "max": 3669.5916101492476
+          }
+         },
+         "v2_above_competitor_in_rounds": {
+          "httprouter": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "gin": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "nethttp": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "chi": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          }
+         }
+        },
+        "mserver-rs": {
+         "contestants": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 70880.60269542663,
+            "sd": 430.959900141139,
+            "min": 70496.22818770296,
+            "max": 71750.18755388427
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 14108.232181616624,
+            "sd": 85.2262119214961,
+            "min": 13937.245798124244,
+            "max": 14185.156081505584
+           },
+           "peak_resident_kib": 6672
+          },
+          {
+           "arm": "matchit",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 70733.88549623324,
+            "sd": 509.46255056352385,
+            "min": 70274.45648188969,
+            "max": 71721.13545425545
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 14137.49567105645,
+            "sd": 101.14541305851355,
+            "min": 13942.8913620283,
+            "max": 14229.92151149128
+           },
+           "peak_resident_kib": 7624
+          },
+          {
+           "arm": "path-tree",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 70295.89700554853,
+            "sd": 203.01268972635003,
+            "min": 70091.00803651818,
+            "max": 70665.20553431287
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 14225.581329747723,
+            "sd": 40.972295705659775,
+            "min": 14151.235992859745,
+            "max": 14267.165332805445
+           },
+           "peak_resident_kib": 7452
+          },
+          {
+           "arm": "actix-router",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 10377.368444558024,
+            "sd": 13.755311515764895,
+            "min": 10357.965213408528,
+            "max": 10393.048792667336
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 96363.54393144902,
+            "sd": 127.79531232824434,
+            "min": 96218.15695751716,
+            "max": 96544.05854785902
+           },
+           "peak_resident_kib": 32004
+          },
+          {
+           "arm": "null",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 73010.82170192637,
+            "sd": 323.4406106183383,
+            "min": 72755.59417819991,
+            "max": 73600.714094656
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 13696.599718910098,
+            "sd": 60.350343261865696,
+            "min": 13586.824697297441,
+            "max": 13744.647560030986
+           },
+           "peak_resident_kib": 6976
+          }
+         ],
+         "ranking": [
+          "v2",
+          "matchit",
+          "path-tree",
+          "actix-router"
+         ],
+         "not_ranked": [],
+         "routing_cost_ns_per_request": {
+          "v2": {
+           "n": 7,
+           "median": 423.9820952004811,
+           "sd": 64.68851817239488,
+           "min": 336.6030007854606,
+           "max": 503.47124662309216
+          },
+          "matchit": {
+           "n": 7,
+           "median": 455.5681341903746,
+           "sd": 96.76062754825598,
+           "min": 295.8105979867778,
+           "max": 536.8528737176657
+          },
+          "path-tree": {
+           "n": 7,
+           "median": 528.9816108376253,
+           "sd": 76.03615777977109,
+           "min": 458.3957756897071,
+           "max": 680.3406355080042
+          },
+          "actix-router": {
+           "n": 7,
+           "median": 82773.85961700251,
+           "sd": 123.80205376813913,
+           "min": 82497.2485919948,
+           "max": 82863.26013269403
+          }
+         },
+         "v2_above_competitor_in_rounds": {
+          "matchit": {
+           "v2_above": 4,
+           "rounds_both_count": 7
+          },
+          "path-tree": {
+           "v2_above": 6,
+           "rounds_both_count": 7
+          },
+          "actix-router": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          }
+         }
+        }
+       }
+      },
+      "mixed-disjoint/m100000/t111": {
+       "m": 100000,
+       "rounds": 7,
+       "others_max_pct_of_one_cpu": 5.72,
+       "idle_server_max_pct_of_one_cpu": 0.96,
+       "programs": {
+        "mserver": {
+         "contestants": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 6,
+            "median": 90035.74079597148,
+            "sd": 551.5291237023714,
+            "min": 89775.7258769778,
+            "max": 91110.21988414746
+           },
+           "ns_per_request": {
+            "n": 6,
+            "median": 11106.707449623773,
+            "sd": 67.44365616655455,
+            "min": 10975.71711792118,
+            "max": 11138.868443907968
+           },
+           "peak_resident_kib": 41372
+          },
+          {
+           "arm": "crow",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 75918.75399928678,
+            "sd": 287.17070913794527,
+            "min": 75603.71469158845,
+            "max": 76510.67967480833
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 13171.975925861409,
+            "sd": 49.627455152870745,
+            "min": 13070.070796002312,
+            "max": 13226.863310610033
+           },
+           "peak_resident_kib": 78188
+          },
+          {
+           "arm": "drogon",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 197.4324536694043,
+            "sd": 1.5921939192092167,
+            "min": 194.20217979396338,
+            "max": 198.08420876649396
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 5065023.411371238,
+            "sd": 41359.673641559406,
+            "min": 5048358.000000001,
+            "max": 5149272.789115646
+           },
+           "peak_resident_kib": 126012
+          },
+          {
+           "arm": "oatpp",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": true,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 54.62033041969396,
+            "sd": 1.951132778237002,
+            "min": 52.66045273324414,
+            "max": 57.90724417627844
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 18308201.219512194,
+            "sd": 642355.7902935509,
+            "min": 17268996.551724136,
+            "max": 18989582.278481014
+           },
+           "peak_resident_kib": 110632
+          },
+          {
+           "arm": "pistache",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 77089.61329247622,
+            "sd": 651.839419195491,
+            "min": 76544.18833404982,
+            "max": 78506.09408504059
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 12971.916154333567,
+            "sd": 108.38945148174749,
+            "min": 12737.864641651442,
+            "max": 13064.349126492223
+           },
+           "peak_resident_kib": 168580
+          },
+          {
+           "arm": "boost-url",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 35767.085689663036,
+            "sd": 141.6720300929434,
+            "min": 35444.01174413126,
+            "max": 35903.85314930821
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 27958.665927568367,
+            "sd": 111.44440255747672,
+            "min": 27852.1638288081,
+            "max": 28213.510570387894
+           },
+           "peak_resident_kib": 67680
+          },
+          {
+           "arm": "uwebsockets",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 62298.93568220601,
+            "sd": 144.8409960116039,
+            "min": 62207.38110056611,
+            "max": 62608.697030025105
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 16051.63858819538,
+            "sd": 37.19165723897674,
+            "min": 15972.22187071602,
+            "max": 16075.26281139168
+           },
+           "peak_resident_kib": 41836
+          },
+          {
+           "arm": "glaze",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 76203.58993595978,
+            "sd": 496.3413106248728,
+            "min": 75555.55584993062,
+            "max": 76862.95857581617
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 13122.74134119381,
+            "sd": 85.35419517341282,
+            "min": 13010.167947329517,
+            "max": 13235.294066080492
+           },
+           "peak_resident_kib": 261380
+          },
+          {
+           "arm": "cpp-httplib",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 565.2943204879621,
+            "sd": 10.787401807257003,
+            "min": 546.8306137224512,
+            "max": 578.0304624044606
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 1768990.0,
+            "sd": 34101.0157297687,
+            "min": 1730012.6291618831,
+            "max": 1828719.8538367844
+           },
+           "peak_resident_kib": 52392
+          },
+          {
+           "arm": "null",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 93611.04795943724,
+            "sd": 482.0604855306221,
+            "min": 92955.20167454692,
+            "max": 94199.39497219249
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 10682.499788201405,
+            "sd": 55.1025412319755,
+            "min": 10615.779435687442,
+            "max": 10757.870264228806
+           },
+           "peak_resident_kib": 16708
+          }
+         ],
+         "ranking": [
+          "v2",
+          "pistache",
+          "glaze",
+          "crow",
+          "uwebsockets",
+          "boost-url",
+          "cpp-httplib",
+          "drogon"
+         ],
+         "not_ranked": [
+          "oatpp"
+         ],
+         "routing_cost_ns_per_request": {
+          "v2": {
+           "n": 6,
+           "median": 405.4730218424211,
+           "sd": 106.43405947178317,
+           "min": 221.69250310536518,
+           "max": 523.089008220526
+          },
+          "crow": {
+           "n": 7,
+           "median": 2486.375481165205,
+           "sd": 63.530972848723614,
+           "min": 2379.315721502542,
+           "max": 2573.398880803823
+          },
+          "drogon": {
+           "n": 7,
+           "median": 5054331.675676337,
+           "sd": 41357.8769365045,
+           "min": 5037701.963526265,
+           "max": 5138637.404358703
+          },
+          "oatpp": {
+           "n": 7,
+           "median": 18297518.719723992,
+           "sd": 642338.9657078615,
+           "min": 17258380.77228845,
+           "max": 18978926.242007278
+          },
+          "pistache": {
+           "n": 7,
+           "median": 2272.1910538079846,
+           "sd": 79.47970865418867,
+           "min": 2122.085205964,
+           "max": 2372.6134315923027
+          },
+          "boost-url": {
+           "n": 7,
+           "median": 17276.166139366964,
+           "sd": 91.38299660376599,
+           "min": 17204.287838391407,
+           "max": 17459.48595557208
+          },
+          "uwebsockets": {
+           "n": 7,
+           "median": 5372.4299835035945,
+           "sd": 90.27112107589888,
+           "min": 5214.351606487213,
+           "max": 5455.984232367995
+          },
+          "glaze": {
+           "n": 7,
+           "median": 2394.388511642075,
+           "sd": 76.66707796918968,
+           "min": 2364.296402017453,
+           "max": 2579.2575923443983
+          },
+          "cpp-httplib": {
+           "n": 7,
+           "median": 1758333.9635262638,
+           "sd": 34124.15131051179,
+           "min": 1719320.8934669832,
+           "max": 1818084.469079841
+          }
+         },
+         "v2_above_competitor_in_rounds": {
+          "crow": {
+           "v2_above": 6,
+           "rounds_both_count": 6
+          },
+          "drogon": {
+           "v2_above": 6,
+           "rounds_both_count": 6
+          },
+          "oatpp": {
+           "v2_above": 6,
+           "rounds_both_count": 6
+          },
+          "pistache": {
+           "v2_above": 6,
+           "rounds_both_count": 6
+          },
+          "boost-url": {
+           "v2_above": 6,
+           "rounds_both_count": 6
+          },
+          "uwebsockets": {
+           "v2_above": 6,
+           "rounds_both_count": 6
+          },
+          "glaze": {
+           "v2_above": 6,
+           "rounds_both_count": 6
+          },
+          "cpp-httplib": {
+           "v2_above": 6,
+           "rounds_both_count": 6
+          }
+         }
+        },
+        "mserver-go": {
+         "contestants": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 40793.224106482885,
+            "sd": 195.18114910608958,
+            "min": 40417.640983333804,
+            "max": 40966.86803385402
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 24513.87508351122,
+            "sd": 117.87849747580738,
+            "min": 24409.969519115406,
+            "max": 24741.671598605906
+           },
+           "peak_resident_kib": 68400
+          },
+          {
+           "arm": "httprouter",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 35279.775588076045,
+            "sd": 299.0456912343054,
+            "min": 34970.175858094764,
+            "max": 35766.64693549836
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 28344.85150007538,
+            "sd": 239.08231589401188,
+            "min": 27959.008900202527,
+            "max": 28595.795573287738
+           },
+           "peak_resident_kib": 80872
+          },
+          {
+           "arm": "gin",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 35316.97801137991,
+            "sd": 384.1340256207433,
+            "min": 34776.39215694091,
+            "max": 35927.922647100866
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 28314.993419815757,
+            "sd": 307.7614111882413,
+            "min": 27833.504592581645,
+            "max": 28755.139276298196
+           },
+           "peak_resident_kib": 93124
+          },
+          {
+           "arm": "nethttp",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 35585.561211494125,
+            "sd": 639.0695947409603,
+            "min": 34197.94524017318,
+            "max": 36110.94218531782
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 28101.285070558344,
+            "sd": 518.3155256344476,
+            "min": 27692.437236007245,
+            "max": 29241.52293294145
+           },
+           "peak_resident_kib": 154736
+          },
+          {
+           "arm": "chi",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 31998.39084970387,
+            "sd": 289.8270139467388,
+            "min": 31710.189629881177,
+            "max": 32405.62297581373
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 31251.571514861178,
+            "sd": 281.8120068215804,
+            "min": 30858.842020915945,
+            "max": 31535.60453822323
+           },
+           "peak_resident_kib": 259212
+          },
+          {
+           "arm": "null",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 42042.89550436919,
+            "sd": 172.5465396881683,
+            "min": 41809.650470658155,
+            "max": 42340.84167920572
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 23785.23144049576,
+            "sd": 97.46857059506064,
+            "min": 23617.85832167612,
+            "max": 23917.922985311634
+           },
+           "peak_resident_kib": 38184
+          }
+         ],
+         "ranking": [
+          "v2",
+          "nethttp",
+          "gin",
+          "httprouter",
+          "chi"
+         ],
+         "not_ranked": [],
+         "routing_cost_ns_per_request": {
+          "v2": {
+           "n": 7,
+           "median": 792.1111974392843,
+           "sd": 136.29571596569332,
+           "min": 585.6269927146386,
+           "max": 1033.5861172223413
+          },
+          "httprouter": {
+           "n": 7,
+           "median": 4559.620059579618,
+           "sd": 300.9584421652228,
+           "min": 4209.439845222834,
+           "max": 4977.937251611616
+          },
+          "gin": {
+           "n": 7,
+           "median": 4524.044957475926,
+           "sd": 344.88898948419387,
+           "min": 4048.2731520858833,
+           "max": 5058.896039149997
+          },
+          "nethttp": {
+           "n": 7,
+           "median": 4384.861165950497,
+           "sd": 526.7180494962203,
+           "min": 3774.514250695611,
+           "max": 5401.784768644302
+          },
+          "chi": {
+           "n": 7,
+           "median": 7411.833350564029,
+           "sd": 304.94428570885134,
+           "min": 7073.610580420183,
+           "max": 7875.755535562483
+          }
+         },
+         "v2_above_competitor_in_rounds": {
+          "httprouter": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "gin": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "nethttp": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "chi": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          }
+         }
+        },
+        "mserver-rs": {
+         "contestants": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 71715.01806979332,
+            "sd": 544.7720061308474,
+            "min": 70943.6552015399,
+            "max": 72783.5859503684
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 13944.080708824424,
+            "sd": 105.38635989258088,
+            "min": 13739.361518707066,
+            "max": 14095.693225266661
+           },
+           "peak_resident_kib": 67936
+          },
+          {
+           "arm": "matchit",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 6,
+            "median": 68545.7206363276,
+            "sd": 210.44443575198898,
+            "min": 68239.22550821691,
+            "max": 68782.0193895775
+           },
+           "ns_per_request": {
+            "n": 6,
+            "median": 14588.802811176076,
+            "sd": 44.83549219735494,
+            "min": 14538.683348856859,
+            "max": 14654.328101651545
+           },
+           "peak_resident_kib": 140592
+          },
+          {
+           "arm": "path-tree",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 67711.8902660525,
+            "sd": 215.33719430104097,
+            "min": 67383.28602987724,
+            "max": 67952.96881308651
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 14768.45493562232,
+            "sd": 47.06456262850789,
+            "min": 14716.060496939144,
+            "max": 14840.475419328875
+           },
+           "peak_resident_kib": 116644
+          },
+          {
+           "arm": "actix-router",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": true,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 21.28282210221075,
+            "sd": 1.8774867887007058,
+            "min": 18.478691560807963,
+            "max": 24.663549194048542
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 46986250.00000001,
+            "sd": 4142503.9626752217,
+            "min": 40545664.864864856,
+            "max": 54116385.71428571
+           },
+           "peak_resident_kib": 2341944
+          },
+          {
+           "arm": "null",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 73368.05707602098,
+            "sd": 184.5540566811399,
+            "min": 73096.10641406501,
+            "max": 73630.05922412059
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 13629.90979799071,
+            "sd": 34.29980854899845,
+            "min": 13581.409692420952,
+            "max": 13680.619243046056
+           },
+           "peak_resident_kib": 41140
+          }
+         ],
+         "ranking": [
+          "v2",
+          "matchit",
+          "path-tree"
+         ],
+         "not_ranked": [
+          "actix-router"
+         ],
+         "routing_cost_ns_per_request": {
+          "v2": {
+           "n": 7,
+           "median": 294.8695988738691,
+           "sd": 82.09051951409428,
+           "min": 157.95182628611474,
+           "max": 415.0739822206051
+          },
+          "matchit": {
+           "n": 6,
+           "median": 955.9506753526803,
+           "sd": 47.04885920175525,
+           "min": 916.6573331107047,
+           "max": 1041.0684033756825
+          },
+          "path-tree": {
+           "n": 7,
+           "median": 1160.327168647691,
+           "sd": 58.02512457524635,
+           "min": 1035.4412538930883,
+           "max": 1227.215721053013
+          },
+          "actix-router": {
+           "n": 7,
+           "median": 46972569.38075696,
+           "sd": 4142520.5813656333,
+           "min": 40532029.822060496,
+           "max": 54102804.30459329
+          }
+         },
+         "v2_above_competitor_in_rounds": {
+          "matchit": {
+           "v2_above": 6,
+           "rounds_both_count": 6
+          },
+          "path-tree": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "actix-router": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          }
+         }
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ }
+}

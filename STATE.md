@@ -69,11 +69,9 @@ compared with round 2's pin and found the same (`pins-round3.cmake`, `router-sur
 | mserver-go | v2 httprouter gin nethttp chi null | same |
 | mserver-rs | v2 matchit path-tree actix-router null | same |
 
-Windows: r3 absent (POSIX headers). Pistache through `server/cmake/pistache-windows.cmake`: libevent
-with its CMake, Pistache's meson build of its static library, the logging installer's line removed
-from the fetched `src/meson.build` (Alex, 2026-10-24); nothing installed (checked: no Program Files
-folder, no HKCU key); 40 of 40 checks. boost-url through `server/cmake/boost-headers/`: 40 of 40.
-Round 2's adapters and every file compiled on Linux are unchanged by both.
+Windows: r3 absent (POSIX headers). Pistache via `server/cmake/pistache-windows.cmake` (libevent with its CMake,
+Pistache's meson static library, the logging installer's line removed from the fetched `src/meson.build`, Alex
+2026-10-24; nothing installed); boost-url via `server/cmake/boost-headers/`; 40 of 40 each; Linux files unchanged.
 
 ## Functional checks (desktop, untimed)
 
@@ -90,14 +88,10 @@ Round-robin count checks (2026-10-28, ed3b7e0, 500 requests a window): W A/A 84 
 
 1. First diff (Opus): 3 HIGH, 3 MEDIUM, 10 LOW; HIGH, MEDIUM, one LOW fixed. 2. Generator and v2 arms (Opus):
    1 HIGH (Go and Rust tied to the C++ v2 build), 3 MEDIUM; fixed. 3. The runner: a fresh agent in its own task.
-4. D5 tooling and the laptop jobs (Opus, 2026-10-24): 0 CRITICAL, 2 HIGH, 3 MEDIUM, 4 LOW. Fixed: bare commands
-   on the job's PATH; records only on the laptop's host and CPU; toolchains and found trees compared; no green
-   record without kept logs; arms required and logged; no inherited sanitizer options; p2v2.h in the Go hash
-   (then Rust's leaked boxes freed, actix-router's leak suppressed for ASan).
-5. Timed path and probe (Sonnet, 2026-10-25): 1 HIGH (a failed `others` record made a driver fault), 1 MEDIUM
-   (a vacuous post-run binary check), 5 LOW; all but 1 LOW fixed. 6. The Windows clock (Sonnet): 5 LOW, 4 fixed.
-7. The A/A pilot (Sonnet, 2026-10-26): 2 HIGH (the analysis took incomplete or doubled files), 3 MEDIUM, 6 LOW; fixed.
-9. The rerun (Sonnet, 2026-10-27): no HIGH, 3 MEDIUM (streak across phases, rerun bookkeeping, an arm's second draw), 4 LOW; fixed.
+4. D5 tooling and the laptop jobs (Opus, 2026-10-24): 2 HIGH, 3 MEDIUM, 4 LOW, fixed (PATH, host checks, toolchain
+   comparison, kept logs, arms logged, no inherited sanitizer options, p2v2.h in the Go hash; ASan leak handling).
+5. Timed path and probe (Sonnet, 2026-10-25): 1 HIGH, 1 MEDIUM, 5 LOW; all but 1 LOW fixed. 6. Windows clock: 5 LOW,
+   4 fixed. 7. A/A pilot (2026-10-26): 2 HIGH, 3 MEDIUM, 6 LOW; fixed. 9. Rerun (2026-10-27): 3 MEDIUM, 4 LOW; fixed.
 10. Round-robin (Opus, 2026-10-28): no HIGH, 1 MEDIUM (a server mid-start missed by the stop), 3 LOW; 3 fixed, 1 by design.
 
 ## Method the paper must state (the new loop has no frozen text)
@@ -110,7 +104,8 @@ Round-robin count checks (2026-10-28, ed3b7e0, 500 requests a window): W A/A 84 
   10% of one CPU, up to 30 s, else the window is invalid); idle servers' CPU recorded; reruns within the size.
 - Boost off; each system's clock reference (Arch's idle CPUs read 3,201 MHz, busy ones about 3,168: 1% bias).
 - Each contestant is one server process, so its SD is within that process. Proposed: a rank gap smaller than the
-  same program's and size's A/A gap is not claimed (Arch: Rust v2 over matchit at m = 100,000, 301 ns < 516 ns).
+  same program's and size's A/A gap is not claimed. Open: which A/A statistic (|d| median or maximum over the
+  rounds); it decides which leads fall (row 6), so Alex and the coordinator fix it, not this session.
 
 ## Laptop requests
 
@@ -125,33 +120,37 @@ The coordinator schedules them, from `t3/jobs/requests-*.json` (the lab queue's 
 1. Toolchains: done on both systems, 2026-10-24. W (Papers `lab/laptop/queues/gap2-w-q2-p2-toolchains.json`,
    a27b47e): under `C:\Users\alext\opt` go-1.27.3, meson-1.12.1, libevent-2.1.13-stable, rapidjson-1.1.0 wraps,
    boost-1.92.0, llvm-22.1.8, P4's Rust 1.99.0. L: `~/opt/p2/go1.27.3`, Rust 1.99.0 in `~/opt/rustup`, `~/opt/cargo`.
-5. Timing probe (`t3/jobs/probe.py PLAN OUT`, `t3/plans/probe-L.json`, `probe-W.json`; approved by Alex 2026-10-25):
-   one mirrored round of every arm at m = 10 and 100,000, both shapes, pair (111, 211), the bring-ups' binaries;
-   never cited. DONE on both, archives checked, binary checks empty, quiet passed. L at 25fbd22 (archive 022e401c):
-   176 windows, 172 valid, 4 overloaded (Drogon, actix-router; m = 100,000, mixed-disjoint); reference 3,197.8 MHz,
-   drift at most 0.96%; start-up at most 5.0 s; spacing 6.05 s at m = 10, 6.56 s at 100,000. W at 39bf126
-   (p2r3-probe-w-2, archive 7f81c663; the first try failed on "clock_drift", fixed in f5bf53e, 39bf126): 168
-   windows, 162 valid, 6 overloaded (Oat++ both shapes, actix-router; m = 100,000); reference 3,169.8 MHz, drift
-   at most 0.34%; start-up at most 5.75 s; spacing 6.29, 6.81 s.
+5. Timing probe (`t3/jobs/probe.py`, `t3/plans/probe-*.json`; Alex 2026-10-25): one mirrored round of every arm at
+   m = 10 and 100,000, both shapes; never cited. DONE: L (archive 022e401c) 172 of 176 valid, 4 overloaded (Drogon,
+   actix-router); W (p2r3-probe-w-2, archive 7f81c663) 162 of 168, 6 overloaded (Oat++, actix-router); all at
+   m = 100,000; reference 3,197.8 and 3,169.8 MHz; start-up at most 5.0 s (L), 5.75 s (W); spacing 6.05 to 6.81 s.
 6. The campaign, decision 21 (a): round-robin, every contestant, mixed-disjoint, m = 1,000 and 100,000, pair
    (111, 211), R = 7, 1.5 s windows, the A/A run first in the same job (`t3/jobs/rr.py`, `t3/plans/rr-*.json`,
-   `t3/rr_results.py`; `t3/jobs/requests-2026-10-28-rr.json`). L DONE 2026-10-28 10:43:31 to 10:56:39 (chain A12,
-   gap33-a-q1, exit 0, archive cbd18218 checked; `design/round3/rr-L.json`, `rr-L.md`): A/A 84 of 84 valid; campaign
-   294 valid, 14 overloaded (Drogon and actix-router at m = 100,000, every round); no rerun; 448 settles quiet (at
-   most 3.2 s); others at most 3.7%; spacing 1.683 s (A/A), 1.761 s; campaign windows 10:46:50 to 10:56:34; peak
-   memory at m = 100,000 4.26 GiB (actix-router 2.13). v2 first in every program at both sizes. A/A: Rust at
-   m = 100,000, entry 1 6.4% faster in all 7 rounds (d 516 ns, 485 to 540; rates 117,240 at most against 124,057
-   at least; both servers at 100% of CPU 14), where the pilot's |d| was at most 168 ns over 16 replicates; Rust at
-   m = 1,000 28 ns in all 7; C++ and Go mixed signs. Cause not known. W (p2r3-rr-w) did not run in A12 (the
-   chain's memory check failed to parse; skipped); queued again as chain A15.
+   `t3/rr_results.py`, `t3/jobs/requests-2026-10-28-rr.json`); output `design/round3/rr-L.*`, `rr-W.*`.
+   L DONE 2026-10-28 10:43:31 to 10:56:39 (chain A12, archive cbd18218 checked): A/A 84 of 84; campaign 294 valid,
+   14 overloaded (Drogon, actix-router at m = 100,000); no rerun; settles quiet (at most 3.2 s); spacing 1.683 s
+   (A/A), 1.761 s; planned windows 9.7 min; peak memory at m = 100,000 4.26 GiB (actix-router 2.13).
+   W DONE 12:10:22 to 12:28:10 (chain A15, archive 589aa1d5 checked; A12 had skipped it): A/A 92 valid, 4 invalid
+   (others); campaign 406 valid, 15 invalid (others), 20 overloaded (Oat++, actix-router at m = 100,000); 2 A/A and
+   7 campaign rounds rerun (147 windows, about 4.3 min); settles quiet (at most 0.86 s); spacing 1.713, 1.743 s;
+   planned windows 9.3 min; peak memory 4.17 GiB. The job began 33 s after W booted (uptime_s); others of 45% or
+   more only until 12:20 (System, svchost, TiWorker, DismHost, lsass, sppsvc, MsMpEng among them), at most 19% after.
+   v2 first by median in every program at both sizes on both systems.
+   A/A d (ns, entry 0 minus entry 1): L Rust m = 100,000 516 (485 to 540, all 7 rounds; the pilot's |d| at most
+   168); L Rust m = 1,000 -28, all 7; W Rust m = 100,000 45 (6 of 7 positive). Entry 0, v2's slot in the campaign,
+   is the slower Rust server at m = 100,000 on both. Cause not known. W's A/A SDs at m = 1,000 are 2.7 to 8.8 times
+   the campaign's v2 (its windows ran 1 to 4 min after boot).
+   v2's lead over the runner-up (median ns per request) and, in brackets, the A/A |d| median and maximum: L m = 1,000
+   C++ 160 (15, 35), Go 152 (22, 125), Rust 40 (28, 61); m = 100,000 C++ 652 (28, 47), Go 2,942 (44, 150), Rust 309
+   (516, 540). W m = 1,000 C++ 237 (66, 243), Go 408 (258, 1,091), Rust 29 (124, 153); m = 100,000 C++ 1,865 (59,
+   366), Go 3,587 (106, 235), Rust 645 (45, 121). Rounds v2 ahead of the runner-up: 7 of 7 or 6 of 6, but L Rust
+   m = 1,000 6 of 7 and W Rust m = 1,000 4 of 7.
 7. A/A pilot (p2r3-pilot-l, -w at dec7e54; `t3/jobs/pilot.py`, `t3/plans/pilot-*.json`, `t3/pilot_analysis.py`,
-   hypotheses 3a): v2 against v2 in all three programs, a fresh server per window, one 4-window round at every H8
-   cell, 1,920 windows per system. W DONE 2026-10-27 03:13 to 06:40 (gap17-w-q1, archive 6c1e18ba checked): 1,919
-   valid (seq 831 failed closed on a PDH status), drift at most 0.14%, others median 0.52%, 8 windows above 10% in
-   5 bursts (taskhostw.exe, sppsvc.exe, then System up to 37.8%); 474 of 480 replicates count. L DONE 19:48 to
-   23:03 (gap17-a-q1, archive 3058490f checked): 1,920 valid, drift at most 0.95%, others at most 1.83%; 480 of
-   480. `design/round3/aa-pilot.json`: 954 replicates, delta = 1.02 (the floor). |d| median and q97.5 in ns: L C++
-   23.5, 76.0; Go 36.5, 123.7; Rust 28.0, 92.7; W 45.7, 154.6; 77.1, 315.0; 47.2, 167.2. Decision 20: moot.
+   hypotheses 3a): v2 against v2 in all three programs, a fresh server per window, 1,920 windows per system. W DONE
+   2026-10-27 (archive 6c1e18ba checked): 1,919 valid, 8 windows above 10% others in 5 bursts; 474 of 480
+   replicates. L DONE (archive 3058490f checked): 1,920 valid; 480 of 480. `design/round3/aa-pilot.json`: 954
+   replicates, delta = 1.02. |d| median and q97.5 in ns: L C++ 23.5, 76.0; Go 36.5, 123.7; Rust 28.0, 92.7; W 45.7,
+   154.6; 77.1, 315.0; 47.2, 167.2. Decision 20: moot.
 8. p2gen against t1gen on L (p2r3-gencheck-l at 606c59b; `gencheck.py`, `plans/gencheck-L.json`,
    `gencheck_analysis.py`; hypotheses 3b; decision 17): DONE 2026-10-26 (archive 9761e71f checked), 64 of 64 valid,
    t1gen's self-tests passed, drift at most 0.83%. Median q = X_p2gen / X_t1gen 0.99805, [0.99439, 1.00309], 16 pairs.
@@ -191,8 +190,10 @@ to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); 3caa3
 
 ## Next engineering
 
-Coordinator (2026-10-28): run as is; propose a cut if W's spacing puts it over 10 min; the settle rule disclosed
-in the method; no sign tests (rounds ahead descriptive); the chain skips a job under 6 GiB free; no freeze step.
-Arch's job took 13.1 min (campaign windows 9.7 min). When W's record (chain A15) arrives: `t3/rr_results.py` over
-it, rr-W.json, the same A/A check, and the cut question. The Rust A/A gap is the coordinator's and Alex's call
-(accept it as the floor, or more server processes per contestant); W runs unchanged.
+Coordinator (2026-10-28): run as is; a cut only if W's spacing puts it over 10 min; settle rule disclosed; no sign
+tests (rounds ahead descriptive); a 6 GiB free-memory gate; no freeze step. Both records are in and analysed (row 6).
+Cut: none proposed. W's spacing keeps its planned windows at 9.3 min; its 17.8 min job is the reruns of host-spoiled
+rounds, which a cut of contestants would not remove (a lab-side question: when after boot a W job starts).
+Open for Alex and the coordinator, nothing runs until they answer: the A/A statistic for the floor; and the Rust
+A/A gap: (1) accept it as the floor, (2) a fresh server per contestant per round (start-ups and 1 s warm-ups alone
+add about 6.4 min on Arch and 8.1 min on W), or (2b) more v2 processes in the A/A run only.
