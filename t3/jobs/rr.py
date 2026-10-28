@@ -91,6 +91,19 @@ def run_one(name: str, plan_path: Path, out: Path, count: int | None) -> int:
     return L.run(cmd, out / f"{name}.out", dict(os.environ, PYTHONUTF8="1"))
 
 
+def run_and_summarize(name: str, plan_path: Path, out: Path, count: int | None, want: dict) -> tuple[int, dict, bool]:
+    """One plan through p2run into OUT/NAME.jsonl: its exit, its summary, and whether a next run may start (this
+    one finished, exit 0 or in count mode 1, with the expected binaries)."""
+    code = run_one(name, plan_path, out, count)
+    jsonl = out / f"{name}.jsonl"
+    rows = [json.loads(l) for l in jsonl.read_text(encoding="utf-8").splitlines() if l.strip()] if jsonl.exists() else []
+    session = next((r for r in rows if r.get("type") == "session"), None)
+    summary = {"p2run_exit": code, **summarize(rows),
+               "session_binaries_differ": probe.session_differs(session, want) if session else ["no session line"]}
+    finished = code == 0 or (code == 1 and count is not None)
+    return code, summary, finished and not summary["session_binaries_differ"]
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("aa_plan", type=Path)
@@ -114,13 +127,8 @@ def main() -> int:
                      "note": "no rate: the medians and spreads come from aa.jsonl and rr.jsonl by t3/rr_results.py"}
     codes: dict = {}
     for name, path in (("aa", a.aa_plan), ("rr", a.plan)):
-        codes[name] = run_one(name, path, out, a.count)
-        jsonl = out / f"{name}.jsonl"
-        rows = [json.loads(l) for l in jsonl.read_text(encoding="utf-8").splitlines() if l.strip()] if jsonl.exists() else []
-        session = next((r for r in rows if r.get("type") == "session"), None)
-        summary[name] = {"p2run_exit": codes[name], **summarize(rows),
-                         "session_binaries_differ": probe.session_differs(session, want) if session else ["no session line"]}
-        if codes[name] not in (0, 1) or (codes[name] == 1 and a.count is None) or summary[name]["session_binaries_differ"]:
+        codes[name], summary[name], go_on = run_and_summarize(name, path, out, a.count, want)
+        if not go_on:
             break  # the A/A run did not finish, or ran other binaries: the campaign does not start
     summary["binaries_after_run"] = probe.binary_problems(want)
     (out / "rr-summary.json").write_text(json.dumps(summary, indent=1) + "\n", encoding="utf-8")

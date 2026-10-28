@@ -162,7 +162,8 @@ class PlanTests(unittest.TestCase):
             plan_dict(programs=[{"path": "/b/mserver", "arms": [{"name": "v2", "path": "/other/mserver"}]}]),
             plan_dict(programs=[]),
             plan_dict(programs=[{"path": "a", "arms": []}]),
-            plan_dict(programs=[{"path": "a", "arms": ["x", "x", "x"]}]),  # one name twice only (A/A)
+            plan_dict(programs=[{"path": "a", "arms": ["x", "x", "x"]}]),  # mirrored: one name twice only (A/A)
+            plan_dict(programs=[{"path": "a", "arms": [{"name": "x"}, {"name": "x"}]}]),  # an arm is only a name
             plan_dict(programs=[{"path": "a", "arms": ["x"], "extra": 1}]),
             plan_dict(programs=[{"path": "a", "arms": ["x"], "env": {"A": 1}}]),
             plan_dict(programs=[{"path": "a", "arms": ["x"], "version": "?"}]),
@@ -191,8 +192,10 @@ class SequenceTests(unittest.TestCase):
         plan = p2run.parse_plan(plan_dict(programs=[{"name": "p", "path": "p", "arms": ["v2", "v2"]}]))
         ws = list(p2run.windows(plan))
         self.assertEqual([(w.arm, w.index, w.entry) for w in ws], [("v2", 0, 0), ("v2", 1, 1), ("v2", 2, 1), ("v2", 3, 0)])
-        for arms in (["v2", "v2", "v2"], ["v2", "crow", "v2"], ["v2", "crow", "crow"]):
-            with self.assertRaisesRegex(PlanError, "one name twice"):
+        with self.assertRaisesRegex(PlanError, "mirrored A/A round holds one name twice"):
+            p2run.parse_plan(plan_dict(programs=[{"name": "p", "path": "p", "arms": ["v2", "v2", "v2"]}]))
+        for arms in (["v2", "crow", "v2"], ["v2", "crow", "crow"]):
+            with self.assertRaisesRegex(PlanError, "one name repeated"):
                 p2run.parse_plan(plan_dict(programs=[{"name": "p", "path": "p", "arms": arms}]))
 
     def test_entries_of_distinct_arms_are_their_positions(self) -> None:
@@ -936,6 +939,18 @@ class RoundRobinSequenceTests(unittest.TestCase):
                                ("mserver-go", "gin", 1), ("mserver-go", "null", 2)])
         aa = rr_plan(programs=[{"name": "mserver", "path": "mserver", "arms": ["v2", "v2"]}])
         self.assertEqual([(c.arm, c.entry) for c in p2run.contestants(aa)], [("v2", 0), ("v2", 1)])
+
+    def test_an_aa_plan_may_hold_one_arm_k_times(self) -> None:
+        many = rr_plan(programs=[{"name": "mserver", "path": "mserver", "arms": ["v2"] * 7},
+                                 {"name": "mserver-go", "path": "mserver-go", "arms": ["v2"] * 7}])
+        self.assertEqual([(c.program, c.entry) for c in p2run.contestants(many)],
+                         [(p, e) for p in ("mserver", "mserver-go") for e in range(7)])
+        ws = list(p2run.windows(many))
+        self.assertEqual(len(ws), p2run.total_windows(many))
+        self.assertEqual(len(ws), 2 * 3 * 14)  # two sizes, R = 3, 14 contestants
+        for arms in (["v2", "v2", "null"], ["v2", "null", "null", "v2"]):
+            with self.assertRaisesRegex(PlanError, "one name repeated"):
+                rr_plan(programs=[{"name": "mserver", "path": "mserver", "arms": arms}])
 
     def test_every_contestant_once_per_round_in_orders_the_plan_fixes(self) -> None:
         plan = rr_plan()

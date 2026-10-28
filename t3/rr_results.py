@@ -4,11 +4,12 @@ each contestant. Fixed and committed with the plans, before the campaign runs; s
 
     rr_results.py RECORD.jsonl [RECORD.jsonl ...] --out RESULT.json [--md RESULT.md]
 
-Inputs: t3/jobs/rr.py's records (aa.jsonl, the A/A run; rr.jsonl, the campaign), of one or both systems, at
-most one of each kind per system. A record is refused (exit 2) unless its session line is first and its end
-line last with exit 0, it was timed, it ran the committed plan of its system and kind (t3/plans/rr-aa-L.json,
-rr-L.json, rr-aa-W.json, rr-W.json, compared without notes), and it holds every planned window once and every
-rerun window its rerun lines announce.
+Inputs: t3/jobs/rr.py's records (aa.jsonl, the A/A run; rr.jsonl, the campaign) and t3/jobs/aa.py's (an A/A
+run, or the k-server A/A run), of one or both systems, at most one of each kind per system. A record is refused
+(exit 2) unless its session line is first and its end line last with exit 0, it was timed, it ran the committed
+plan of its system and kind (t3/plans/rr-aa-L.json, rr-aak-L.json, rr-L.json, rr-aa-W.json, rr-aak-W.json,
+rr-W.json, compared without notes), and it holds every planned window once and every rerun window its rerun
+lines announce.
 
 Which windows count, per cell and contestant (a contestant is a program and an entry of its arm list):
   - A round that ran again counts as its rerun: the original round's windows are dropped for every
@@ -35,6 +36,19 @@ A/A record, per program and cell: each entry's statistics as above, and per roun
 d = t_0 - t_1 (ns), each as a median and a standard deviation over the rounds where both entries count. The
 A/A run has 6 servers per cell and the campaign 21 or 22, so it has fewer idle neighbours on the server CPU and
 shorter gaps between a contestant's windows; this is reported with it.
+k-server A/A record (rr-aak-L.json, rr-aak-W.json: v2 k > 2 times in each program, 21 servers per cell; added on
+2026-10-28 after the first records, by Alex's answer "More A/A servers", and fixed here with those plans before
+they run), per program and cell: each entry's statistics as above; the medians of t of the entries that count,
+with their range (largest minus least) and sample standard deviation; the within-process standard deviation of
+t, pooled over the entries (the sum of (n_i - 1) s_i^2 over the sum of (n_i - 1)); entry 0's rank among the
+entries by median t (1 = fewest ns per request; entry 0 starts first and is v2's slot in the campaign); and per
+pair of entries d = t_i - t_j per round, as a median, standard deviation, least and largest. It describes how
+much separate processes of one build differ and does not enter the floor.
+The floor (Alex, 2026-10-28: "Largest, A/A redone"), when a system's A/A record and campaign are in one result:
+per program and cell the A/A floor is the largest |d| over the rounds where both entries count; each pair of
+neighbours in the campaign's ranking gets its gap, the lower-ranked router's median t minus the higher-ranked
+one's (ns per request), which clears the floor when it is larger. No rank claim between neighbours whose gap
+does not clear it.
 Per cell also: the largest other-processes share and the largest single idle server's share of one CPU over
 the counted windows (recorded by p2run, never judged here), and each server's peak resident memory (KiB).
 """
@@ -42,6 +56,7 @@ the counted windows (recorded by p2run, never judged here), and each server's pe
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import math
 import statistics
@@ -49,8 +64,9 @@ import sys
 from pathlib import Path
 
 PLANS = Path(__file__).resolve().parent / "plans"
-NAMES = {("linux", "aa"): "rr-aa-L.json", ("linux", "rr"): "rr-L.json",
-         ("windows", "aa"): "rr-aa-W.json", ("windows", "rr"): "rr-W.json"}
+NAMES = {("linux", "aa"): "rr-aa-L.json", ("linux", "aak"): "rr-aak-L.json", ("linux", "rr"): "rr-L.json",
+         ("windows", "aa"): "rr-aa-W.json", ("windows", "aak"): "rr-aak-W.json", ("windows", "rr"): "rr-W.json"}
+KINDS = {"rr": "campaign", "aa": "A/A run", "aak": "k-server A/A run"}
 NULL, V2 = "null", "v2"
 
 
@@ -68,8 +84,13 @@ def public(obj):
 
 
 def kind_of(plan: dict) -> str:
-    """aa when every program's arm list is v2 twice, else rr."""
-    return "aa" if all(p.get("arms") == [V2, V2] for p in plan.get("programs", [])) else "rr"
+    """aa when every program's arm list is v2 twice, aak when it is v2 more than twice, else rr."""
+    arms = [p.get("arms") for p in plan.get("programs", [])]
+    if all(a == [V2, V2] for a in arms):
+        return "aa"
+    if arms and all(isinstance(a, list) and len(a) > 2 and all(x == V2 for x in a) for a in arms):
+        return "aak"
+    return "rr"
 
 
 def load_record(path: Path, plans: Path = PLANS) -> tuple[str, str, list[dict]]:
@@ -212,10 +233,48 @@ def aa_cell(c: dict, rounds: int) -> dict:
     return out
 
 
+def aak_cell(c: dict, rounds: int) -> dict:
+    stats = {key: contestant_stats(who) for key, who in sorted(c["contestants"].items())}
+    out = {"m": c["m"], "rounds": rounds, "others_max_pct_of_one_cpu": c["others_max"],
+           "idle_server_max_pct_of_one_cpu": c["idle_max"], "programs": {}}
+    for program in sorted({p for p, _ in stats}):
+        by_entry = {e: s for (p, e), s in stats.items() if p == program}
+        medians = {e: s["ns_per_request"]["median"] for e, s in by_entry.items() if s["ns_per_request"]["n"]}
+        values = list(medians.values())
+        dof = [(s["ns_per_request"]["n"] - 1, s["ns_per_request"]["sd"]) for s in by_entry.values()
+               if s["ns_per_request"]["n"] > 1]
+        out["programs"][program] = {
+            "entries": [_public_stats(s) for s in by_entry.values()],
+            "medians_ns": {"n": len(values), "range": max(values) - min(values) if values else None,
+                           "sd": statistics.stdev(values) if len(values) > 1 else None},
+            "within_process_sd_ns": math.sqrt(sum(f * sd * sd for f, sd in dof) / sum(f for f, _ in dof)) if dof else None,
+            "entry0_rank": 1 + sum(v < medians[0] for v in values) if 0 in medians else None,
+            "pairs_d_ns": {f"{i}-{j}": spread(per_round(by_entry[i]["_x"], by_entry[j]["_x"], lambda x, y: 1e9 / x - 1e9 / y))
+                           for i, j in itertools.combinations(by_entry, 2)}}
+    return out
+
+
+def floor(aa: dict, rr: dict) -> dict:
+    """Per cell and program: the A/A floor, the largest |d| over the rounds, and each pair of neighbours in the
+    campaign's ranking with its gap in median ns per request and whether the gap clears the floor."""
+    out: dict = {}
+    for cell, c in rr["cells"].items():
+        for program, p in c["programs"].items():
+            d = aa["cells"].get(cell, {}).get("programs", {}).get(program, {}).get("d_ns", {})
+            limit = max(abs(d["min"]), abs(d["max"])) if d.get("n") else None
+            ns = {s["arm"]: s["ns_per_request"]["median"] for s in p["contestants"]}
+            out.setdefault(cell, {})[program] = {
+                "aa_largest_abs_d_ns": limit,
+                "neighbours": [{"ahead": hi, "behind": lo, "gap_ns": ns[lo] - ns[hi],
+                                "clears": limit is not None and ns[lo] - ns[hi] > limit}
+                               for hi, lo in zip(p["ranking"], p["ranking"][1:])]}
+    return out
+
+
 def analyse(rows: list[dict], kind: str) -> dict:
     session = rows[0]
     rounds = session["plan"]["rounds"]
-    one = aa_cell if kind == "aa" else campaign_cell
+    one = {"aa": aa_cell, "aak": aak_cell, "rr": campaign_cell}[kind]
     return {"session": {k: session.get(k) for k in ("host", "os", "cpu_model", "started", "plan_sha256", "runner_sha256")},
             "cells": {name: one(c, rounds) for name, c in counted(rows).items()}}
 
@@ -227,9 +286,9 @@ def _f(v, digits: int) -> str:
 def markdown(result: dict) -> str:
     out = ["# Round 3 in the new loop: median and standard deviation per contestant", ""]
     for system, kinds in sorted(result["systems"].items()):
-        for kind in ("rr", "aa"):
+        for kind in ("rr", "aa", "aak"):
             for cell, c in (kinds.get(kind) or {}).get("cells", {}).items():
-                out += [f"## {system}, {'A/A run' if kind == 'aa' else 'campaign'}, {cell}", "",
+                out += [f"## {system}, {KINDS[kind]}, {cell}", "",
                         f"{c['rounds']} rounds. Other processes at most {_f(c['others_max_pct_of_one_cpu'], 2)}% of one "
                         f"CPU; a single idle server at most {_f(c['idle_server_max_pct_of_one_cpu'], 3)}%.", "",
                         "| Program | Arm | n | Median req/s | SD req/s | Median ns/req | SD ns/req | Peak KiB | Note |",
@@ -239,7 +298,7 @@ def markdown(result: dict) -> str:
                         notes = []
                         if kind == "rr" and s["arm"] in p["ranking"]:
                             notes.append(f"rank {p['ranking'].index(s['arm']) + 1}")
-                        if kind == "aa":
+                        if kind in ("aa", "aak"):
                             notes.append(f"entry {e}")
                         if s["overloaded"]:
                             notes.append("does not sustain the load")
@@ -250,6 +309,24 @@ def markdown(result: dict) -> str:
                                    f"| {_f(t.get('median'), 1)} | {_f(t.get('sd'), 1)} | {_f(s['peak_resident_kib'], 0)} "
                                    f"| {'; '.join(notes)} |")
                 out.append("")
+                if kind == "aak":
+                    for program, p in c["programs"].items():
+                        mv = p["medians_ns"]
+                        out.append(f"{program}: the {mv['n']} entries' median ns per request span {_f(mv['range'], 1)} "
+                                   f"(SD {_f(mv['sd'], 1)}); within one process the pooled SD is "
+                                   f"{_f(p['within_process_sd_ns'], 1)}; entry 0 ranks {p['entry0_rank']}.")
+                    out.append("")
+    for system, kinds in sorted(result["systems"].items()):
+        if "floor" in kinds:
+            out += [f"## {system}, the floor: the A/A run's largest |d| against the campaign's neighbours", "",
+                    "| Cell | Program | Ahead | Behind | Gap ns/req | A/A floor ns/req | Clears |",
+                    "|---|---|---|---|---|---|---|"]
+            for cell, programs in kinds["floor"].items():
+                for program, f in programs.items():
+                    for n in f["neighbours"]:
+                        out.append(f"| {cell} | {program} | {n['ahead']} | {n['behind']} | {_f(n['gap_ns'], 1)} "
+                                   f"| {_f(f['aa_largest_abs_d_ns'], 1)} | {'yes' if n['clears'] else 'no'} |")
+            out.append("")
     return "\n".join(out) + "\n"
 
 
@@ -278,6 +355,9 @@ def main(argv: list[str] | None = None, plans: Path = PLANS) -> int:
     except RecordError as e:
         print(f"rr_results: refused: {e}", file=sys.stderr)
         return 2
+    for kinds in systems.values():
+        if "aa" in kinds and "rr" in kinds:
+            kinds["floor"] = floor(kinds["aa"], kinds["rr"])
     result = _clean({"rule": "t3/rr_results.py's docstring (decision 21 (a))", "systems": systems})
     a.out.write_text(json.dumps(result, indent=1) + "\n", encoding="utf-8", newline="\n")
     if a.md:

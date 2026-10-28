@@ -91,7 +91,9 @@ class Fixture(unittest.TestCase):
         self.plans = self.dir / "plans"
         self.plans.mkdir()
         self.rr, self.aa = plan_dict(), plan_dict(("v2", "v2"), ("v2", "v2"))
-        for name, plan in (("rr-L.json", self.rr), ("rr-aa-L.json", self.aa), ("rr-W.json", self.rr), ("rr-aa-W.json", self.aa)):
+        self.aak = plan_dict(("v2",) * 4, ("v2",) * 4)
+        for name, plan in (("rr-L.json", self.rr), ("rr-aa-L.json", self.aa), ("rr-W.json", self.rr), ("rr-aa-W.json", self.aa),
+                           ("rr-aak-L.json", self.aak), ("rr-aak-W.json", self.aak)):
             (self.plans / name).write_text(json.dumps(plan))
 
     def tearDown(self) -> None:
@@ -188,12 +190,55 @@ class StatisticsTests(Fixture):
         self.assertAlmostEqual(go["r"]["median"], statistics.median(r))
         self.assertAlmostEqual(go["d_ns"]["sd"], statistics.stdev(d))
 
+    def test_the_k_server_aa_run_gives_the_spread_between_processes(self) -> None:
+        rc, res, err = self.run_main(self.write("aak.jsonl", record(self.aak)))
+        self.assertEqual(rc, 0, err)
+        go = self.cell(res, "aak", "mixed-disjoint/m1000/t111")["programs"]["mserver-go"]
+        t = {e: [1e9 / x_of("mserver-go", "v2", e, 1000, k) for k in (1, 2, 3)] for e in range(4)}
+        medians = [statistics.median(t[e]) for e in range(4)]
+        self.assertEqual([e["req_s"]["n"] for e in go["entries"]], [3, 3, 3, 3])
+        self.assertAlmostEqual(go["medians_ns"]["range"], max(medians) - min(medians))
+        self.assertAlmostEqual(go["medians_ns"]["sd"], statistics.stdev(medians))
+        pooled = (sum(2 * statistics.variance(t[e]) for e in range(4)) / 8) ** 0.5
+        self.assertAlmostEqual(go["within_process_sd_ns"], pooled)
+        self.assertEqual(go["entry0_rank"], 4)  # the made-up counts rise with the entry: entry 0 is the slowest
+        self.assertEqual(sorted(go["pairs_d_ns"]), ["0-1", "0-2", "0-3", "1-2", "1-3", "2-3"])
+        self.assertAlmostEqual(go["pairs_d_ns"]["1-3"]["median"], statistics.median(
+            [a - b for a, b in zip(t[1], t[3])]))
+        self.assertNotIn("floor", res["systems"]["linux"])
+        md = (self.dir / "out.md").read_text()
+        self.assertIn("k-server A/A run", md)
+        self.assertIn("entry 0 ranks 4.", md)
+
+    def test_the_floor_is_the_aa_runs_largest_gap_against_the_rankings_neighbours(self) -> None:
+        rc, res, err = self.run_main(self.write("rr.jsonl", record(self.rr)), self.write("aa.jsonl", record(self.aa)))
+        self.assertEqual(rc, 0, err)
+        f = res["systems"]["linux"]["floor"]["mixed-disjoint/m100000/t111"]["mserver-go"]
+        d = [1e9 / x_of("mserver-go", "v2", 0, 100000, k) - 1e9 / x_of("mserver-go", "v2", 1, 100000, k) for k in (1, 2, 3)]
+        self.assertAlmostEqual(f["aa_largest_abs_d_ns"], max(abs(v) for v in d))
+        gin = statistics.median([1e9 / x_of("mserver-go", "gin", 1, 100000, k) for k in (1, 2, 3)])
+        v2 = statistics.median([1e9 / x_of("mserver-go", "v2", 0, 100000, k) for k in (1, 2, 3)])
+        self.assertEqual([(n["ahead"], n["behind"], n["clears"]) for n in f["neighbours"]], [("v2", "gin", True)])
+        self.assertAlmostEqual(f["neighbours"][0]["gap_ns"], gin - v2)
+        self.assertIn("| mixed-disjoint/m100000/t111 | mserver-go | v2 | gin |", (self.dir / "out.md").read_text())
+
+    def test_a_gap_at_or_below_the_floor_does_not_clear_it(self) -> None:
+        aa = {"cells": {"c": {"programs": {"p": {"d_ns": {"n": 3, "min": -50.0, "max": 20.0}}}}}}
+        rr = {"cells": {"c": {"programs": {"p": {"ranking": ["v2", "x", "y"], "contestants": [
+            {"arm": "v2", "ns_per_request": {"median": 1000.0}}, {"arm": "x", "ns_per_request": {"median": 1050.0}},
+            {"arm": "y", "ns_per_request": {"median": 1100.5}}]}}}}}
+        f = R.floor(aa, rr)["c"]["p"]
+        self.assertEqual(f["aa_largest_abs_d_ns"], 50.0)
+        self.assertEqual([n["clears"] for n in f["neighbours"]], [False, True])
+        none = R.floor({"cells": {}}, rr)["c"]["p"]
+        self.assertEqual((none["aa_largest_abs_d_ns"], [n["clears"] for n in none["neighbours"]]), (None, [False, False]))
+
     def test_both_kinds_and_both_systems_in_one_result_and_its_table(self) -> None:
         paths = [self.write("rr-l.jsonl", record(self.rr)), self.write("aa-l.jsonl", record(self.aa)),
                  self.write("rr-w.jsonl", record(self.rr, system="windows"))]
         rc, res, err = self.run_main(*paths)
         self.assertEqual(rc, 0, err)
-        self.assertEqual({s: sorted(k) for s, k in res["systems"].items()}, {"linux": ["aa", "rr"], "windows": ["rr"]})
+        self.assertEqual({s: sorted(k) for s, k in res["systems"].items()}, {"linux": ["aa", "floor", "rr"], "windows": ["rr"]})
         md = (self.dir / "out.md").read_text()
         self.assertIn("| mserver | crow | 3 |", md)
         self.assertIn("rank 1", md)
@@ -215,6 +260,9 @@ class RefusalTests(Fixture):
         self.assertIn("not the committed rr-L.json", self.refused(record({**self.rr, "window_s": 2.0})))
         self.assertIn("or a window twice", self.refused(record(self.rr, drop_seq=4)))
         self.assertIn("second rr record", self.refused(record(self.rr), self.write("again.jsonl", record(self.rr))))
+        self.assertIn("second aak record", self.refused(record(self.aak), self.write("again.jsonl", record(self.aak))))
+        self.assertIn("not the committed rr-aak-W.json",
+                      self.refused(record({**self.aak, "rounds": 4}, system="windows")))
         self.assertIn("no session line", self.refused(record(self.rr)[1:]))
 
     def test_the_committed_plans_are_round_robin_and_the_files_have_no_dashes(self) -> None:
@@ -224,8 +272,10 @@ class RefusalTests(Fixture):
             self.assertTrue(p.round_robin, name)
             self.assertEqual((p.rounds, p.window_s, p.warmup_s, p.sizes, p.shapes),
                              (7, 1.5, 0.1, (1000, 100000), ("mixed-disjoint",)), name)
-            self.assertEqual(R.kind_of(plan), "aa" if "-aa-" in name else "rr")
-        for name in ("rr_results.py", "test_rr_results.py", "jobs/rr.py", *(f"plans/{n}" for n in R.NAMES.values())):
+            self.assertEqual(R.kind_of(plan), "aak" if "-aak-" in name else "aa" if "-aa-" in name else "rr")
+        self.assertEqual(R.kind_of(plan_dict(("v2",) * 3, ("v2", "v2"))), "rr")  # every list longer than two, or none
+        for name in ("rr_results.py", "test_rr_results.py", "jobs/rr.py", "jobs/aa.py",
+                     *(f"plans/{n}" for n in R.NAMES.values())):
             text = (HERE / name).read_text(encoding="utf-8")
             self.assertNotIn(chr(0x2013), text, name)
             self.assertNotIn(chr(0x2014), text, name)

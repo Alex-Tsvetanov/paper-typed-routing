@@ -18,11 +18,12 @@ to z, or one arm twice for an A/A round (v2, v2, v2, v2: entry 0 first and last)
 entry of one round.
 
 Round-robin ("schedule": "round-robin"; decision 21). A contestant is one entry of a program's arm list
-(an A/A plan's ["v2", "v2"] gives two). For each shape, size and seed pair (a cell): every contestant's
-server starts once, in plan order, pinned to the server CPU on a port of its own, and is probed (one
-{"type": "server", ...} line each); then each gets one warm-up, p2gen for server_warmup_s with nothing
-sampled ({"type": "warmup", ...}); then "rounds" rounds, each giving every contestant one window, in an
-order drawn for that round: random.Random seeded with the text "<order_seed>:<shape>:<m>:<table seed>",
+(an A/A plan's ["v2", "v2"] gives two; this schedule also takes one arm k > 2 times, k servers of one
+build). For each shape, size and seed pair (a cell): every contestant's server starts once, in plan order,
+pinned to the server CPU on a port of its own, and is probed (one {"type": "server", ...} line each); then
+each gets one warm-up, p2gen for server_warmup_s with nothing sampled ({"type": "warmup", ...}); then
+"rounds" rounds, each giving every contestant one window, in an order drawn for that round:
+random.Random seeded with the text "<order_seed>:<shape>:<m>:<table seed>",
 shuffled once per round, so the orders follow from the plan alone. The servers not under load sleep on
 the server CPU; their CPU over each window comes from the same two process snapshots as "others" and is
 kept in others.idle_servers, outside the others sum and never judged. After the cell's last round, with
@@ -70,7 +71,8 @@ Plan (JSON; keys starting with "_" are ignored; any other unknown key is an erro
                    "path": "BIN",                a string, or a list (command prefix)
                    "arms": ["v2", "crow", "null"],   the first half of the mirrored round; distinct,
                                                  or one arm twice (["v2", "v2"]: an A/A round, whose
-                                                 rows tell the two apart by "entry")
+                                                 rows tell the two apart by "entry"); round-robin also
+                                                 takes one arm k > 2 times (k entries)
                    "env": {"P2V2_DLL": "..."},   optional, added to the environment
                    "version": "router-list" | "startup-line"}]
                  version: router-list also records BIN --router ?? (the C++ server lists its external
@@ -358,10 +360,10 @@ def _program(raw: Any) -> Program:
                         f"name, env, version (got {unknown}). A program is one binary and an arm is only a name")
     argv = _argv(raw["path"], "program path")
     arms = raw["arms"]
-    aa = isinstance(arms, list) and len(arms) == 2 and arms[0] == arms[1]  # an A/A round: one arm, two entries
+    aa = isinstance(arms, list) and len(arms) >= 2 and all(a == arms[0] for a in arms)  # an A/A round: k entries
     if not isinstance(arms, list) or not arms or not all(isinstance(a, str) and a for a in arms) \
             or (len(set(arms)) != len(arms) and not aa):
-        raise PlanError(f"program {argv[0]}: arms want a non-empty list of distinct names, or one name twice "
+        raise PlanError(f"program {argv[0]}: arms want a non-empty list of distinct names, or one name repeated "
                         f"(an A/A round), got {arms!r}")
     env = raw.get("env", {})
     if not isinstance(env, dict) or not all(isinstance(k, str) and isinstance(v, str) for k, v in env.items()):
@@ -442,6 +444,8 @@ def parse_plan(raw: Any) -> Plan:
     th = Thresholds(float(d["error_share_max"]), float(d["generator_busy_max_pct"]), float(d["clock_drift_max"]),
                     None if d["others_max_pct"] is None else float(d["others_max_pct"]))
     schedule = _schedule(d)
+    if schedule[0] == "mirrored" and any(len(p.arms) > 2 and len(set(p.arms)) == 1 for p in programs):
+        raise PlanError("a mirrored A/A round holds one name twice; more entries need the round-robin schedule")
     return Plan(_argv(d["p2gen"], "p2gen"), str(Path(d["data_root"]).resolve()), tuple(shapes), tuple(sizes), _pairs(d["pairs"]), programs,
                 server[0], generator, d["connections"], d["threads"], float(d["warmup_s"]), float(d["window_s"]),
                 d["timeout_ms"], float(d["ready_timeout_s"]), float(d["stop_timeout_s"]), float(d["count_limit_s"]),
