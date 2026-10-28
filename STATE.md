@@ -86,13 +86,11 @@ Round-robin count checks (2026-10-28, ed3b7e0, 500 requests a window): W A/A 84 
 
 ## Reviews
 
-1. First diff (Opus): 3 HIGH, 3 MEDIUM, 10 LOW; HIGH, MEDIUM, one LOW fixed. 2. Generator and v2 arms (Opus):
-   1 HIGH (Go and Rust tied to the C++ v2 build), 3 MEDIUM; fixed. 3. The runner: a fresh agent in its own task.
-4. D5 tooling and the laptop jobs (Opus, 2026-10-24): 2 HIGH, 3 MEDIUM, 4 LOW, fixed (PATH, host checks, toolchain
-   comparison, kept logs, arms logged, no inherited sanitizer options, p2v2.h in the Go hash; ASan leak handling).
-5. Timed path and probe (Sonnet, 2026-10-25): 1 HIGH, 1 MEDIUM, 5 LOW; all but 1 LOW fixed. 6. Windows clock: 5 LOW,
-   4 fixed. 7. A/A pilot (2026-10-26): 2 HIGH, 3 MEDIUM, 6 LOW; fixed. 9. Rerun (2026-10-27): 3 MEDIUM, 4 LOW; fixed.
-10. Round-robin (Opus, 2026-10-28): no HIGH, 1 MEDIUM (a server mid-start missed by the stop), 3 LOW; 3 fixed, 1 by design.
+1. First diff (Opus): 3 HIGH, 3 MEDIUM, 10 LOW; HIGH, MEDIUM, one LOW fixed. 2. Generator and v2 arms (Opus): 1 HIGH,
+   3 MEDIUM; fixed. 3. The runner: own task. 4. D5 tooling, laptop jobs (Opus): 2 HIGH, 3 MEDIUM, 4 LOW; fixed. 5. Timed
+   path, probe (Sonnet): 1 HIGH, 1 MEDIUM, 5 LOW; all but 1 LOW fixed. 6. Windows clock: 5 LOW, 4 fixed. 7. A/A pilot:
+   2 HIGH, 3 MEDIUM, 6 LOW; fixed. 9. Rerun: 3 MEDIUM, 4 LOW; fixed. 10. Round-robin (Opus): 1 MEDIUM, 3 LOW; 3 fixed.
+11. A/A runs (Sonnet, 2026-10-28): 1 MEDIUM (the floor raised on a contestant without windows), 4 LOW; 3 fixed.
 
 ## Method the paper must state (the new loop has no frozen text)
 
@@ -103,9 +101,10 @@ Round-robin count checks (2026-10-28, ed3b7e0, 500 requests a window): W A/A 84 
 - Round-robin: one warm-up per server per size; before each window the size's servers settle (together at most
   10% of one CPU, up to 30 s, else the window is invalid); idle servers' CPU recorded; reruns within the size.
 - Boost off; each system's clock reference (Arch's idle CPUs read 3,201 MHz, busy ones about 3,168: 1% bias).
-- Each contestant is one server process, so its SD is within that process. Proposed: a rank gap smaller than the
-  same program's and size's A/A gap is not claimed. Open: which A/A statistic (|d| median or maximum over the
-  rounds); it decides which leads fall (row 6), so Alex and the coordinator fix it, not this session.
+- Each contestant is one server process, so its SD is within that process. The floor (Alex, 2026-10-28, "Largest,
+  A/A redone"; in `t3/rr_results.py` before the runs): no rank claim between ranking neighbours whose gap in median
+  ns per request is at most the A/A run's largest |d| over the rounds (same program and size); W's from row 9's
+  A/A run again. Row 9's k-server A/A run (Alex: "More A/A servers") is descriptive, outside the floor.
 
 ## Laptop requests
 
@@ -135,16 +134,15 @@ The coordinator schedules them, from `t3/jobs/requests-*.json` (the lab queue's 
    7 campaign rounds rerun (147 windows, about 4.3 min); settles quiet (at most 0.86 s); spacing 1.713, 1.743 s;
    planned windows 9.3 min; peak memory 4.17 GiB. The job began 33 s after W booted (uptime_s); others of 45% or
    more only until 12:20 (System, svchost, TiWorker, DismHost, lsass, sppsvc, MsMpEng among them), at most 19% after.
-   v2 first by median in every program at both sizes on both systems.
-   A/A d (ns, entry 0 minus entry 1): L Rust m = 100,000 516 (485 to 540, all 7 rounds; the pilot's |d| at most
-   168); L Rust m = 1,000 -28, all 7; W Rust m = 100,000 45 (6 of 7 positive). Entry 0, v2's slot in the campaign,
-   is the slower Rust server at m = 100,000 on both. Cause not known. W's A/A SDs at m = 1,000 are 2.7 to 8.8 times
-   the campaign's v2 (its windows ran 1 to 4 min after boot).
+   v2 first by median everywhere. A/A d (ns, entry 0 minus entry 1): L Rust m = 100,000 516 (485 to 540, all 7
+   rounds; the pilot's |d| at most 168), m = 1,000 -28 (all 7); W Rust m = 100,000 45 (6 of 7 positive). Entry 0,
+   v2's campaign slot, is the slower Rust server at m = 100,000 on both; cause not known. W's A/A SDs at m = 1,000:
+   2.7 to 8.8 times the campaign's v2 (its windows ran 1 to 4 min after boot).
    v2's lead over the runner-up (median ns per request) and, in brackets, the A/A |d| median and maximum: L m = 1,000
    C++ 160 (15, 35), Go 152 (22, 125), Rust 40 (28, 61); m = 100,000 C++ 652 (28, 47), Go 2,942 (44, 150), Rust 309
    (516, 540). W m = 1,000 C++ 237 (66, 243), Go 408 (258, 1,091), Rust 29 (124, 153); m = 100,000 C++ 1,865 (59,
-   366), Go 3,587 (106, 235), Rust 645 (45, 121). Rounds v2 ahead of the runner-up: 7 of 7 or 6 of 6, but L Rust
-   m = 1,000 6 of 7 and W Rust m = 1,000 4 of 7.
+   366), Go 3,587 (106, 235), Rust 645 (45, 121). Rounds v2 ahead: all, but Rust m = 1,000 L 6 of 7, W 4 of 7.
+   W's campaign ran 4.8 to 18 min after boot: its m = 1,000 cell wholly inside the new 15 min rule (row 9).
 7. A/A pilot (p2r3-pilot-l, -w at dec7e54; `t3/jobs/pilot.py`, `t3/plans/pilot-*.json`, `t3/pilot_analysis.py`,
    hypotheses 3a): v2 against v2 in all three programs, a fresh server per window, 1,920 windows per system. W DONE
    2026-10-27 (archive 6c1e18ba checked): 1,919 valid, 8 windows above 10% others in 5 bursts; 474 of 480
@@ -154,6 +152,10 @@ The coordinator schedules them, from `t3/jobs/requests-*.json` (the lab queue's 
 8. p2gen against t1gen on L (p2r3-gencheck-l at 606c59b; `gencheck.py`, `plans/gencheck-L.json`,
    `gencheck_analysis.py`; hypotheses 3b; decision 17): DONE 2026-10-26 (archive 9761e71f checked), 64 of 64 valid,
    t1gen's self-tests passed, drift at most 0.83%. Median q = X_p2gen / X_t1gen 0.99805, [0.99439, 1.00309], 16 pairs.
+9. A/A runs (Alex, 2026-10-28; `aa.py`, `plans/rr-aak-*.json`, `jobs/requests-2026-10-28-aa.json` at d063274):
+   p2r3-aa-w, rr-aa-W.json again (at least 15 min after boot, the coordinator's rule) then rr-aak-W.json (v2 seven
+   times per program, 21 servers per cell, 294 windows), about 13 min; p2r3-aa-l, rr-aak-L.json, about 10 min.
+   Desktop count checks, 500 requests a window: W 84 of 84 and 294 of 294 valid; L (container, p2run) 294 of 294.
 
 ## Lab requests
 
@@ -186,14 +188,12 @@ std dev per contestant, one fixed A/A run per OS, replacing D9's Holm test. (202
 1862c01 to 06adfe5 (servers, reviews 1 to 3, generator, runner); a27b47e to 083b47c (request 1); 40e08db to
 3ff814e (D5, laptop jobs, review 4); c7153b3 to 39bf126 (probe, `others`, Windows clock, reviews 5, 6); 76baac8
 to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); 3caa3c6 668f289 (rerun); 89230bf ed3b7e0
-(round-robin, review 10, settle); docs. `bench/` is round 2's but `isa.cmake`.
+(round-robin, review 10, settle); 32ddf39 d063274 (A/A runs, floor, review 11); docs. `bench/` is round 2's but `isa.cmake`.
 
 ## Next engineering
 
-Coordinator (2026-10-28): run as is; a cut only if W's spacing puts it over 10 min; settle rule disclosed; no sign
-tests (rounds ahead descriptive); a 6 GiB free-memory gate; no freeze step. Both records are in and analysed (row 6).
-Cut: none proposed. W's spacing keeps its planned windows at 9.3 min; its 17.8 min job is the reruns of host-spoiled
-rounds, which a cut of contestants would not remove (a lab-side question: when after boot a W job starts).
-Open for Alex and the coordinator, nothing runs until they answer: the A/A statistic for the floor; and the Rust
-A/A gap: (1) accept it as the floor, (2) a fresh server per contestant per round (start-ups and 1 s warm-ups alone
-add about 6.4 min on Arch and 8.1 min on W), or (2b) more v2 processes in the A/A run only.
+Coordinator (2026-10-28): run as is, no cut (W's planned windows 9.3 min; its overrun is reruns); settle rule
+disclosed; no sign tests; a 6 GiB free-memory gate; no freeze step; W timed jobs start at least 15 min after boot.
+Alex (2026-10-28): the floor's statistic is the largest |d|, W's A/A run again; more A/A servers. Requested: row 9.
+Put to the coordinator: (a) row 9 as asked, or (b) p2r3-rr-w again (A/A and campaign), since W's m = 1,000 cell,
+where the floor bites (C++ 237 against 243, Go 408 against 1,091), ran inside the 15 min after boot.

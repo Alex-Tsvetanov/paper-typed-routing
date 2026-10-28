@@ -1,0 +1,59 @@
+{
+ "about": "P2 round 3: the A/A runs Alex asked for on 2026-10-28 (via the coordinator), \"Largest, A/A redone\" and \"More A/A servers\". One job per system, drafted in the lab queue's job format for the operator to copy into queues; not a queue itself. Commit: d063274742fa4fa4cab5491297571d953b3cfa31 on branch round3 of p2-typed-routing/typed-routing (local; bundled from that checkout as before). Each job runs t3/jobs/aa.py. On Windows: the A/A run again, t3/plans/rr-aa-W.json unchanged (v2 twice in each program; the plan p2r3-rr-w ran in chain A15, so the round orders are the same), then the k-server A/A run, rr-aak-W.json. On Arch: the k-server A/A run, rr-aak-L.json. The k-server plans hold v2 seven times in each of the three programs: 21 servers per cell (the Windows campaign's count; Arch's has 22) and 294 windows, with the campaign's cells, rounds and windows (mixed-disjoint, m = 1,000 and 100,000, pair (111, 211), R = 7, 1.5 s windows after p2gen's 0.1 s lead-in, each server started once per size with a 1 s warm-up). It times the Release builds of p2r3-bringup-l and p2r3-bringup-w at 3ff814e50, the builds every round-3 record timed: aa.py refuses (exit 2) before the first window unless the clone is clean, each binary's sha256 is the bring-up's, no compiled source changed since 3ff814e50 (none did) and every plan is an A/A plan of that build. No build, no download. The analysis, t3/rr_results.py, is committed with the plans before the runs: the floor (per program and size, the A/A run's largest |d| over the rounds, set against each pair of neighbours in the campaign's ranking; on Windows from the A/A run done again) and the k-server run's statistics (descriptive; they do not enter the floor). aa-summary.json holds verdicts, shares, start-ups, memory and spacing, no rate. Peak resident memory of the 21 v2 servers at m = 100,000, from the A/A records' per-server peaks: about 1.35 GiB on Arch (7 x 44,800, 80,184 and 76,700 KiB) and 1.19 GiB on Windows (7 x 41,456, 68,984 and 68,232 KiB), plus p2gen. Either system may go first.",
+ "jobs": [
+  {
+   "id": "p2r3-aa-w",
+   "paper": "P2",
+   "os": "windows",
+   "repo": {
+    "name": "typed-routing",
+    "path": "p2-typed-routing/typed-routing"
+   },
+   "commit": "d063274742fa4fa4cab5491297571d953b3cfa31",
+   "build": "",
+   "run": "\"%LAB_PYTHON%\" \"%LAB_SRC%\\t3\\jobs\\aa.py\" \"%LAB_OUT%\\aa\" \"%LAB_SRC%\\t3\\plans\\rr-aa-W.json\" \"%LAB_SRC%\\t3\\plans\\rr-aak-W.json\"",
+   "outputs": [
+    "out/aa/aa-summary.json",
+    "out/aa/rr-aa-W.jsonl",
+    "out/aa/rr-aak-W.jsonl",
+    "out/aa/rr-aa-W.out",
+    "out/aa/rr-aak-W.out",
+    "record.json"
+   ],
+   "quiet": true,
+   "boost": false,
+   "poll_s": 120,
+   "expected_s": 900,
+   "timeout_s": 2700,
+   "note": "Start at least 15 minutes after boot and only once the quiet check passes (the coordinator's rule of 2026-10-28; in A15 the job began 33 s after boot and others above 10% of one CPU came until about 10 min after it). The A/A run again (84 windows, 6 servers per size), then the k-server A/A run (294 windows, 21 servers per size); server on CPU 14, p2gen on 2 to 13, the runner on 0 and 1; reads C:\\Users\\alext\\lab\\p2r3\\build-3ff814e50, progs-3ff814e50 (p2v2.dll beside mserver-go.exe) and sets, writes only in LAB_OUT. expected_s from p2r3-rr-w's record (A15): 25 s from the job's start to the first run's session; that A/A run took 197 s for 96 windows (2.05 s each with its starts, warm-ups and stops), so 84 windows about 172 s; the k-server run at the campaign's spacing, 294 x 1.743 = 512 s, 42 warm-ups x 1.39 = 58 s, 42 starts x 0.23 = 10 s, preflight and the 10 s session clock about 16 s: about 597 s; together about 794 s, rounded up to 900. Reruns of host-spoiled rounds come on top (A15: 4.3 min); timeout_s three times expected_s. Boost off, the lab's default.",
+   "run_label": "P2 round 3 A/A runs on Windows: t3/jobs/aa.py, the A/A run again (t3/plans/rr-aa-W.json) then the k-server A/A run (rr-aak-W.json, v2 seven times per program)",
+   "plain": "Measure P2's own library against copies of itself on Windows, once more with two copies after the laptop has settled from boot, then with seven copies to see how much separate processes differ, about 13 minutes"
+  },
+  {
+   "id": "p2r3-aa-l",
+   "paper": "P2",
+   "os": "linux",
+   "repo": {
+    "name": "typed-routing",
+    "path": "p2-typed-routing/typed-routing"
+   },
+   "commit": "d063274742fa4fa4cab5491297571d953b3cfa31",
+   "build": "",
+   "run": "\"$LAB_PYTHON\" \"$LAB_SRC/t3/jobs/aa.py\" \"$LAB_OUT/aa\" \"$LAB_SRC/t3/plans/rr-aak-L.json\"",
+   "outputs": [
+    "out/aa/aa-summary.json",
+    "out/aa/rr-aak-L.jsonl",
+    "out/aa/rr-aak-L.out",
+    "record.json"
+   ],
+   "quiet": true,
+   "boost": false,
+   "poll_s": 120,
+   "expected_s": 700,
+   "timeout_s": 2100,
+   "note": "The k-server A/A run (294 windows, 21 servers per size); server on CPU 14, p2gen on 2 to 13, the runner on 0 and 1; reads ~/lab/p2r3/build-3ff814e50, progs-3ff814e50 and sets, writes only in LAB_OUT. expected_s from p2r3-rr-l's record (A12): 14 s from the job's start to the first run's session; at the campaign's spacing 294 x 1.761 = 518 s, 42 warm-ups x 1.15 = 48 s, 42 starts x 0.19 = 8 s, preflight about 3 s: about 591 s, rounded up to 700. timeout_s three times that. Boost off, the lab's default.",
+   "run_label": "P2 round 3 k-server A/A run on Arch: t3/jobs/aa.py with t3/plans/rr-aak-L.json (v2 seven times per program)",
+   "plain": "Measure P2's own library against six copies of itself on Arch, to see how much separate processes differ, about 10 minutes"
+  }
+ ]
+}
