@@ -113,8 +113,7 @@ actix-router, Oat++). All servers' peak memory at m = 100,000: W 3.75 GiB, L 4.0
 
 ## Laptop requests
 
-The coordinator schedules them. Jobs drafted in the lab queue's format with `plain` sentences:
-`t3/jobs/requests-2026-10-24.json` (rows 0, 2 to 4, at 3ff814e50), `requests-2026-10-25.json` (row 5).
+The coordinator schedules them, from `t3/jobs/requests-*.json` (the lab queue's format, `plain` sentences).
 0, 2, 3. Bring-up, `t3/jobs/bringup.py OUT` (p2r3-bringup-l, -w): toolchains checked, the Release build
    with every arm, CTest, the inputs hash, the Go and Rust programs, the request sets (all 160 cells
    checked), the suite, the runner's and record tools' tests, a count-mode pass of p2run.
