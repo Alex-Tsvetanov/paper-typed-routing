@@ -367,8 +367,8 @@ the router's own program, so its noise is both programs' noise.
 **Recommendation.** H9 (a) and H10 (a). H9 (a) keeps H9's 0.5 bound out of the noise; it leaves more
 small cells reported and not tested than (b) or (c). H10 (a) uses the noise of the very difference it
 tests and the percentile H8 uses; it is the most lenient of the three, (c) the strictest.
-**Not asked yet:** it waits on the scope question of 2026-10-27 (the new loop's 5 to 10 minute
-campaigns). Before asking, count from round 2's grid how many H9 cells each option leaves tested.
+**Not asked; moot (2026-10-28).** Alex chose decision 21 (a): round 3 runs in the new loop, which has no
+H9 or H10 test.
 
 ## 21. Round 3 in the new loop: a campaign of about 10 minutes per system (2026-10-27)
 
@@ -432,3 +432,6 @@ fit: a short job of their own, or left out.
 time limit and (c) loses the sign test, each for one size. Its price is the departure from 5 s windows,
 whose effect the A/A run measures and the paper reports. The claim narrows to one shape, two sizes and
 one table on each OS, and the paper says so. (d) only if a venue needs the tested family.
+**Answered by Alex on 2026-10-28 (through the coordinator): (a).** 1.5 s windows, m = 1,000 and 100,000,
+R = 7, and the A/A run per OS. Decision 20 is moot. The coordinator records the D9 change for the new loop
+in AGENTS.md.

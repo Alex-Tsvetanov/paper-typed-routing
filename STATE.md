@@ -139,9 +139,9 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
    - W at 39bf126 (p2r3-probe-w-2, 16:10 to 16:30 EET, archive 7f81c663): exit 0, 168 windows, 162 valid, 6
      overloaded on the error share only (Oat++ at m = 100,000 on both shapes, actix-router mixed-disjoint);
      reference 3,169.8 MHz, 13 of 13 CPUs over 10.001 s, drift at most 0.34%; start-up at most 5.75 s; 6.29, 6.81 s.
-6. The campaign after the freeze, at the probes' spacing: L 7,040 windows (22 arms x 2 x 160 pairs and sizes),
-   12.02 h; W 6,720 windows, 11.93 h, plus H7's MSVC costs (0.33 h, plan v2's desktop basis): together 24.28 h,
-   1.23 calendar days at 19.68 measuring hours a day; W quiet 12.26 h. Not in it: the A/A pilot (row 7).
+6. The campaign, decision 21 (a) (Alex, 2026-10-28): the new loop, round-robin, every contestant, mixed-disjoint,
+   m = 1,000 and 100,000, pair (111, 211), R = 7, 1.5 s windows, about 10 min per system; the A/A run (v2 twice
+   per program) first, in the same job. The 24 h design (H8 to H10 tested, 24.28 h) does not run.
 7. A/A pilot (p2r3-pilot-l, -w at dec7e54, `t3/jobs/requests-2026-10-26-pilot.json`; `t3/jobs/pilot.py`,
    `t3/plans/pilot-L.json`, `pilot-W.json`; rule in `hypotheses-round3.md` 3a, analysis `t3/pilot_analysis.py`):
    v2 against v2 in all three programs, one 4-window round at every H8 cell, 1,920 windows per system, the
@@ -154,7 +154,7 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
    valid, drift at most 0.95%, others median 0.66% and at most 1.83%; 480 of 480 count. Analysis of both
    (`design/round3/aa-pilot.json`; 716ac9b's code and HEAD's give the same bytes): 954 replicates, pooled
    q97.5 of r 1.0106 and of 1/r 1.0104, so delta = 1.02, the floor. |d| median and q97.5 in ns: L C++ 23.5,
-   76.0; Go 36.5, 123.7; Rust 28.0, 92.7; W 45.7, 154.6; 77.1, 315.0; 47.2, 167.2. H9 and H10 from it: decision 20.
+   76.0; Go 36.5, 123.7; Rust 28.0, 92.7; W 45.7, 154.6; 77.1, 315.0; 47.2, 167.2. Decision 20 (H9, H10): moot.
 8. p2gen against t1gen on L (p2r3-gencheck-l at 606c59b, `t3/jobs/requests-2026-10-26-gencheck.json`;
    `gencheck.py`, `plans/gencheck-L.json`, `gencheck_analysis.py`; hypotheses 3b; decision 17): 64 windows,
    about 7 min, timeout 1 h; t1gen equal to its records' 1eaee40c3; review 8 no HIGH. DONE 2026-10-26, ending
@@ -185,8 +185,8 @@ SvcRestartTask on W after P4's c3 (the coordinator's script; sppsvc may rewrite 
 Laptop time (Alex, 2026-10-26, AGENTS.md bc1a76d): "Do not wait on me. Laptop is available 24/7 so just carry
 on and use it." Requests go to the coordinator when final; design, scope and pushes still go to Alex.
 The new loop (Alex, 2026-10-27, via the coordinator; covers round 3): campaigns of 5 to 10 minutes, median and
-std dev per contestant, one fixed A/A run per OS, replacing D9's Holm test. Open: 21, round 3's scope (lead: 1.5 s
-windows, not the agreed 5 s, 2 cells, 7 round-robin rounds, about 10 min per system; 5 s variants; the 24 h design).
+std dev per contestant, one fixed A/A run per OS, replacing D9's Holm test. (2026-10-28) 21. Round 3 in it: (a),
+1.5 s windows, m = 1,000 and 100,000, R = 7, the A/A run per OS (row 6); 20 moot. No frozen file precedes it.
 
 ## Commits on `round3` (local, not pushed)
 
@@ -196,4 +196,4 @@ to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); 3caa3
 
 ## Next engineering
 
-Alex's answer to 21. (a): the runner's round-robin mode, plans, results script, review. (b): 20, then the freeze.
+Decision 21 (a): p2run's round-robin mode, the results script, plans, job, tests, review, desktop count check.

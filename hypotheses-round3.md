@@ -6,6 +6,10 @@ then every number below that is not marked as measured is a proposal. Round 2's 
 `hypotheses-round2.md`, is the prior study and is never edited. Its labels H1 to H7 keep their
 meaning; round 3's hypotheses continue at H8.
 
+**2026-10-28: this draft will not be frozen as written.** Alex chose decision 21 (a): round 3 runs in the
+new loop, a round-robin campaign of about 10 minutes per system reported as the median and standard
+deviation per contestant. H8 to H10's tests below do not run; the text stays as the drafted design.
+
 Design: `design/round3/end-to-end.md` (draft). Router list and its re-check:
 `design/round3/router-survey.md`.
 
@@ -154,3 +158,6 @@ Alex answered the design questions on 2026-10-23 (`design/round3/decisions-for-a
 - 2026-10-27: the L pilot ran (1,920 of 1,920 windows valid, 480 of 480 replicates count). The analysis
   of both pilots (716ac9b's code; the current code gives the same output, byte for byte): delta = 1.02
   (section 3a). H9's minimum and H10's margin: decision 20, open.
+- 2026-10-28: Alex's answer to decision 21: (a). Round 3 runs in the new loop (mixed-disjoint, m = 1,000 and
+  100,000, pair (111, 211), R = 7 round-robin rounds of 1.5 s windows, every contestant, one A/A run per
+  system), with no tested family. H8 to H10 are not tested and this draft is not frozen; decision 20 is moot.
