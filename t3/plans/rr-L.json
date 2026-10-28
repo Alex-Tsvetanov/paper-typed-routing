@@ -1,0 +1,89 @@
+{
+  "_comment": "The campaign on the laptop's Arch: every contestant (22: the C++ server's 11 arms, the Go program's 6, the Rust program's 5), 308 windows; reported as the median and standard deviation per contestant. Decision 21 (a), Alex 2026-10-28: round 3 in the new loop. Round-robin (p2run's schedule): mixed-disjoint, m = 1,000 and 100,000, pair (111, 211); per cell every contestant's server starts once and gets a 1 s warm-up, then 7 rounds give each contestant one 1.5 s window (after p2gen's 0.1 s lead-in) in an order drawn from order_seed; others above 10% of one CPU make a window invalid and its round reruns once in the cell (decision 18). It times the Release builds of the bring-up at 3ff814e (gated green, the builds the probe and the A/A pilot timed); t3/jobs/rr.py refuses unless each binary's sha256 is the bring-up's and no compiled source changed since _build_commit. The analysis is t3/rr_results.py, committed with this plan before it runs.",
+  "_build_commit": "3ff814e50cd8b81e7d482a17206ea6fc31f128c8",
+  "_expect_sha256": {
+    "/home/alex/lab/p2r3/build-3ff814e50/t3/gen/p2gen": "8a4942ab5fc4eed3660a6695e6e76cf28f0f3e874ad1ca00031f6a109d60e249",
+    "/home/alex/lab/p2r3/build-3ff814e50/server/mserver": "986c66f9c2f1ea73429250d9aa53514a63c6afe2346fb2bfe2be747707a21c01",
+    "/home/alex/lab/p2r3/progs-3ff814e50/mserver-go": "2700cc32e7dde5debf2d3e5be92e3f916f703c7d9b8e275c57f424030d5d33b8",
+    "/home/alex/lab/p2r3/progs-3ff814e50/rust/release/mserver-rs": "b5b332bd6adc072dcaf2b9def3f22170e8a8e6ca45d9cb63ba633f12f5a250fb"
+  },
+  "p2gen": "/home/alex/lab/p2r3/build-3ff814e50/t3/gen/p2gen",
+  "data_root": "/home/alex/lab/p2r3/sets",
+  "shapes": [
+    "mixed-disjoint"
+  ],
+  "sizes": [
+    1000,
+    100000
+  ],
+  "pairs": [
+    [
+      111,
+      211
+    ]
+  ],
+  "cpus": {
+    "server": 14,
+    "generator": "2-13"
+  },
+  "housekeeping_cpus": "0-1",
+  "schedule": "round-robin",
+  "rounds": 7,
+  "order_seed": 20261028,
+  "server_warmup_s": 1.0,
+  "connections": 64,
+  "warmup_s": 0.1,
+  "window_s": 1.5,
+  "timeout_ms": 1000,
+  "ready_timeout_s": 60,
+  "stop_timeout_s": 20,
+  "error_share_max": 0.001,
+  "generator_busy_max_pct": 90,
+  "clock_drift_max": 0.02,
+  "others_max_pct": 10,
+  "rerun_host_faults": true,
+  "verify_sets": true,
+  "abort_after_consecutive": 8,
+  "programs": [
+    {
+      "name": "mserver",
+      "path": "/home/alex/lab/p2r3/build-3ff814e50/server/mserver",
+      "arms": [
+        "v2",
+        "crow",
+        "drogon",
+        "oatpp",
+        "pistache",
+        "boost-url",
+        "r3",
+        "uwebsockets",
+        "glaze",
+        "cpp-httplib",
+        "null"
+      ]
+    },
+    {
+      "name": "mserver-go",
+      "path": "/home/alex/lab/p2r3/progs-3ff814e50/mserver-go",
+      "arms": [
+        "v2",
+        "httprouter",
+        "gin",
+        "nethttp",
+        "chi",
+        "null"
+      ]
+    },
+    {
+      "name": "mserver-rs",
+      "path": "/home/alex/lab/p2r3/progs-3ff814e50/rust/release/mserver-rs",
+      "arms": [
+        "v2",
+        "matchit",
+        "path-tree",
+        "actix-router",
+        "null"
+      ]
+    }
+  ]
+}

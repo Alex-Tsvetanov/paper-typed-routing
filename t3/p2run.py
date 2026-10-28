@@ -17,12 +17,31 @@ over the program's arms (a, b, ..., z, z, ..., b, a). A plan lists the arms once
 to z, or one arm twice for an A/A round (v2, v2, v2, v2: entry 0 first and last). A window is one
 entry of one round.
 
+Round-robin ("schedule": "round-robin"; decision 21). A contestant is one entry of a program's arm list
+(an A/A plan's ["v2", "v2"] gives two). For each shape, size and seed pair (a cell): every contestant's
+server starts once, in plan order, pinned to the server CPU on a port of its own, and is probed (one
+{"type": "server", ...} line each); then each gets one warm-up, p2gen for server_warmup_s with nothing
+sampled ({"type": "warmup", ...}); then "rounds" rounds, each giving every contestant one window, in an
+order drawn for that round: random.Random seeded with the text "<order_seed>:<shape>:<m>:<table seed>",
+shuffled once per round, so the orders follow from the plan alone. The servers not under load sleep on
+the server CPU; their CPU over each window comes from the same two process snapshots as "others" and is
+kept in others.idle_servers, outside the others sum and never judged. After the cell's last round, with
+rerun_host_faults, each round with a window invalid only for host reasons runs once more, whole and in its
+order, while the servers still run ({"type": "rerun", ...} for the cell). Then each server's memory is
+read and every server is stopped ({"type": "cell_end", ...}: per server its exit code, how it was stopped,
+its memory in KiB, and whether its windows in the cell count: not when it never became ready, died, or did
+not exit 0 on the stop). A window of a server that never became ready or has died runs nothing and is
+invalid (not_ready, server_died). Server, warm-up and cell_end lines are not windows: the session's
+"windows" and the end line count windows only, and only windows feed the consecutive-fault rule.
+warmup_s is p2gen's lead-in before each window in both schedules.
+
 Modes.
   timed (no --count)  the real runs, on the laptop only. Samples the CPUs and the clock, and
                       needs LAB_TOOLS, the lab job's tools folder (lab/laptop), for its labrec.py.
   --count N           the desktop's functional mode. p2gen runs with --count N. Nothing is
                       sampled and no time, rate, latency, duration or start-up time is read for
-                      any output: the output file holds counts, ports, CPU numbers and verdicts.
+                      any output: the output file holds counts, ports, CPU numbers and verdicts
+                      (and, round-robin, each server's memory).
                       A window passes only if p2gen exits 0 (N answers, no error of any kind),
                       the probe answered, and the server exited 0 after the stop.
   --dry-run           prints the window sequence and the number of windows. Runs nothing.
@@ -71,6 +90,9 @@ Plan (JSON; keys starting with "_" are ignored; any other unknown key is an erro
                                 record of them (hypotheses-round3.md section 3)
     "rerun_host_faults" (false)  rerun once, after the last window, every round with a window invalid
                                 for a host reason (RERUN_CODES); decision 18, see Reruns
+    "schedule" ("mirrored")     or "round-robin" (see Round-robin), which also needs "rounds" (R per cell)
+                                and "order_seed" (an integer); "server_warmup_s" (1.0) is each server's
+                                one warm-up per cell there
 
 Output, JSON lines. The first is {"type": "session", ...}: host, OS, CPU model, versions of the
 programs, hashes of the runner, p2gen and the programs, the plan, the lab job's LAB_JOB_ID and
@@ -115,9 +137,9 @@ is not rerun, and a rerun round is never rerun. No reruns follow a run stopped b
 rule. The rerun pass counts its own consecutive faults from zero; "others" is one of them, since a
 host busy for that many windows in a row is not the quiet host the method states.
 
-Exit codes: 0 done (timed: every window ran, whatever its verdict); 1 count mode with a window
-that did not pass; 2 a bad plan, command line or preflight check; 3 stopped by the consecutive-fault
-rule (the record so far is kept).
+Exit codes: 0 done (timed: every window ran, whatever its verdict); 1 count mode with a window, a
+warm-up or a server (cell_end) that did not pass; 2 a bad plan, command line or preflight check; 3
+stopped by the consecutive-fault rule (the record so far is kept).
 """
 from __future__ import annotations
 
@@ -130,6 +152,7 @@ import json
 import math
 import os
 import platform
+import random
 import re
 import shutil
 import signal
@@ -150,7 +173,7 @@ MARKER_END = b"MEASURE_END"
 SEED_PAIRS_HELP = "[[111, 211], ...]"
 # Plan keys that are times or time limits. A count-mode session line does not echo them.
 TIME_KEYS = frozenset({"warmup_s", "window_s", "timeout_ms", "ready_timeout_s", "stop_timeout_s",
-                       "count_limit_s", "session_clock_mhz", "error_share_max",
+                       "count_limit_s", "session_clock_mhz", "error_share_max", "server_warmup_s",
                        "generator_busy_max_pct", "clock_drift_max", "others_max_pct"})
 SPAN_TOLERANCE_S = 0.05  # the runner's sample span may differ from p2gen's window by this much
 # Reason codes that point at the runner or the host, not at the arm. A run of them across windows
@@ -264,10 +287,18 @@ class Plan:
     housekeeping_cpus: tuple[int, ...]
     abort_after: int
     rerun_host_faults: bool = False
+    schedule: str = "mirrored"  # or "round-robin" (decision 21)
+    rounds: int = 0  # round-robin: R per cell
+    order_seed: int = 0  # round-robin: the round orders are drawn from it
+    server_warmup_s: float = 1.0  # round-robin: each server's one warm-up per cell
 
     @property
     def generator_threads(self) -> int:
         return self.threads or len(self.generator_cpus)
+
+    @property
+    def round_robin(self) -> bool:
+        return self.schedule == "round-robin"
 
 
 _REQUIRED = ("p2gen", "data_root", "shapes", "sizes", "pairs", "programs", "cpus")
@@ -277,6 +308,7 @@ _DEFAULTS: Mapping[str, Any] = {
     "error_share_max": 0.001, "generator_busy_max_pct": 90.0, "clock_drift_max": 0.02,
     "session_clock_mhz": None, "verify_sets": True, "housekeeping_cpus": None,
     "abort_after_consecutive": 8, "others_max_pct": None, "rerun_host_faults": False,
+    "schedule": "mirrored", "rounds": None, "order_seed": None, "server_warmup_s": 1.0,
 }
 
 
@@ -397,11 +429,33 @@ def parse_plan(raw: Any) -> Plan:
         raise PlanError("housekeeping_cpus must not include a server or generator CPU")
     th = Thresholds(float(d["error_share_max"]), float(d["generator_busy_max_pct"]), float(d["clock_drift_max"]),
                     None if d["others_max_pct"] is None else float(d["others_max_pct"]))
+    schedule = _schedule(d)
     return Plan(_argv(d["p2gen"], "p2gen"), str(Path(d["data_root"]).resolve()), tuple(shapes), tuple(sizes), _pairs(d["pairs"]), programs,
                 server[0], generator, d["connections"], d["threads"], float(d["warmup_s"]), float(d["window_s"]),
                 d["timeout_ms"], float(d["ready_timeout_s"]), float(d["stop_timeout_s"]), float(d["count_limit_s"]),
                 th, None if d["session_clock_mhz"] is None else float(d["session_clock_mhz"]), d["verify_sets"],
-                housekeeping, d["abort_after_consecutive"], d["rerun_host_faults"])
+                housekeeping, d["abort_after_consecutive"], d["rerun_host_faults"], *schedule)
+
+
+def _schedule(d: Mapping[str, Any]) -> tuple[str, int, int, float]:
+    """schedule, rounds, order_seed and server_warmup_s. rounds and order_seed belong to round-robin only:
+    a mirrored plan that names them is refused, so neither is read where it does nothing."""
+    schedule = d["schedule"]
+    if schedule not in ("mirrored", "round-robin"):
+        raise PlanError(f"schedule is mirrored or round-robin, got {schedule!r}")
+    _number(d, "server_warmup_s", 0.01)  # p2gen's shortest --duration
+    if d["server_warmup_s"] > 3600:
+        raise PlanError(f"server_warmup_s: p2gen accepts at most 3600, got {d['server_warmup_s']}")
+    if schedule == "mirrored":
+        if d["rounds"] is not None or d["order_seed"] is not None:
+            raise PlanError("rounds and order_seed belong to the round-robin schedule")
+        return schedule, 0, 0, float(d["server_warmup_s"])
+    if d["rounds"] is None or d["order_seed"] is None:
+        raise PlanError("the round-robin schedule needs rounds and order_seed")
+    _number(d, "rounds", 1, integer=True)
+    if not isinstance(d["order_seed"], int) or isinstance(d["order_seed"], bool):
+        raise PlanError(f"order_seed: want an integer, got {d['order_seed']!r}")
+    return schedule, d["rounds"], d["order_seed"], float(d["server_warmup_s"])
 
 
 def load_plan(path: Path) -> tuple[Plan, bytes]:
@@ -430,6 +484,8 @@ class Window:
     half: int  # 1 for the first pass over the arms, 2 for the second
     round_length: int
     rerun: bool = False  # a window of a round run again for a host fault (rerun_host_faults)
+    round_no: int = 0  # round-robin: the round in the cell, from 1 (index is then the position in it); 0 if mirrored
+    rr_entry: int = 0  # round-robin: the contestant's entry
 
     @property
     def round_key(self) -> tuple[str, int, int, str]:
@@ -442,6 +498,8 @@ class Window:
     @property
     def entry(self) -> int:
         """The arm's position in the plan's list: what tells an A/A round's two entries of one arm apart."""
+        if self.round_no:
+            return self.rr_entry
         return self.index if self.half == 1 else self.round_length - 1 - self.index
 
 
@@ -460,8 +518,55 @@ def _round(seq: int, shape: str, m: int, table_seed: int, ring_seed: int, progra
         yield Window(seq + index, shape, m, table_seed, ring_seed, program.name, arm, index, half, len(order), rerun)
 
 
+@dataclasses.dataclass(frozen=True)
+class Contestant:
+    """Round-robin: one entry of a program's arm list, with a server of its own in each cell."""
+    program: str
+    arm: str
+    entry: int
+
+
+def contestants(plan: Plan) -> tuple[Contestant, ...]:
+    return tuple(Contestant(p.name, arm, e) for p in plan.programs for e, arm in enumerate(p.arms))
+
+
+Cell = tuple[str, int, int, int]  # shape, m, table seed, ring seed
+
+
+def cells(plan: Plan) -> Iterator[Cell]:
+    for shape in plan.shapes:
+        for m in plan.sizes:
+            for table_seed, ring_seed in plan.pairs:
+                yield shape, m, table_seed, ring_seed
+
+
+def round_orders(plan: Plan, shape: str, m: int, table_seed: int) -> list[tuple[Contestant, ...]]:
+    """The cell's R orders: the contestants shuffled once per round by a generator seeded with a text, which
+    random.seed hashes the same way in every Python 3 (version 2 seeding), so the plan alone fixes them."""
+    rng = random.Random(f"{plan.order_seed}:{shape}:{m}:{table_seed}")
+    out = []
+    for _ in range(plan.rounds):
+        order = list(contestants(plan))
+        rng.shuffle(order)
+        out.append(tuple(order))
+    return out
+
+
+def rr_round(seq: int, cell: Cell, round_no: int, order: Sequence[Contestant], rerun: bool = False) -> Iterator[Window]:
+    shape, m, table_seed, ring_seed = cell
+    for position, c in enumerate(order):
+        yield Window(seq + position, shape, m, table_seed, ring_seed, c.program, c.arm, position, 0, len(order), rerun,
+                     round_no, c.entry)
+
+
 def windows(plan: Plan) -> Iterator[Window]:
     seq = 0
+    if plan.round_robin:
+        for cell in cells(plan):
+            for round_no, order in enumerate(round_orders(plan, *cell[:3]), 1):
+                yield from rr_round(seq, cell, round_no, order)
+                seq += len(order)
+        return
     for shape in plan.shapes:
         for m in plan.sizes:
             for table_seed, ring_seed in plan.pairs:
@@ -480,7 +585,7 @@ def rerun_windows(plan: Plan, rounds: Sequence[tuple[str, int, int, str]], first
 
 
 def total_windows(plan: Plan) -> int:
-    per_cell = sum(2 * len(p.arms) for p in plan.programs)
+    per_cell = plan.rounds * len(contestants(plan)) if plan.round_robin else sum(2 * len(p.arms) for p in plan.programs)
     return len(plan.shapes) * len(plan.sizes) * len(plan.pairs) * per_cell
 
 
@@ -620,6 +725,34 @@ def judge(obs: Observed, th: Thresholds, count: int | None = None) -> Verdict:
         return Verdict("valid", ())
     only_errors = count is None and [c for c, _ in reasons] == ["error_share"] and _overloaded(obs.generator)
     return Verdict("overloaded" if only_errors else "invalid", tuple(reasons))
+
+
+def judge_warmup(obs: Observed, count: int | None = None) -> Verdict:
+    """A round-robin warm-up's verdict: the server answered and p2gen ran. Nothing is sampled over a warm-up, and
+    its errors are not judged: a server that cannot sustain the load shows that in its windows."""
+    if not obs.ready:
+        return Verdict("invalid", (("not_ready", "the server did not become ready"),))
+    reasons: list[tuple[str, str]] = []
+    probe = obs.probe or {}
+    if probe.get("status") != 200 or not probe.get("body_ok"):
+        reasons.append(("probe", f"probe returned status {probe.get('status')} body_ok {probe.get('body_ok')}"))
+    g = obs.generator
+    absent = missing_keys(g, count is not None) if g is not None else []
+    if g is None:
+        if not reasons:
+            reasons.append(("no_result", "p2gen wrote no result"))
+    elif absent:
+        reasons.append(("generator_schema", f"p2gen's line lacks {absent}"))
+    elif count is not None:
+        reasons.extend(_count_reasons(g, count, obs.generator_exit))
+    else:
+        if g["measure"]["completed"] == 0:
+            reasons.append(("no_answers", "no completed answers"))
+        if g["thread_failed"] or obs.generator_exit != 0:
+            reasons.append(("generator_failed", f"p2gen exit code {obs.generator_exit}, failed threads {g['thread_failed']}"))
+    if not obs.server_alive_at_end:
+        reasons.append(("server_died", f"the server had exited (code {obs.server_exit})"))
+    return Verdict("invalid" if reasons else "valid", tuple(reasons))
 
 
 # ---------------------------------------------------------------- samples
@@ -827,6 +960,19 @@ class LinuxHost:
     def make_sampler(self, cpus: Sequence[int]) -> LinuxSampler:
         return LinuxSampler(cpus)
 
+    def memory(self, sp: Spawned) -> dict[str, int]:
+        """The process's peak and current resident memory in KiB (/proc/PID/status: VmHWM, VmRSS)."""
+        names = {"VmHWM": "peak_resident_kib", "VmRSS": "resident_kib"}
+        out = {}
+        with open(f"/proc/{sp.proc.pid}/status") as f:
+            for line in f:
+                key, _, value = line.partition(":")
+                if key in names:
+                    out[names[key]] = int(value.split()[0])
+        if len(out) != len(names):
+            raise OSError(f"/proc/{sp.proc.pid}/status lacks VmHWM or VmRSS")
+        return out
+
 
 if IS_WINDOWS:
     import ctypes
@@ -856,6 +1002,7 @@ if IS_WINDOWS:
         (_k32.AssignProcessToJobObject, [wintypes.HANDLE, wintypes.HANDLE], wintypes.BOOL),
         (_k32.SetThreadAffinityMask, [wintypes.HANDLE, ctypes.c_size_t], ctypes.c_size_t),
         (_k32.AllocConsole, [], wintypes.BOOL),
+        (_k32.K32GetProcessMemoryInfo, [wintypes.HANDLE, ctypes.c_void_p, wintypes.DWORD], wintypes.BOOL),
         (_k32.GetActiveProcessorCount, [wintypes.WORD], wintypes.DWORD),
         (_nt.NtResumeProcess, [wintypes.HANDLE], ctypes.c_long),
         (_nt.NtQuerySystemInformation, [ctypes.c_ulong, ctypes.c_void_p, ctypes.c_ulong,
@@ -888,6 +1035,15 @@ if IS_WINDOWS:
         _fields_ = [("Basic", _JobBasic), ("Io", _JobIo), ("ProcessMemoryLimit", ctypes.c_size_t),
                     ("JobMemoryLimit", ctypes.c_size_t), ("PeakProcessMemoryUsed", ctypes.c_size_t),
                     ("PeakJobMemoryUsed", ctypes.c_size_t)]
+
+    class _MemoryCounters(ctypes.Structure):  # PROCESS_MEMORY_COUNTERS_EX
+        _fields_ = [("cb", wintypes.DWORD), ("PageFaultCount", wintypes.DWORD),
+                    *((n, ctypes.c_size_t) for n in ("PeakWorkingSetSize", "WorkingSetSize", "QuotaPeakPagedPoolUsage",
+                                                      "QuotaPagedPoolUsage", "QuotaPeakNonPagedPoolUsage",
+                                                      "QuotaNonPagedPoolUsage", "PagefileUsage", "PeakPagefileUsage",
+                                                      "PrivateUsage"))]
+
+    _PROCESS_MEMORY_RIGHTS = 0x1000 | 0x0010  # QUERY_LIMITED_INFORMATION, VM_READ
 
     class _FmtValue(ctypes.Structure):
         _fields_ = [("CStatus", wintypes.DWORD), ("doubleValue", ctypes.c_double)]
@@ -1090,6 +1246,21 @@ if IS_WINDOWS:
         def make_sampler(self, cpus: Sequence[int]) -> WindowsSampler:
             return WindowsSampler(cpus)
 
+        def memory(self, sp: Spawned) -> dict[str, int]:
+            """The process's peak and current working set, its private bytes and its peak commit, in KiB."""
+            handle = _k32.OpenProcess(_PROCESS_MEMORY_RIGHTS, False, sp.proc.pid)
+            if not handle:
+                raise ctypes.WinError(ctypes.get_last_error())
+            try:
+                c = _MemoryCounters()
+                c.cb = ctypes.sizeof(c)
+                if not _k32.K32GetProcessMemoryInfo(handle, ctypes.byref(c), c.cb):
+                    raise ctypes.WinError(ctypes.get_last_error())
+            finally:
+                _k32.CloseHandle(handle)
+            return {"peak_resident_kib": c.PeakWorkingSetSize // 1024, "resident_kib": c.WorkingSetSize // 1024,
+                    "private_kib": c.PrivateUsage // 1024, "peak_commit_kib": c.PeakPagefileUsage // 1024}
+
     HOST: LinuxHost | WindowsHost = WindowsHost()
 else:
     HOST = LinuxHost()
@@ -1251,18 +1422,50 @@ def load_labrec() -> Any:
     return module
 
 
-def others_row(labrec: Any, start: list, end: list, wall_s: float, exclude: Sequence[int]) -> dict[str, Any]:
+def others_row(labrec: Any, start: list, end: list, wall_s: float, exclude: Sequence[int],
+               idle: Mapping[int, Mapping[str, Any]] | None = None) -> dict[str, Any]:
     """Every other process's CPU between two snapshots, in aa_trial.py's shape: the sum in percent of
     one CPU, the busiest few, and the busiest few that started in between. The verdict reads the sum
-    only when the plan sets others_max_pct."""
+    only when the plan sets others_max_pct. Round-robin: idle maps the pid of each server not under load to
+    its contestant; those processes go to "idle_servers", outside the sum, the lists and the verdict."""
     shares = labrec.process_shares(start, end, wall_s, exclude_pids=tuple(exclude))
-    others = [p for p in shares["judged"] if p["cpu_percent"] > 0]
-    return {"sum_pct_of_one_cpu": round(sum(p["cpu_percent"] for p in others), 2), "top": others[:OTHERS_TOP],
-            "started": [p for p in others if p["how"] == "started"][:OTHERS_TOP],
-            "judged": len(shares["judged"]), "unattributed": len(shares["unattributed"]), "wall_s": round(wall_s, 3)}
+    judged = [p for p in shares["judged"] if p["pid"] not in (idle or {})]
+    others = [p for p in judged if p["cpu_percent"] > 0]
+    row = {"sum_pct_of_one_cpu": round(sum(p["cpu_percent"] for p in others), 2), "top": others[:OTHERS_TOP],
+           "started": [p for p in others if p["how"] == "started"][:OTHERS_TOP],
+           "judged": len(judged), "unattributed": len(shares["unattributed"]), "wall_s": round(wall_s, 3)}
+    if idle is not None:
+        found = {p["pid"]: p["cpu_percent"] for p in shares["judged"] if p["pid"] in idle}
+        servers = [{**who, "cpu_percent": found[pid]} for pid, who in idle.items() if pid in found]
+        row["idle_servers"] = {"sum_pct_of_one_cpu": round(sum(found.values()), 2),
+                               "max_pct_of_one_cpu": round(max(found.values(), default=0.0), 3), "servers": servers,
+                               "missing": [dict(who) for pid, who in idle.items() if pid not in found]}
+    return row
 
 
 # ---------------------------------------------------------------- the runner
+
+
+@dataclasses.dataclass
+class Slot:
+    """Round-robin: one contestant's server, kept for a whole cell."""
+    contestant: Contestant
+    cell: Cell
+    cell_dir: Path
+    port: int
+    log: Path
+    server: Spawned | None = None
+    ready: bool = False
+
+    def alive(self) -> bool:
+        return self.server is not None and self.server.proc.poll() is None
+
+    def who(self) -> dict[str, Any]:
+        return {"program": self.contestant.program, "arm": self.contestant.arm, "entry": self.contestant.entry}
+
+
+def cell_name(cell: Cell) -> str:
+    return f"{cell[0]}/m{cell[1]}/t{cell[2]}"
 
 
 class Runner:
@@ -1282,16 +1485,26 @@ class Runner:
     def timed(self) -> bool:
         return self.count is None
 
-    def run_window(self, w: Window) -> dict[str, Any]:
+    def run_window(self, w: Window, slot: Slot | None = None,
+                   idle: Mapping[int, Mapping[str, Any]] | None = None) -> dict[str, Any]:
+        """One window. Round-robin passes the contestant's running server (slot) and the servers not under
+        load (idle: pid to contestant)."""
         row: dict[str, Any] = {"type": "window", "seq": w.seq, "cell": w.cell, "shape": w.shape, "m": w.m,
                                "table_seed": w.table_seed, "ring_seed": w.ring_seed, "program": w.program,
-                               "arm": w.arm, "entry": w.entry, "index": w.index, "half": w.half}
+                               "arm": w.arm, "entry": w.entry}
+        if w.round_no:
+            row.update(round=w.round_no, position=w.index)
+        else:
+            row.update(index=w.index, half=w.half)
         if w.rerun:
             row["rerun"] = True
         if self.timed:
             row["started"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
         try:
-            self._window(w, row)
+            if slot is None:
+                self._window(w, row)
+            else:
+                self._rr_window(w, row, slot, idle or {})
         except Exception as e:  # noqa: BLE001 - a driver fault becomes an invalid row, not the end of the campaign
             row.update(status="invalid", valid=False, reasons=[f"driver error: {e!r}"], reason_codes=["driver"])
         finally:
@@ -1311,14 +1524,15 @@ class Runner:
             row.setdefault("others_errors", []).append(repr(e))
             return None
 
-    def _others(self, row: dict[str, Any], before: list, after: list | None, wall_s: float) -> None:
+    def _others(self, row: dict[str, Any], before: list, after: list | None, wall_s: float,
+                also_mine: Sequence[int] = (), idle: Mapping[int, Mapping[str, Any]] | None = None) -> None:
         """row["others"] from two snapshots; a failure goes to others_errors and leaves no record, which
-        makes the window invalid only under others_max_pct."""
+        makes the window invalid only under others_max_pct. also_mine: round-robin's server under load."""
         if after is None:
             return
         try:
-            mine = (os.getpid(), *(sp.proc.pid for sp in self._live))
-            row["others"] = others_row(self.labrec, before, after, wall_s, mine)
+            mine = (os.getpid(), *(sp.proc.pid for sp in self._live), *also_mine)
+            row["others"] = others_row(self.labrec, before, after, wall_s, mine, idle)
         except Exception as e:  # noqa: BLE001 - the window keeps p2gen's result and lacks the record
             row.setdefault("others_errors", []).append(repr(e))
 
@@ -1383,32 +1597,39 @@ class Runner:
         return Observed(ready, probe, generator, gen_exit, alive, server_exit, busy, clock, self.session_mhz, span,
                         others)
 
-    def _generator_cmd(self, port: int, cell: Path, result: Path) -> list[str]:
+    def _generator_cmd(self, port: int, cell: Path, result: Path, duration_s: float | None = None) -> list[str]:
         p = self.plan
         cmd = [*p.p2gen, "--port", str(port), "--paths", str(cell / "ring.txt"), "--connections", str(p.connections),
                "--threads", str(p.generator_threads), "--cpus", ",".join(map(str, p.generator_cpus)),
                "--timeout-ms", str(p.timeout_ms), "--out", str(result)]
         if self.count is not None:
             return [*cmd, "--count", str(self.count)]
-        return [*cmd, "--warmup", str(p.warmup_s), "--duration", str(p.window_s)]
+        return [*cmd, "--warmup", str(p.warmup_s), "--duration", str(p.window_s if duration_s is None else duration_s)]
 
-    def _run_generator(self, w: Window, row: dict[str, Any], port: int, cell: Path):
+    def _run_generator(self, w: Window | None, row: dict[str, Any], port: int, cell: Path, *, sample: bool = True,
+                       also_mine: Sequence[int] = (), idle: Mapping[int, Mapping[str, Any]] | None = None,
+                       duration_s: float | None = None, stem: str | None = None):
+        """p2gen against the server on port. sample=False (a round-robin warm-up): no CPU, clock or process
+        sample. stem names the scratch files when there is no window."""
         plan = self.plan
-        result = self.workdir / f"{w.seq:06d}.gen.json"
-        errlog = self.workdir / f"{w.seq:06d}.gen.err"
+        stem = stem or f"{w.seq:06d}"
+        result = self.workdir / f"{stem}.gen.json"
+        errlog = self.workdir / f"{stem}.gen.err"
         taken: dict[str, Reading] = {}
-        hooks = (self.sampler.begin, lambda: taken.__setitem__("r", self.sampler.end())) if self.timed else (None, None)
-        before = self._processes(row)
+        hooks = ((self.sampler.begin, lambda: taken.__setitem__("r", self.sampler.end())) if self.timed and sample
+                 else (None, None))
+        before = self._processes(row) if sample else None
         t0 = time.monotonic()
         with open(errlog, "wb") as err:
-            gen = HOST.spawn(self._generator_cmd(port, cell, result), plan.generator_cpus, env=os.environ,
+            gen = HOST.spawn(self._generator_cmd(port, cell, result, duration_s), plan.generator_cpus, env=os.environ,
                              cwd=self.workdir, stdout=subprocess.PIPE, stderr=err)
         self._live.append(gen)
         row["generator_affinity"] = list(gen.affinity)
         pin = (lambda: HOST.pin_thread(plan.housekeeping_cpus)) if plan.housekeeping_cpus else None
         reader = MarkerReader(gen.proc.stdout, *hooks, pin=pin)
         reader.start()
-        limit = plan.count_limit_s if not self.timed else plan.warmup_s + plan.window_s + GENERATOR_GRACE_S
+        span = plan.window_s if duration_s is None else duration_s
+        limit = plan.count_limit_s if not self.timed else plan.warmup_s + span + GENERATOR_GRACE_S
         try:
             code = gen.proc.wait(timeout=limit)
         except subprocess.TimeoutExpired:
@@ -1417,7 +1638,7 @@ class Runner:
             row["generator_note"] = "p2gen killed at the limit" + ("" if not self.timed else f" of {limit:g} s")
         if before is not None:
             wall = time.monotonic() - t0
-            self._others(row, before, self._processes(row), wall)
+            self._others(row, before, self._processes(row), wall, also_mine, idle)
         reader.join(10)
         if not reader.is_alive():
             gen.proc.stdout.close()
@@ -1436,6 +1657,145 @@ class Runner:
             remove(result)
         remove(errlog)
         return parsed, code, reading
+
+    # ------------------------------------------------ round-robin: a cell's servers, warm-ups and windows
+
+    def _cell_row(self, kind: str, slot: Slot) -> dict[str, Any]:
+        shape, m, table_seed, ring_seed = slot.cell
+        return {"type": kind, "cell": cell_name(slot.cell), "shape": shape, "m": m, "table_seed": table_seed,
+                "ring_seed": ring_seed, **slot.who(), "port": slot.port}
+
+    def start_server(self, c: Contestant, cell: Cell) -> tuple[Slot, dict[str, Any]]:
+        """Starts the contestant's server for the cell, pinned, waits for it and probes GET /."""
+        plan, program = self.plan, self.programs[c.program]
+        cell_dir = Path(plan.data_root) / cell[0] / f"m{cell[1]}" / f"t{cell[2]}"
+        slot = Slot(c, cell, cell_dir, free_port(), self.workdir / f"{cell[0]}-m{cell[1]}-t{cell[2]}-{c.program}-{c.entry}.server.log")
+        row = self._cell_row("server", slot)
+        row["server_cpu"] = plan.server_cpu
+        cmd = [*program.argv, "--port", str(slot.port), "--workers", "1", "--routes", str(cell_dir / "routes.txt"),
+               "--router", c.arm]
+        try:
+            with open(slot.log, "wb") as out:
+                slot.server = HOST.spawn(cmd, (plan.server_cpu,), env=self._server_env(program), cwd=self.workdir,
+                                         stdout=out, stderr=subprocess.STDOUT)
+            row["server_affinity"] = list(slot.server.affinity)
+            slot.ready = wait_ready(slot.server.proc, slot.port, plan.ready_timeout_s)
+            if self.timed and slot.ready:
+                row["startup_s"] = round(time.monotonic() - slot.server.started_at, 4)
+            if slot.ready:
+                try:
+                    row["probe"] = probe_server(slot.port)
+                except (OSError, ValueError) as e:
+                    row["probe"] = {"status": 0, "body_ok": False, "error": repr(e)}
+        except Exception as e:  # noqa: BLE001 - the contestant's windows in this cell become not_ready
+            row["error"] = repr(e)
+        if not slot.ready and slot.alive():  # still loading or hung: it must not share the server CPU with the windows
+            HOST.kill(slot.server)
+        probe = row.get("probe") or {}
+        codes = [] if slot.ready and probe.get("status") == 200 and probe.get("body_ok") else \
+            ["probe"] if slot.ready else ["not_ready"]
+        row.update(ready=slot.ready, status="invalid" if codes else "valid", reason_codes=codes)
+        if codes:
+            row["server_log_tail"] = scrub(tail(slot.log), self.count is not None)
+        return slot, row
+
+    def warm_up(self, slot: Slot) -> dict[str, Any]:
+        """The server's one warm-up of the cell: p2gen for server_warmup_s, nothing sampled."""
+        row = self._cell_row("warmup", slot)
+        probe = generator = gen_exit = None
+        try:
+            if slot.alive() and slot.ready:
+                try:
+                    probe = probe_server(slot.port)
+                except (OSError, ValueError) as e:
+                    probe = {"status": 0, "body_ok": False, "error": repr(e)}
+                row["probe"] = probe
+                if probe["status"] == 200 and probe["body_ok"]:
+                    stem = f"{slot.cell[0]}-m{slot.cell[1]}-t{slot.cell[2]}-{slot.contestant.program}-{slot.contestant.entry}.warmup"
+                    generator, gen_exit, _ = self._run_generator(None, row, slot.port, slot.cell_dir, sample=False,
+                                                                 duration_s=self.plan.server_warmup_s, stem=stem)
+            alive = slot.alive()
+            obs = Observed(slot.ready, probe, generator, gen_exit, alive,
+                           None if alive or slot.server is None else slot.server.proc.returncode)
+            verdict = judge_warmup(obs, self.count)
+            row.update(status=verdict.status, reasons=[t for _, t in verdict.reasons],
+                       reason_codes=[c for c, _ in verdict.reasons])
+        except Exception as e:  # noqa: BLE001 - recorded; the contestant's windows still run if its server lives
+            row.update(status="invalid", reasons=[f"driver error: {e!r}"], reason_codes=["driver"])
+        finally:
+            for sp in self._live:
+                if sp.proc.poll() is None:
+                    HOST.kill(sp)
+            self._live.clear()
+        return row
+
+    def _rr_window(self, w: Window, row: dict[str, Any], slot: Slot, idle: Mapping[int, Mapping[str, Any]]) -> None:
+        """A round-robin window on the contestant's running server; the server is left running."""
+        plan = self.plan
+        changed = [b for b, s in self._signatures.items() if file_signature(b) != s]
+        if changed:
+            raise RuntimeError(f"a binary changed since the session started: {changed}")
+        row["routes_sha256"], row["ring_sha256"] = cell_digests(str(slot.cell_dir))
+        row.update(port=slot.port, server_cpu=plan.server_cpu, generator_cpus=list(plan.generator_cpus))
+        if not slot.ready:
+            verdict = Verdict("invalid", (("not_ready", "the server did not become ready at the cell's start"),))
+        elif not slot.alive():
+            verdict = Verdict("invalid", (("server_died", f"the server had exited (code "
+                                                          f"{slot.server.proc.returncode}) before the window"),))
+        else:
+            row["server_affinity"] = list(slot.server.affinity)
+            probe, generator, gen_exit, reading = None, None, None, None
+            try:
+                probe = probe_server(slot.port)
+            except (OSError, ValueError) as e:
+                probe = {"status": 0, "body_ok": False, "error": repr(e)}
+            row["probe"] = probe
+            if probe["status"] == 200 and probe["body_ok"]:
+                generator, gen_exit, reading = self._run_generator(w, row, slot.port, slot.cell_dir,
+                                                                   also_mine=(slot.server.proc.pid,), idle=idle)
+            alive = slot.alive()
+            obs = self._observed(True, probe, generator, gen_exit, alive, 0 if alive else slot.server.proc.returncode,
+                                 reading, row)
+            verdict = judge(obs, plan.thresholds, self.count)
+        row.update(status=verdict.status, valid=verdict.valid, reasons=[t for _, t in verdict.reasons],
+                   reason_codes=[c for c, _ in verdict.reasons])
+        if {"server_died", "probe"} & set(row["reason_codes"]):
+            row["server_log_tail"] = scrub(tail(slot.log), self.count is not None)
+
+    def stop_servers(self, slots: Sequence[Slot], cell: Cell) -> dict[str, Any]:
+        """Each server's memory, then its stop. A server's windows in the cell count only if it became ready,
+        lived to the stop and exited 0 on it."""
+        servers = []
+        for slot in slots:
+            rec: dict[str, Any] = {**slot.who(), "port": slot.port}
+            codes = [] if slot.ready else ["not_ready"]
+            try:
+                if slot.server is not None:
+                    alive = slot.alive()
+                    if alive:
+                        try:
+                            rec["memory"] = HOST.memory(slot.server)
+                        except (OSError, ValueError) as e:
+                            rec["memory_error"] = repr(e)
+                    rec["exit"], rec["stop_method"] = HOST.stop(slot.server, self.plan.stop_timeout_s)
+                    if slot.ready and not alive:
+                        codes.append("server_died")
+                    elif slot.ready and rec["exit"] != 0:
+                        codes.append("server_exit")
+            except Exception as e:  # noqa: BLE001 - the other servers must still be stopped
+                rec["error"] = repr(e)
+                codes.append("driver")
+            finally:
+                if slot.server is not None and slot.server.proc.poll() is None:
+                    HOST.kill(slot.server)
+            rec.update(windows_count=not codes, reason_codes=codes)
+            if codes:
+                rec["server_log_tail"] = scrub(tail(slot.log), self.count is not None)
+            else:
+                remove(slot.log)
+            servers.append(rec)
+        return {"type": "cell_end", "cell": cell_name(cell), "shape": cell[0], "m": cell[1], "table_seed": cell[2],
+                "servers": servers}
 
 
 # ---------------------------------------------------------------- session, preflight, main
@@ -1620,6 +1980,12 @@ def session_line(plan: Plan, plan_text: bytes, count: int | None, clock: Mapping
             "programs": programs,
             # the lab's word that the host was quiet when the job started: "passed:<LAB_JOB_ID>" or absent
             "lab": {"job_id": os.environ.get("LAB_JOB_ID"), "quiet": os.environ.get("LAB_QUIET")}}
+    if plan.round_robin:  # the contestants and every cell's round orders, as indices into the contestants
+        everyone = contestants(plan)
+        line["round_robin"] = {"contestants": [dataclasses.asdict(c) for c in everyone],
+                               "orders": {cell_name(cell): [[everyone.index(c) for c in order]
+                                                            for order in round_orders(plan, *cell[:3])]
+                                          for cell in cells(plan)}}
     if labrec is not None:
         line["lab"]["labrec_sha256"] = sha256_file(Path(labrec.__file__))
     if clock is not None:
@@ -1647,7 +2013,8 @@ def session_clock(plan: Plan, sampler: Any) -> dict[str, Any]:
 def dry_run(plan: Plan) -> int:
     try:
         for w in windows(plan):
-            print(f"{w.seq + 1:6d} {w.cell} {w.program} {w.arm} {w.index + 1}/{w.round_length}")
+            where = f"round {w.round_no} {w.index + 1}/{w.round_length}" if w.round_no else f"{w.index + 1}/{w.round_length}"
+            print(f"{w.seq + 1:6d} {w.cell} {w.program} {w.arm} {where}")
         print(f"windows: {total_windows(plan)}")
         sys.stdout.flush()
     except BrokenPipeError:  # the reader (head, a pager) closed early
@@ -1753,6 +2120,118 @@ def _run_windows(plan: Plan, runner: Runner, sink: Any) -> int:
     return code
 
 
+class _Streak:
+    """The consecutive-fault rule: one systematic reason failing abort_after windows in a row stops the run."""
+
+    def __init__(self, abort_after: int) -> None:
+        self.abort_after, self.counts = abort_after, {}
+
+    def hit(self, row: Mapping[str, Any]) -> str | None:
+        failing = set(row["reason_codes"]) & SYSTEMATIC if row["status"] == "invalid" else set()
+        self.counts = {c: self.counts.get(c, 0) + 1 for c in failing}
+        worst = max(self.counts, key=self.counts.get, default=None)
+        return worst if self.abort_after and worst and self.counts[worst] >= self.abort_after else None
+
+
+def _run_round_robin(plan: Plan, runner: Runner, sink: Any) -> int:
+    """Round-robin: per cell the servers' starts, their warm-ups, the R rounds, the cell's reruns and the
+    stops (see Round-robin). Returns 0, 1 (count mode: a window, a warm-up or a server did not pass) or 3
+    (the consecutive-fault rule; the planned windows' streak runs across cells, each cell's rerun pass
+    counts from zero)."""
+    tallies: dict[str, dict[str, int]] = {"planned": {}, "rerun": {}, "warmup": {}}
+    rerun_rounds = rerun_again = servers_failed = 0
+    planned, seq = total_windows(plan), 0
+    rerun_seq = planned
+    streak = _Streak(plan.abort_after)
+
+    def write(line: Mapping[str, Any]) -> None:
+        sink.write(json.dumps(line) + "\n")
+        sink.flush()
+
+    def run(ws: Iterator[Window], slots: Mapping[tuple[str, int], Slot], phase: str, st: _Streak,
+            failed: dict[int, list[dict[str, Any]]]) -> bool:
+        for w in ws:
+            slot = slots[(w.program, w.entry)]
+            idle = {s.server.proc.pid: s.who() for s in slots.values() if s is not slot and s.alive()}
+            row = runner.run_window(w, slot, idle)
+            write(row)
+            tallies[phase][row["status"]] = tallies[phase].get(row["status"], 0) + 1
+            print(f"[{'rerun ' if w.rerun else ''}{w.cell} round {w.round_no} {w.index + 1}/{w.round_length}] "
+                  f"{w.program} {w.arm} {row['status']}" + (f": {'; '.join(row['reasons'])}" if row["reasons"] else ""),
+                  file=sys.stderr, flush=True)
+            if row["status"] != "valid":
+                failed.setdefault(w.round_no, []).append(
+                    {"seq": w.seq, "status": row["status"], "codes": row["reason_codes"], "host": host_faults(row)})
+            worst = st.hit(row)
+            if worst:
+                print(f"p2run: stopped: {st.counts[worst]} windows in a row failed with {worst!r}; the record so far "
+                      f"is kept", file=sys.stderr)
+                return False
+        return True
+
+    code = 0
+    for cell in cells(plan):
+        slots: dict[tuple[str, int], Slot] = {}
+        try:
+            for c in contestants(plan):
+                slot, row = runner.start_server(c, cell)
+                slots[(c.program, c.entry)] = slot
+                write(row)
+            for slot in slots.values():
+                row = runner.warm_up(slot)
+                write(row)
+                tallies["warmup"][row["status"]] = tallies["warmup"].get(row["status"], 0) + 1
+            orders = round_orders(plan, *cell[:3])
+            failed: dict[int, list[dict[str, Any]]] = {}
+            for round_no, order in enumerate(orders, 1):
+                if not run(rr_round(seq, cell, round_no, order), slots, "planned", streak, failed):
+                    code = 3
+                    break
+                seq += len(order)
+            if code == 0 and plan.rerun_host_faults:
+                rounds, first = [], rerun_seq
+                for round_no, bad in sorted(failed.items()):
+                    host = [b for b in bad if b["host"]]
+                    if host:
+                        rounds.append({"round": round_no, "seqs": [b["seq"] for b in host],
+                                       "codes": sorted({c for b in host for c in b["host"]}),
+                                       "arm_faults": [{k: b[k] for k in ("seq", "status", "codes")} for b in bad if not b["host"]],
+                                       "first_seq": first, "windows": len(orders[round_no - 1])})
+                        first += len(orders[round_no - 1])
+                write({"type": "rerun", "cell": cell_name(cell), "rounds": rounds, "windows": first - rerun_seq})
+                again: dict[int, list[dict[str, Any]]] = {}
+                rerun_streak = _Streak(plan.abort_after)
+                for r in rounds:
+                    rerun_rounds += 1
+                    ok = run(rr_round(rerun_seq, cell, r["round"], orders[r["round"] - 1], rerun=True), slots, "rerun",
+                             rerun_streak, again)
+                    rerun_seq += r["windows"]
+                    if not ok:
+                        code = 3
+                        break
+                rerun_again += sum(any(b["host"] for b in bad) for bad in again.values())
+        finally:
+            line = runner.stop_servers(list(slots.values()), cell)
+            write(line)
+            servers_failed += sum(not s["windows_count"] for s in line["servers"])
+        if code:
+            break
+    end: dict[str, Any] = {"type": "end"}
+    if plan.rerun_host_faults and code == 0:
+        end["rerun"] = {"rounds": rerun_rounds, "windows_run": sum(tallies["rerun"].values()),
+                        "by_status": tallies["rerun"], "rounds_with_host_faults": rerun_again}
+    windows_all = {k: tallies["planned"].get(k, 0) + tallies["rerun"].get(k, 0) for k in {*tallies["planned"], *tallies["rerun"]}}
+    print(f"p2run: {sum(windows_all.values())} windows, " + ", ".join(f"{k} {v}" for k, v in sorted(windows_all.items()))
+          + f"; servers whose windows do not count: {servers_failed}", file=sys.stderr)
+    not_passed = (set(windows_all) | set(tallies["warmup"])) - {"valid"}
+    if code == 0 and runner.count is not None and (not_passed or servers_failed):
+        code = 1
+    write({**end, "exit": code, "planned": {"windows": planned, "windows_run": sum(tallies["planned"].values()),
+                                            "by_status": tallies["planned"]},
+           "warmups": {"by_status": tallies["warmup"]}, "servers_not_counting": servers_failed})
+    return code
+
+
 def run_all(plan: Plan, plan_text: bytes, out: Path, count: int | None, workdir: Path) -> int:
     if count is None and not plan.housekeeping_cpus:
         raise PlanError("timed mode needs housekeeping_cpus: the runner must not run on a server or generator CPU")
@@ -1778,7 +2257,7 @@ def run_all(plan: Plan, plan_text: bytes, out: Path, count: int | None, workdir:
         with sink:
             sink.write(json.dumps(session) + "\n")
             runner = Runner(plan, workdir, count, sampler, clock["session_mhz"] if clock else None, labrec)
-            return _run_windows(plan, runner, sink)
+            return (_run_round_robin if plan.round_robin else _run_windows)(plan, runner, sink)
     finally:
         for sig, handler in saved.items():
             signal.signal(sig, handler if handler is not None else signal.SIG_DFL)

@@ -94,6 +94,21 @@ class PlanTests(unittest.TestCase):
         self.assertEqual((p.thresholds.others_max_pct, p.rerun_host_faults), (10.0, True))
         self.assertIn("others_max_pct", p2run.TIME_KEYS)  # a timed-mode threshold, left out of a count-mode session
 
+    def test_the_round_robin_schedule_and_its_keys(self) -> None:
+        p = p2run.parse_plan(plan_dict())
+        self.assertEqual((p.schedule, p.round_robin, p.rounds, p.server_warmup_s), ("mirrored", False, 0, 1.0))
+        p = p2run.parse_plan(plan_dict(schedule="round-robin", rounds=7, order_seed=2026, server_warmup_s=0.5))
+        self.assertEqual((p.schedule, p.round_robin, p.rounds, p.order_seed, p.server_warmup_s),
+                         ("round-robin", True, 7, 2026, 0.5))
+        self.assertIn("server_warmup_s", p2run.TIME_KEYS)
+        for bad in (dict(schedule="interleaved"), dict(rounds=7), dict(order_seed=1),  # mirrored plans name neither
+                    dict(schedule="round-robin", rounds=7), dict(schedule="round-robin", order_seed=1),
+                    dict(schedule="round-robin", rounds=0, order_seed=1), dict(schedule="round-robin", rounds=2.5, order_seed=1),
+                    dict(schedule="round-robin", rounds=7, order_seed=True), dict(schedule="round-robin", rounds=7, order_seed="1"),
+                    dict(server_warmup_s=0), dict(server_warmup_s=4000)):
+            with self.assertRaises(PlanError, msg=repr(bad)):
+                p2run.parse_plan(plan_dict(**bad))
+
     def test_housekeeping(self) -> None:
         self.assertEqual(p2run.parse_plan(plan_dict()).housekeeping_cpus, ())
         self.assertEqual(p2run.parse_plan(plan_dict(housekeeping_cpus="0-1")).housekeeping_cpus, (0, 1))
@@ -641,6 +656,14 @@ class TimedPartsTests(unittest.TestCase):
                          {"sum_pct_of_one_cpu": 4.75, "judged": 3, "unattributed": 1,
                           "top": [FakeLabrec.SVC, FakeLabrec.UPD], "started": [FakeLabrec.UPD]})
 
+    def test_idle_servers_are_kept_apart_from_the_others(self) -> None:
+        idle = {40: {"program": "mserver", "arm": "crow", "entry": 1}, 77: {"program": "mserver", "arm": "null", "entry": 2}}
+        row = p2run.others_row(FakeLabrec(), [], [], 5.0, (os.getpid(),), idle)
+        self.assertEqual((row["sum_pct_of_one_cpu"], row["judged"], row["top"]), (1.25, 2, [FakeLabrec.UPD]))
+        self.assertEqual(row["idle_servers"], {"sum_pct_of_one_cpu": 3.5, "max_pct_of_one_cpu": 3.5,
+                                               "servers": [{**idle[40], "cpu_percent": 3.5}], "missing": [idle[77]]})
+        self.assertNotIn("idle_servers", p2run.others_row(FakeLabrec(), [], [], 5.0, (os.getpid(),)))
+
     def test_a_failed_others_record_leaves_the_window_as_it_was(self) -> None:
         if os.cpu_count() < 2:
             self.skipTest("needs two CPUs")
@@ -892,6 +915,179 @@ class RerunTests(unittest.TestCase):
         rc, rows, _ = self.run_loop(self.plan(rerun_host_faults=True), {}, count=100)
         self.assertEqual((rc, rows[-2]), (0, {"type": "rerun", "rounds": [], "windows": 0}))
         self.assertEqual(rows[-1]["rerun"], {"rounds": 0, "windows_run": 0, "by_status": {}, "rounds_with_host_faults": 0})
+
+
+# ---------------------------------------------------------------- round-robin (decision 21)
+
+
+def rr_plan(**over):
+    """Two sizes, one pair, programs of 2 and 3 arms: 5 contestants, R = 3, 15 windows per cell, 30 in all."""
+    d = dict(schedule="round-robin", rounds=3, order_seed=2026, sizes=[10, 100],
+             programs=[{"name": "mserver", "path": "mserver", "arms": ["v2", "null"]},
+                       {"name": "mserver-go", "path": "mserver-go", "arms": ["v2", "gin", "null"]}])
+    d.update(over)
+    return p2run.parse_plan(plan_dict(**d))
+
+
+class RoundRobinSequenceTests(unittest.TestCase):
+    def test_contestants_are_the_entries_of_every_program(self) -> None:
+        got = [(c.program, c.arm, c.entry) for c in p2run.contestants(rr_plan())]
+        self.assertEqual(got, [("mserver", "v2", 0), ("mserver", "null", 1), ("mserver-go", "v2", 0),
+                               ("mserver-go", "gin", 1), ("mserver-go", "null", 2)])
+        aa = rr_plan(programs=[{"name": "mserver", "path": "mserver", "arms": ["v2", "v2"]}])
+        self.assertEqual([(c.arm, c.entry) for c in p2run.contestants(aa)], [("v2", 0), ("v2", 1)])
+
+    def test_every_contestant_once_per_round_in_orders_the_plan_fixes(self) -> None:
+        plan = rr_plan()
+        everyone = set(p2run.contestants(plan))
+        orders = p2run.round_orders(plan, "mixed-disjoint", 10, 111)
+        self.assertEqual(len(orders), 3)
+        self.assertTrue(all(len(o) == 5 and set(o) == everyone for o in orders))
+        self.assertEqual(orders, p2run.round_orders(rr_plan(), "mixed-disjoint", 10, 111))  # the plan alone fixes them
+        self.assertNotEqual(orders, p2run.round_orders(rr_plan(order_seed=2027), "mixed-disjoint", 10, 111))
+        self.assertNotEqual(orders, p2run.round_orders(plan, "mixed-disjoint", 100, 111))  # each cell draws its own
+        many = p2run.round_orders(rr_plan(rounds=20), "mixed-disjoint", 10, 111)
+        self.assertGreater(len(set(many)), 1)  # the rounds differ
+        self.assertEqual(many[:3], orders)  # round k's order does not depend on R
+
+    def test_the_orders_are_those_of_a_text_seeded_generator(self) -> None:
+        # random.seed of a text is the same in every Python 3: the laptop's Python draws these orders too
+        rng = __import__("random").Random("2026:mixed-disjoint:10:111")
+        want = list(p2run.contestants(rr_plan()))
+        rng.shuffle(want)
+        self.assertEqual(p2run.round_orders(rr_plan(), "mixed-disjoint", 10, 111)[0], tuple(want))
+
+    def test_the_window_sequence(self) -> None:
+        plan = rr_plan()
+        ws = list(p2run.windows(plan))
+        self.assertEqual((len(ws), p2run.total_windows(plan)), (30, 30))
+        self.assertEqual([w.seq for w in ws], list(range(30)))
+        first = p2run.round_orders(plan, "mixed-disjoint", 10, 111)[0]
+        self.assertEqual([(w.program, w.arm, w.entry) for w in ws[:5]], [(c.program, c.arm, c.entry) for c in first])
+        self.assertEqual({(w.round_no, w.m) for w in ws}, {(r, m) for r in (1, 2, 3) for m in (10, 100)})
+        self.assertEqual([w.index for w in ws[:5]], [0, 1, 2, 3, 4])
+        self.assertTrue(all(w.round_length == 5 and w.ring_seed == 211 and not w.rerun for w in ws))
+
+
+class WarmupJudgeTests(unittest.TestCase):
+    def obs(self, **over):
+        base = dict(ready=True, probe=PROBE_OK, generator=gen_line(timeouts=5, status=200), generator_exit=0,
+                    server_alive_at_end=True, server_exit=None)
+        base.update(over)
+        return Observed(**base)
+
+    def test_errors_are_not_judged_and_nothing_is_sampled(self) -> None:
+        self.assertEqual(p2run.judge_warmup(self.obs()).status, "valid")
+
+    def test_what_fails_a_warmup(self) -> None:
+        cases = {"not_ready": self.obs(ready=False), "probe": self.obs(probe={"status": 500, "body_ok": False}),
+                 "server_died": self.obs(server_alive_at_end=False, server_exit=1),
+                 "generator_failed": self.obs(generator_exit=1), "no_answers": self.obs(generator=gen_line(completed=0)),
+                 "no_result": self.obs(generator=None)}
+        for code, o in cases.items():
+            v = p2run.judge_warmup(o)
+            self.assertEqual(v.status, "invalid", code)
+            self.assertIn(code, [c for c, _ in v.reasons], code)
+
+    def test_count_mode_uses_the_count_rules(self) -> None:
+        line = {"completed": 100, "resolved": 100, "errors_total": 0, "thread_failed": 0}
+        self.assertEqual(p2run.judge_warmup(self.obs(generator=line), 100).status, "valid")
+        self.assertEqual(p2run.judge_warmup(self.obs(generator={**line, "completed": 99}), 100).status, "invalid")
+
+
+class ScriptedRoundRobin:
+    """The runner's round-robin parts without a process: each window's status and reason codes come from a
+    script keyed by seq, or by ("rerun", seq) for a rerun window. Every call is logged in order."""
+
+    def __init__(self, script: dict, count: int | None = None, dead: frozenset = frozenset()) -> None:
+        self.script, self.count, self.dead, self.log = script, count, dead, []
+
+    def start_server(self, c, cell):
+        self.log.append(("start", p2run.cell_name(cell), c.program, c.entry))
+        slot = p2run.Slot(c, cell, Path("."), 1000 + c.entry, Path("x.log"), None, True)
+        return slot, {"type": "server", "cell": p2run.cell_name(cell), **slot.who(), "status": "valid", "reason_codes": []}
+
+    def warm_up(self, slot):
+        self.log.append(("warmup", p2run.cell_name(slot.cell), slot.contestant.program, slot.contestant.entry))
+        return {"type": "warmup", **slot.who(), "status": "valid", "reasons": [], "reason_codes": []}
+
+    def run_window(self, w, slot, idle):
+        self.log.append(("window", w.seq, w.rerun))
+        status, codes_ = self.script.get(("rerun", w.seq) if w.rerun else w.seq, ("valid", []))
+        row = {"type": "window", "seq": w.seq, "cell": w.cell, "program": w.program, "arm": w.arm, "entry": w.entry,
+               "round": w.round_no, "position": w.index, "status": status, "reasons": [f"why {c}" for c in codes_],
+               "reason_codes": codes_}
+        if w.rerun:
+            row["rerun"] = True
+        return row
+
+    def stop_servers(self, slots, cell):
+        self.log.append(("stop", p2run.cell_name(cell)))
+        servers = [{**s.who(), "windows_count": (s.contestant.program, s.contestant.entry) not in self.dead,
+                    "reason_codes": []} for s in slots]
+        return {"type": "cell_end", "cell": p2run.cell_name(cell), "servers": servers}
+
+
+class RoundRobinLoopTests(unittest.TestCase):
+    def run_loop(self, plan, script, count=None, dead=frozenset()):
+        sink, runner = io.StringIO(), ScriptedRoundRobin(script, count, dead)
+        with contextlib.redirect_stderr(io.StringIO()):
+            rc = p2run._run_round_robin(plan, runner, sink)
+        return rc, [json.loads(line) for line in sink.getvalue().splitlines()], runner
+
+    def test_a_cell_starts_its_servers_warms_them_runs_its_rounds_then_stops_them(self) -> None:
+        rc, rows, runner = self.run_loop(rr_plan(), {})
+        self.assertEqual(rc, 0)
+        kinds = [r["type"] for r in rows]
+        self.assertEqual(kinds, (["server"] * 5 + ["warmup"] * 5 + ["window"] * 15 + ["cell_end"]) * 2 + ["end"])
+        self.assertEqual([e[0] for e in runner.log[:11]], ["start"] * 5 + ["warmup"] * 5 + ["window"])
+        self.assertEqual(rows[-1], {"type": "end", "exit": 0, "planned": {"windows": 30, "windows_run": 30,
+                                                                         "by_status": {"valid": 30}},
+                                    "warmups": {"by_status": {"valid": 10}}, "servers_not_counting": 0})
+
+    def test_a_round_with_a_host_fault_reruns_in_its_cell_before_the_stop(self) -> None:
+        plan = rr_plan(rerun_host_faults=True)
+        # cell m10: round 2 (seqs 5 to 9) has a host fault at 6 and an arm's fault at 8; round 3 (10 to 14) an arm's
+        # fault only. Cell m100: round 1 (15 to 19) a host fault at 19, spoiled again in its rerun.
+        script = {6: ("invalid", ["sampler"]), 8: ("overloaded", ["error_share"]), 12: ("invalid", ["error_share"]),
+                  19: ("invalid", ["others"]), ("rerun", 35): ("invalid", ["others"])}
+        rc, rows, runner = self.run_loop(plan, script)
+        self.assertEqual(rc, 0)
+        kinds = [r["type"] for r in rows]
+        self.assertEqual(kinds[:31], ["server"] * 5 + ["warmup"] * 5 + ["window"] * 15 + ["rerun"] + ["window"] * 5)
+        first = rows[25]
+        self.assertEqual(first, {"type": "rerun", "cell": "mixed-disjoint/m10/t111", "windows": 5, "rounds": [
+            {"round": 2, "seqs": [6], "codes": ["sampler"], "first_seq": 30, "windows": 5,
+             "arm_faults": [{"seq": 8, "status": "overloaded", "codes": ["error_share"]}]}]})
+        reruns = rows[26:31]
+        order = p2run.round_orders(plan, "mixed-disjoint", 10, 111)[1]
+        self.assertEqual([(r["program"], r["entry"]) for r in reruns], [(c.program, c.entry) for c in order])
+        self.assertEqual([(r["seq"], r["round"], r["rerun"]) for r in reruns], [(s, 2, True) for s in range(30, 35)])
+        self.assertEqual(rows[31]["type"], "cell_end")  # the servers ran through the rerun
+        second = next(r for r in rows[32:] if r["type"] == "rerun")
+        self.assertEqual((second["cell"], [r["round"] for r in second["rounds"]], second["rounds"][0]["first_seq"]),
+                         ("mixed-disjoint/m100/t111", [1], 35))
+        self.assertEqual(rows[-1]["rerun"], {"rounds": 2, "windows_run": 10, "by_status": {"valid": 9, "invalid": 1},
+                                             "rounds_with_host_faults": 1})
+
+    def test_the_consecutive_fault_rule_stops_the_run_and_the_servers_are_stopped(self) -> None:
+        plan = rr_plan(abort_after_consecutive=3)
+        rc, rows, runner = self.run_loop(plan, {i: ("invalid", ["sampler"]) for i in range(4, 7)})
+        self.assertEqual(rc, 3)
+        self.assertEqual([r["type"] for r in rows][-3:], ["window", "cell_end", "end"])
+        self.assertEqual((rows[-1]["exit"], rows[-1]["planned"]["windows_run"]), (3, 7))
+        self.assertEqual(runner.log[-1], ("stop", "mixed-disjoint/m10/t111"))
+
+    def test_the_streak_runs_across_cells(self) -> None:
+        rc, _, _ = self.run_loop(rr_plan(abort_after_consecutive=3), {13: ("invalid", ["sampler"]), 14: ("invalid", ["sampler"]),
+                                                                      15: ("invalid", ["sampler"])})
+        self.assertEqual(rc, 3)
+
+    def test_count_mode_fails_on_a_server_whose_windows_do_not_count(self) -> None:
+        rc, rows, _ = self.run_loop(rr_plan(), {}, count=100, dead=frozenset({("mserver-go", 1)}))
+        self.assertEqual((rc, rows[-1]["servers_not_counting"]), (1, 2))
+        rc, _, _ = self.run_loop(rr_plan(), {}, count=100)
+        self.assertEqual(rc, 0)
 
 
 # ---------------------------------------------------------------- orchestration in count mode
@@ -1230,6 +1426,104 @@ class OrchestrationTests(unittest.TestCase):
     def test_verification_can_be_switched_off(self) -> None:
         rc, rows, err = self.run_main(self.plan("noverify", sizes=[10], verify_sets=False, data_root=str(self.sets)), "noverify")
         self.assertEqual(rc, 0, err)
+
+    # ------------------------------------------------ round-robin (decision 21), count mode
+
+    RR = {"schedule": "round-robin", "rounds": 2, "order_seed": 7, "server_warmup_s": 1.0}
+
+    def by_type(self, rows: list[dict]) -> dict[str, list[dict]]:
+        out: dict[str, list[dict]] = {}
+        for r in rows[1:]:
+            out.setdefault(r["type"], []).append(r)
+        return out
+
+    def test_round_robin_keeps_each_server_for_its_cell_and_records_no_time(self) -> None:
+        rc, rows, err = self.run_main(self.plan("rr-ok", **self.RR), "rr-ok")
+        self.assertEqual(rc, 0, err)
+        session, t = rows[0], self.by_type(rows)
+        self.assertEqual([r["type"] for r in rows[1:]],
+                         (["server"] * 2 + ["warmup"] * 2 + ["window"] * 4 + ["cell_end"]) * 2)
+        self.assertEqual((session["windows"], len(t["window"])), (8, 8))
+        self.assertTrue(all(r["status"] == "valid" for r in t["server"] + t["warmup"] + t["window"]), err)
+        ports = {(r["cell"], r["entry"]): r["port"] for r in t["server"]}
+        self.assertEqual(len(set(ports.values())), 4)
+        for w in t["window"]:
+            self.assertEqual(w["port"], ports[(w["cell"], w["entry"])])  # the same server through the cell
+            self.assertEqual((w["generator"]["completed"], w["generator_exit"]), (100, 0))
+            self.assertNotIn("server_exit", w)
+        for cell in ("mixed-disjoint/m10/t111", "mixed-disjoint/m100/t111"):
+            for r in (1, 2):
+                self.assertEqual(sorted(w["arm"] for w in t["window"] if w["cell"] == cell and w["round"] == r), ["a", "b"])
+        orders = session["round_robin"]["orders"]
+        names = [c["arm"] for c in session["round_robin"]["contestants"]]
+        self.assertEqual([w["arm"] for w in t["window"][:4]], [names[i] for rnd in orders["mixed-disjoint/m10/t111"] for i in rnd])
+        for end in t["cell_end"]:
+            for s in end["servers"]:
+                self.assertEqual((s["windows_count"], s["reason_codes"], s["exit"]), (True, [], 0))
+                self.assertTrue(isinstance(s["memory"]["peak_resident_kib"], int) and s["memory"]["peak_resident_kib"] > 0)
+                self.assertIsInstance(s["memory"]["resident_kib"], int)
+        self.assertEqual(self.end, {"type": "end", "exit": 0,
+                                    "planned": {"windows": 8, "windows_run": 8, "by_status": {"valid": 8}},
+                                    "warmups": {"by_status": {"valid": 4}}, "servers_not_counting": 0})
+        for row in [*rows, self.end]:
+            for path, value in walk(row):
+                self.assertIsNone(TIMEISH.search(path.split(".")[-1]), path)
+                self.assertNotIsInstance(value, float, path)
+        self.assertNotIn("server_warmup_s", session["plan"])
+        self.assertFalse(list(self.root.glob("rr-ok.jsonl.work/*.server.log")))  # logs of servers that passed are removed
+
+    def test_round_robin_aa_runs_two_servers_of_one_arm(self) -> None:
+        programs = [{"name": "fake", "path": [sys.executable, str(self.root / "server.py")], "arms": ["a", "a"],
+                     "version": "startup-line"}]
+        rc, rows, err = self.run_main(self.plan("rr-aa", sizes=[10], programs=programs, **self.RR), "rr-aa")
+        self.assertEqual(rc, 0, err)
+        t = self.by_type(rows)
+        self.assertEqual([(r["arm"], r["entry"]) for r in t["server"]], [("a", 0), ("a", 1)])
+        self.assertNotEqual(t["server"][0]["port"], t["server"][1]["port"])
+        self.assertEqual(sorted((w["round"], w["entry"]) for w in t["window"]), [(1, 0), (1, 1), (2, 0), (2, 1)])
+
+    def test_a_server_that_dies_mid_cell_spoils_only_its_own_windows_there(self) -> None:
+        original = p2run.Runner.run_window
+
+        def kill_b_first(runner, w, slot=None, idle=None):
+            if slot is not None and w.m == 10 and w.arm == "b" and w.round_no == 1 and slot.alive():
+                p2run.HOST.kill(slot.server)
+            return original(runner, w, slot, idle)
+
+        with mock.patch.object(p2run.Runner, "run_window", kill_b_first):
+            rc, rows, err = self.run_main(self.plan("rr-die", abort_after_consecutive=0, **self.RR), "rr-die")
+        self.assertEqual(rc, 1, err)
+        t = self.by_type(rows)
+        got = {(w["m"], w["arm"], w["round"]): (w["status"], w["reason_codes"]) for w in t["window"]}
+        for r in (1, 2):
+            self.assertEqual(got[(10, "b", r)], ("invalid", ["server_died"]))
+            self.assertEqual(got[(10, "a", r)], ("valid", []))
+            self.assertEqual(got[(100, "b", r)], ("valid", []))  # a new server in the next cell
+        m10 = {s["arm"]: s for s in t["cell_end"][0]["servers"]}
+        self.assertEqual((m10["b"]["windows_count"], m10["b"]["reason_codes"], "memory" in m10["b"]), (False, ["server_died"], False))
+        self.assertEqual((m10["a"]["windows_count"], m10["a"]["reason_codes"]), (True, []))
+        self.assertIn("fake-server: start", m10["b"]["server_log_tail"])
+        self.assertTrue(all(s["windows_count"] for s in t["cell_end"][1]["servers"]))
+        self.assertEqual(self.end["servers_not_counting"], 1)
+
+    def test_a_server_that_exits_nonzero_on_the_cell_stop_does_not_count(self) -> None:
+        rc, rows, err = self.run_main(self.plan("rr-badexit", sizes=[10], **self.RR), "rr-badexit", {"FAKE_SERVER": "badexit"})
+        self.assertEqual(rc, 1, err)
+        t = self.by_type(rows)
+        self.assertTrue(all(w["status"] == "valid" for w in t["window"]))
+        self.assertEqual({(s["exit"], s["windows_count"], tuple(s["reason_codes"])) for s in t["cell_end"][0]["servers"]},
+                         {(3, False, ("server_exit",))})
+
+    def test_a_server_that_never_starts_runs_no_window(self) -> None:
+        rc, rows, err = self.run_main(self.plan("rr-refuse", sizes=[10], abort_after_consecutive=0, **self.RR), "rr-refuse",
+                                      {"FAKE_SERVER": "refuse"})
+        self.assertEqual(rc, 1, err)
+        t = self.by_type(rows)
+        self.assertEqual({(r["status"], tuple(r["reason_codes"])) for r in t["server"]}, {("invalid", ("not_ready",))})
+        self.assertIn("refuses the table", t["server"][0]["server_log_tail"])
+        self.assertEqual({tuple(r["reason_codes"]) for r in t["warmup"] + t["window"]}, {("not_ready",)})
+        self.assertTrue(all("generator" not in r for r in t["warmup"] + t["window"]))
+        self.assertEqual({tuple(s["reason_codes"]) for s in t["cell_end"][0]["servers"]}, {("not_ready",)})
 
 
 class OrphanTests(unittest.TestCase):

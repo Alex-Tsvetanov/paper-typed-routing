@@ -1,0 +1,89 @@
+{
+  "_comment": "The campaign on the laptop's Windows: every contestant (21: the C++ server's 10 arms, the Go program's 6, the Rust program's 5), 294 windows; reported as the median and standard deviation per contestant. Decision 21 (a), Alex 2026-10-28: round 3 in the new loop. Round-robin (p2run's schedule): mixed-disjoint, m = 1,000 and 100,000, pair (111, 211); per cell every contestant's server starts once and gets a 1 s warm-up, then 7 rounds give each contestant one 1.5 s window (after p2gen's 0.1 s lead-in) in an order drawn from order_seed; others above 10% of one CPU make a window invalid and its round reruns once in the cell (decision 18). It times the Release builds of the bring-up at 3ff814e (gated green, the builds the probe and the A/A pilot timed); t3/jobs/rr.py refuses unless each binary's sha256 is the bring-up's and no compiled source changed since _build_commit. The analysis is t3/rr_results.py, committed with this plan before it runs.",
+  "_build_commit": "3ff814e50cd8b81e7d482a17206ea6fc31f128c8",
+  "_expect_sha256": {
+    "C:\\Users\\alext\\lab\\p2r3\\build-3ff814e50\\t3\\gen\\p2gen.exe": "9adce3ad2209fea11953e75949e1846c15e9d1f7a190540b043d3d0390366f29",
+    "C:\\Users\\alext\\lab\\p2r3\\build-3ff814e50\\server\\mserver.exe": "da95e5703dcf08c329ec21439179b85e719dd41790e9748f73e96acfb2e05b69",
+    "C:\\Users\\alext\\lab\\p2r3\\progs-3ff814e50\\mserver-go.exe": "05be3677aa9ea85b9970afcac67efda8d1da6849aeb24435d7a0119845717d68",
+    "C:\\Users\\alext\\lab\\p2r3\\progs-3ff814e50\\p2v2.dll": "e0d5e4ad3b6aaba3b495e9665c222edcefc63dbb3f61ca0f3ab1965dd994f2c1",
+    "C:\\Users\\alext\\lab\\p2r3\\progs-3ff814e50\\rust\\release\\mserver-rs.exe": "c4ccf1ee1dfde02dc91159eec6e660f3e0b60099f5d4409e4d7ba3dd6bb6670d"
+  },
+  "p2gen": "C:\\Users\\alext\\lab\\p2r3\\build-3ff814e50\\t3\\gen\\p2gen.exe",
+  "data_root": "C:\\Users\\alext\\lab\\p2r3\\sets",
+  "shapes": [
+    "mixed-disjoint"
+  ],
+  "sizes": [
+    1000,
+    100000
+  ],
+  "pairs": [
+    [
+      111,
+      211
+    ]
+  ],
+  "cpus": {
+    "server": 14,
+    "generator": "2-13"
+  },
+  "housekeeping_cpus": "0-1",
+  "schedule": "round-robin",
+  "rounds": 7,
+  "order_seed": 20261028,
+  "server_warmup_s": 1.0,
+  "connections": 64,
+  "warmup_s": 0.1,
+  "window_s": 1.5,
+  "timeout_ms": 1000,
+  "ready_timeout_s": 60,
+  "stop_timeout_s": 20,
+  "error_share_max": 0.001,
+  "generator_busy_max_pct": 90,
+  "clock_drift_max": 0.02,
+  "others_max_pct": 10,
+  "rerun_host_faults": true,
+  "verify_sets": true,
+  "abort_after_consecutive": 8,
+  "programs": [
+    {
+      "name": "mserver",
+      "path": "C:\\Users\\alext\\lab\\p2r3\\build-3ff814e50\\server\\mserver.exe",
+      "arms": [
+        "v2",
+        "crow",
+        "drogon",
+        "oatpp",
+        "pistache",
+        "boost-url",
+        "uwebsockets",
+        "glaze",
+        "cpp-httplib",
+        "null"
+      ]
+    },
+    {
+      "name": "mserver-go",
+      "path": "C:\\Users\\alext\\lab\\p2r3\\progs-3ff814e50\\mserver-go.exe",
+      "arms": [
+        "v2",
+        "httprouter",
+        "gin",
+        "nethttp",
+        "chi",
+        "null"
+      ]
+    },
+    {
+      "name": "mserver-rs",
+      "path": "C:\\Users\\alext\\lab\\p2r3\\progs-3ff814e50\\rust\\release\\mserver-rs.exe",
+      "arms": [
+        "v2",
+        "matchit",
+        "path-tree",
+        "actix-router",
+        "null"
+      ]
+    }
+  ]
+}
