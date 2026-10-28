@@ -82,6 +82,10 @@ m = 1,000, on both shapes; at m = 100,000 the linear-scan arms get the ring only
 them, Laptop requests 0 to 4): Linux 880 of 880 (22 arms), Windows 840 of 840 (21 arms, Pistache and
 boost-url included); CTest 8 of 8 on Linux, 7 of 7 on Windows; count mode 176 of 176 and 168 of 168
 windows. Not run on the desktop, by rule: any timed mode. Kernel features used: epoll, IOCP, TCP.
+Round-robin count checks (2026-10-28, ed3b7e0, 500 requests a window, desktop builds of the bring-up's compiled
+sources): W A/A 84 of 84, campaign 280 of 294; L (container) 84 of 84, 292 of 308; every settle quiet; the rest
+are p2gen timeouts of arms the probes found overloaded at m = 100,000 (W Oat++, actix-router; L Drogon,
+actix-router, Oat++). All servers' peak memory at m = 100,000: W 3.75 GiB, L 4.04 GiB (actix-router 1.95, 2.13).
 
 ## Reviews
 
@@ -115,14 +119,9 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
    with every arm, CTest, the inputs hash, the Go and Rust programs, the request sets (all 160 cells
    checked), the suite, the runner's and record tools' tests, a count-mode pass of p2run.
 4. Records, `t3/jobs/records.py OUT` (p2r3-records-l, -w): L ASan+UBSan, TSan and MSan, W clang-cl ASan.
-   Rows 0, 2 to 4 DONE, 2026-10-25, at 3ff814e, every job exit 0 (archives `laptop-archive\gap9-w-q2-p2-a18f07bb\`
-   and `gap9-a-q1-5b0f7b2a\`, sha256 checked). W: bring-up 02:11:46 to 03:11:48 EEST (840 checks, 168 of 168
-   windows); records to 03:41:56 EET: p2r3-3ff814e50-W-asan green, 0 reports, 5,270 s, filed in Papers
-   `lab/sanitizer-records/laptop-w/` (7e0e6a0). L: bring-up 09:48:38 to 10:48:39 EET (880 checks, 176 of 176);
-   records to 13:48:43: -L-asan, -L-tsan, -L-msan green, 0 reports (MSan's first run), 1,615, 1,711 and 2,582
-   s, in `lab/sanitizer-records/` (7fd305b). Gates (`t3/check_records.py --host-tag W --records
-   <Papers>/lab/sanitizer-records/laptop-w`; L with `lab/sanitizer-records`): green, W 21 targets
-   (mserver-go's gap), L 23 (Go's MSan, Rust's TSan and MSan gaps).
+   Rows 0, 2 to 4 DONE 2026-10-25 at 3ff814e, every job exit 0, archives' sha256 checked: W bring-up 840 checks, 168
+   of 168 windows, p2r3-3ff814e50-W-asan green (Papers `lab/sanitizer-records/laptop-w/`, 7e0e6a0); L 880 checks, 176
+   of 176, -L-asan, -tsan, -msan green (7fd305b). Gates green: W 21 targets (mserver-go's gap), L 23 (Go, Rust gaps).
 1. Toolchains: done on both systems, 2026-10-24. W (Papers `lab/laptop/queues/gap2-w-q2-p2-toolchains.json`,
    a27b47e): under `C:\Users\alext\opt` go-1.27.3, meson-1.12.1, libevent-2.1.13-stable, rapidjson-1.1.0 wraps,
    boost-1.92.0, llvm-22.1.8, P4's Rust 1.99.0. L (`a1-p2-toolchains-l`): `~/opt/p2/go1.27.3`, Rust 1.99.0 in
@@ -193,8 +192,9 @@ std dev per contestant, one fixed A/A run per OS, replacing D9's Holm test. (202
 
 1862c01 to 06adfe5 (servers, reviews 1 to 3, generator, runner); a27b47e to 083b47c (request 1); 40e08db to
 3ff814e (D5, laptop jobs, review 4); c7153b3 to 39bf126 (probe, `others`, Windows clock, reviews 5, 6); 76baac8
-to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); 3caa3c6 668f289 (rerun); docs. `bench/` is round 2's but `isa.cmake`.
+to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); 3caa3c6 668f289 (rerun); 89230bf ed3b7e0
+(round-robin, review 10, settle); docs. `bench/` is round 2's but `isa.cmake`.
 
 ## Next engineering
 
-Decision 21 (a): p2run's round-robin mode, the results script, plans, job, tests, review, desktop count check.
+Row 6's request (at ed3b7e0) is with the coordinator. Then `t3/rr_results.py` over its four records.

@@ -1,5 +1,5 @@
 {
- "about": "P2 round 3 in the new loop (decision 21 (a), Alex 2026-10-28; STATE.md row 6), one job per system, drafted in the lab queue's job format for the operator to copy into queues; not a queue itself. Commit: COMMIT on branch round3 of p2-typed-routing/typed-routing (local; bundled from that checkout as before). Each job runs the fixed A/A run (v2 twice in each program) and then the campaign (every contestant), both round-robin: mixed-disjoint, m = 1,000 and 100,000, pair (111, 211), 7 rounds of 1.5 s windows, every server started once per size and kept running. It times the Release builds of p2r3-bringup-l and p2r3-bringup-w at 3ff814e50, the builds the probe and the A/A pilot timed: t3/jobs/rr.py refuses (exit 2) before the first window unless the clone is clean, each binary's sha256 is the bring-up's and no compiled source changed since 3ff814e50 (none did). No build, no download. The analysis, t3/rr_results.py (the median and standard deviation per contestant), is committed with the plans before the runs; no frozen hypotheses file precedes this campaign (the draft hypotheses-round3.md is not frozen, by Alex's answer). rr-summary.json holds verdicts, shares, start-ups, memory and spacing, no rate. Either system may go first; each is quiet-checked at its start. Connection churn: p2gen opens 64 connections per window, one window about every 1.8 s, about 3.5 times the pilot's rate; on Windows that leaves on the order of 4,000 client ports in TIME_WAIT at once. A connect error makes a window invalid (connect_errors), so it would show in the record. Before each window the size's servers settle (together at most 10% of one CPU, waited for up to 30 s): an overloaded server keeps working through its queued requests after its window, which on the shared server CPU would fall into the next contestant's window. That wait comes after overloaded windows only (in the probes Drogon and actix-router on Arch, Oat++ and actix-router on Windows, at m = 100,000) and is not in expected_s's basis; the timeout covers it.",
+ "about": "P2 round 3 in the new loop (decision 21 (a), Alex 2026-10-28; STATE.md row 6), one job per system, drafted in the lab queue's job format for the operator to copy into queues; not a queue itself. Commit: ed3b7e088ada38a023dc145492cbdef574369f96 on branch round3 of p2-typed-routing/typed-routing (local; bundled from that checkout as before). Each job runs the fixed A/A run (v2 twice in each program) and then the campaign (every contestant), both round-robin: mixed-disjoint, m = 1,000 and 100,000, pair (111, 211), 7 rounds of 1.5 s windows, every server started once per size and kept running. It times the Release builds of p2r3-bringup-l and p2r3-bringup-w at 3ff814e50, the builds the probe and the A/A pilot timed: t3/jobs/rr.py refuses (exit 2) before the first window unless the clone is clean, each binary's sha256 is the bring-up's and no compiled source changed since 3ff814e50 (none did). No build, no download. The analysis, t3/rr_results.py (the median and standard deviation per contestant), is committed with the plans before the runs; no frozen hypotheses file precedes this campaign (the draft hypotheses-round3.md is not frozen, by Alex's answer). rr-summary.json holds verdicts, shares, start-ups, memory and spacing, no rate. Either system may go first; each is quiet-checked at its start. Connection churn: p2gen opens 64 connections per window, one window about every 1.8 s, about 3.5 times the pilot's rate; on Windows that leaves on the order of 4,000 client ports in TIME_WAIT at once. A connect error makes a window invalid (connect_errors), so it would show in the record. Before each window the size's servers settle (together at most 10% of one CPU, waited for up to 30 s): an overloaded server keeps working through its queued requests after its window, which on the shared server CPU would fall into the next contestant's window. That wait comes after overloaded windows only (in the probes Drogon and actix-router on Arch, Oat++ and actix-router on Windows, at m = 100,000) and is not in expected_s's basis; the timeout covers it.",
  "jobs": [
   {
    "id": "p2r3-rr-l",
@@ -9,7 +9,7 @@
     "name": "typed-routing",
     "path": "p2-typed-routing/typed-routing"
    },
-   "commit": "COMMIT",
+   "commit": "ed3b7e088ada38a023dc145492cbdef574369f96",
    "build": "",
    "run": "\"$LAB_PYTHON\" \"$LAB_SRC/t3/jobs/rr.py\" \"$LAB_SRC/t3/plans/rr-aa-L.json\" \"$LAB_SRC/t3/plans/rr-L.json\" \"$LAB_OUT/rr\"",
    "outputs": [
@@ -37,7 +37,7 @@
     "name": "typed-routing",
     "path": "p2-typed-routing/typed-routing"
    },
-   "commit": "COMMIT",
+   "commit": "ed3b7e088ada38a023dc145492cbdef574369f96",
    "build": "",
    "run": "\"%LAB_PYTHON%\" \"%LAB_SRC%\\t3\\jobs\\rr.py\" \"%LAB_SRC%\\t3\\plans\\rr-aa-W.json\" \"%LAB_SRC%\\t3\\plans\\rr-W.json\" \"%LAB_OUT%\\rr\"",
    "outputs": [
