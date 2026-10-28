@@ -53,7 +53,7 @@
    "timeout_s": 2100,
    "note": "The k-server A/A run (294 windows, 21 servers per size); server on CPU 14, p2gen on 2 to 13, the runner on 0 and 1; reads ~/lab/p2r3/build-3ff814e50, progs-3ff814e50 and sets, writes only in LAB_OUT. expected_s from p2r3-rr-l's record (A12): 14 s from the job's start to the first run's session; at the campaign's spacing 294 x 1.761 = 518 s, 42 warm-ups x 1.15 = 48 s, 42 starts x 0.19 = 8 s, preflight about 3 s: about 591 s, rounded up to 700. timeout_s three times that. Boost off, the lab's default.",
    "run_label": "P2 round 3 k-server A/A run on Arch: t3/jobs/aa.py with t3/plans/rr-aak-L.json (v2 seven times per program)",
-   "plain": "Measure P2's own library against six copies of itself on Arch, to see how much separate processes differ, about 10 minutes"
+   "plain": "Measure P2's own library against copies of itself on Arch, with seven copies, to see how much separate processes differ, about 10 minutes"
   }
  ]
 }
