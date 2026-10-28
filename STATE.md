@@ -137,11 +137,9 @@ The coordinator schedules them, from `t3/jobs/requests-*.json` (the lab queue's 
    - W at 39bf126 (p2r3-probe-w-2, 16:10 to 16:30 EET, archive 7f81c663): exit 0, 168 windows, 162 valid, 6
      overloaded on the error share only (Oat++ at m = 100,000 on both shapes, actix-router mixed-disjoint);
      reference 3,169.8 MHz, 13 of 13 CPUs over 10.001 s, drift at most 0.34%; start-up at most 5.75 s; 6.29, 6.81 s.
-6. The campaign, decision 21 (a) (Alex, 2026-10-28): the new loop, round-robin, every contestant, mixed-disjoint,
-   m = 1,000 and 100,000, pair (111, 211), R = 7, 1.5 s windows; the A/A run (v2 twice per program) first, in the
-   same job (`t3/jobs/rr.py`, `t3/plans/rr-aa-L.json`, `rr-L.json`, `rr-aa-W.json`, `rr-W.json`; analysis
-   `t3/rr_results.py`, rules fixed before the runs; request `t3/jobs/requests-2026-10-28-rr.json`, about 15 min
-   per system). The 24 h design (H8 to H10 tested, 24.28 h) does not run. Desktop count check: see Functional checks.
+6. The campaign, decision 21 (a): round-robin, every contestant, mixed-disjoint, m = 1,000 and 100,000, pair
+   (111, 211), R = 7, 1.5 s windows, the A/A run first in the same job (`t3/jobs/rr.py`, `t3/plans/rr-*.json`,
+   analysis `t3/rr_results.py`; `t3/jobs/requests-2026-10-28-rr.json`, about 15 min per system). The 24 h design does not run.
 7. A/A pilot (p2r3-pilot-l, -w at dec7e54, `t3/jobs/requests-2026-10-26-pilot.json`; `t3/jobs/pilot.py`,
    `t3/plans/pilot-L.json`, `pilot-W.json`; rule in `hypotheses-round3.md` 3a, analysis `t3/pilot_analysis.py`):
    v2 against v2 in all three programs, one 4-window round at every H8 cell, 1,920 windows per system, the
@@ -151,9 +149,8 @@ The coordinator schedules them, from `t3/jobs/requests-*.json` (the lab queue's 
    every window; others median 0.52%, 8 windows above 10% in 5 bursts (taskhostw.exe and sppsvc.exe start,
    then System up to 37.8%: 03:31, 03:40, 04:28, 05:27, 06:18); 474 of 480 replicates count. L DONE 2026-10-27
    19:48 to 23:03 (gap17-a-q1, tools 3200992, exit 0, archive 3058490f checked, Papers 3c075c3): 1,920 of 1,920
-   valid, drift at most 0.95%, others median 0.66% and at most 1.83%; 480 of 480 count. Analysis of both
-   (`design/round3/aa-pilot.json`; 716ac9b's code and HEAD's give the same bytes): 954 replicates, pooled
-   q97.5 of r 1.0106 and of 1/r 1.0104, so delta = 1.02, the floor. |d| median and q97.5 in ns: L C++ 23.5,
+   valid, drift at most 0.95%, others median 0.66% and at most 1.83%; 480 of 480 count. Analysis
+   (`design/round3/aa-pilot.json`): 954 replicates, delta = 1.02, the floor. |d| median and q97.5 in ns: L C++ 23.5,
    76.0; Go 36.5, 123.7; Rust 28.0, 92.7; W 45.7, 154.6; 77.1, 315.0; 47.2, 167.2. Decision 20 (H9, H10): moot.
 8. p2gen against t1gen on L (p2r3-gencheck-l at 606c59b, `t3/jobs/requests-2026-10-26-gencheck.json`;
    `gencheck.py`, `plans/gencheck-L.json`, `gencheck_analysis.py`; hypotheses 3b; decision 17): 64 windows,
@@ -196,4 +193,7 @@ to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); 3caa3
 
 ## Next engineering
 
-Row 6's request (at ed3b7e0) is with the coordinator. Then `t3/rr_results.py` over its four records.
+Row 6's request (ed3b7e0) is queued as chain A12, after P6's A11 (coordinator, 2026-10-28): run as is, and
+propose a cut if W's start-to-start spacing puts it over 10 min; the settle rule accepted, to be disclosed in the
+method; no sign tests (the rounds-ahead count is descriptive); the chain skips a job with under 6 GiB free; no
+freeze step in the new loop. Then `t3/rr_results.py` over its four records.
