@@ -1,4 +1,4 @@
-# P2 round 3, state digest (under 200 lines; read this first; updated 2026-10-27)
+# P2 round 3, state digest (under 200 lines; read this first; updated 2026-10-28)
 
 ## What round 3 is
 
@@ -45,7 +45,8 @@ No timing on the desktop; no laptop access; nothing pushed; drafts only; no em o
   pairs; digests in `requests-manifest.tsv`), `check_server.py`, `run_checks.py`,
   `build_programs.py` (one Go and one Rust binary per system against a named C++ build, sha256s in
   `build-info.json`), `gen/` (`p2gen`, the load generator), `p2run.py` (the window runner); laptop
-  jobs `jobs/probe.py`, `pilot.py`, `gencheck.py` with `plans/*.json`; `pilot_analysis.py`, `gencheck_analysis.py`.
+  jobs `jobs/probe.py`, `pilot.py`, `gencheck.py`, `rr.py` with `plans/*.json`; `pilot_analysis.py`,
+  `gencheck_analysis.py`, `rr_results.py`.
 - `bench/cmake/isa.cmake`: MSVC (`/arch:AVX2`) and clang-cl (`-march=native`) branches.
 - D5 (`end-to-end.md`, section 8), one Python code path for both systems: `t3/labsteps.py`, `t3/sanitize.py`
   (one record `p2r3-<code>-<L|W>-<san>`: build, CTest, inputs, programs, request-set cells, suite, count-mode
@@ -82,10 +83,8 @@ m = 1,000, on both shapes; at m = 100,000 the linear-scan arms get the ring only
 them, Laptop requests 0 to 4): Linux 880 of 880 (22 arms), Windows 840 of 840 (21 arms, Pistache and
 boost-url included); CTest 8 of 8 on Linux, 7 of 7 on Windows; count mode 176 of 176 and 168 of 168
 windows. Not run on the desktop, by rule: any timed mode. Kernel features used: epoll, IOCP, TCP.
-Round-robin count checks (2026-10-28, ed3b7e0, 500 requests a window, desktop builds of the bring-up's compiled
-sources): W A/A 84 of 84, campaign 280 of 294; L (container) 84 of 84, 292 of 308; every settle quiet; the rest
-are p2gen timeouts of arms the probes found overloaded at m = 100,000 (W Oat++, actix-router; L Drogon,
-actix-router, Oat++). All servers' peak memory at m = 100,000: W 3.75 GiB, L 4.04 GiB (actix-router 1.95, 2.13).
+Round-robin count checks (2026-10-28, ed3b7e0, 500 requests a window): W A/A 84 of 84, campaign 280 of 294; L
+84 of 84, 292 of 308; every settle quiet; the rest p2gen timeouts of the probes' overloaded arms at m = 100,000.
 
 ## Reviews
 
@@ -110,6 +109,8 @@ actix-router, Oat++). All servers' peak memory at m = 100,000: W 3.75 GiB, L 4.0
 - Round-robin: one warm-up per server per size; before each window the size's servers settle (together at most
   10% of one CPU, up to 30 s, else the window is invalid); idle servers' CPU recorded; reruns within the size.
 - Boost off; each system's clock reference (Arch's idle CPUs read 3,201 MHz, busy ones about 3,168: 1% bias).
+- Each contestant is one server process, so its SD is within that process. Proposed: a rank gap smaller than the
+  same program's and size's A/A gap is not claimed (Arch: Rust v2 over matchit at m = 100,000, 301 ns < 516 ns).
 
 ## Laptop requests
 
@@ -123,40 +124,37 @@ The coordinator schedules them, from `t3/jobs/requests-*.json` (the lab queue's 
    of 176, -L-asan, -tsan, -msan green (7fd305b). Gates green: W 21 targets (mserver-go's gap), L 23 (Go, Rust gaps).
 1. Toolchains: done on both systems, 2026-10-24. W (Papers `lab/laptop/queues/gap2-w-q2-p2-toolchains.json`,
    a27b47e): under `C:\Users\alext\opt` go-1.27.3, meson-1.12.1, libevent-2.1.13-stable, rapidjson-1.1.0 wraps,
-   boost-1.92.0, llvm-22.1.8, P4's Rust 1.99.0. L (`a1-p2-toolchains-l`): `~/opt/p2/go1.27.3`, Rust 1.99.0 in
-   `~/opt/rustup` and `~/opt/cargo`, no pacman change. meson's and libevent's pins are GitHub's asset digests.
-5. Timing probe before the freeze (`t3/jobs/probe.py PLAN OUT`, quiet, boost off; `t3/plans/probe-L.json`,
-   `probe-W.json`): one mirrored round of every arm at m = 10 and 100,000, both shapes, pair (111, 211),
-   timing the bring-ups' binaries (refused unless their sha256s and compiled sources equal 3ff814e's).
-   Pre-freeze: never analysed for H8 to H10, never cited. Approved by Alex (2026-10-25, via the coordinator).
-   DONE on both. Every archive's sha256 checked, every binary check empty, quiet passed:
-   - W at 25fbd22 (p2r3-probe-w): exit 3, "clock_drift" (idle CPUs read 0 in 0.5 s); fixed in f5bf53e, 39bf126.
-   - L at 25fbd22 (p2r3-probe-l, 15:26 to 15:56 EET, archive 022e401c): exit 0, 176 windows, 172 valid, 4
-     overloaded on the error share only (Drogon, actix-router; m = 100,000, mixed-disjoint); reference 3,197.8
-     MHz, drift at most 0.96%; start-up at m = 100,000 at most 5.0 s; spacing 6.05 s at m = 10, 6.56 s at 100,000.
-   - W at 39bf126 (p2r3-probe-w-2, 16:10 to 16:30 EET, archive 7f81c663): exit 0, 168 windows, 162 valid, 6
-     overloaded on the error share only (Oat++ at m = 100,000 on both shapes, actix-router mixed-disjoint);
-     reference 3,169.8 MHz, 13 of 13 CPUs over 10.001 s, drift at most 0.34%; start-up at most 5.75 s; 6.29, 6.81 s.
+   boost-1.92.0, llvm-22.1.8, P4's Rust 1.99.0. L: `~/opt/p2/go1.27.3`, Rust 1.99.0 in `~/opt/rustup`, `~/opt/cargo`.
+5. Timing probe (`t3/jobs/probe.py PLAN OUT`, `t3/plans/probe-L.json`, `probe-W.json`; approved by Alex 2026-10-25):
+   one mirrored round of every arm at m = 10 and 100,000, both shapes, pair (111, 211), the bring-ups' binaries;
+   never cited. DONE on both, archives checked, binary checks empty, quiet passed. L at 25fbd22 (archive 022e401c):
+   176 windows, 172 valid, 4 overloaded (Drogon, actix-router; m = 100,000, mixed-disjoint); reference 3,197.8 MHz,
+   drift at most 0.96%; start-up at most 5.0 s; spacing 6.05 s at m = 10, 6.56 s at 100,000. W at 39bf126
+   (p2r3-probe-w-2, archive 7f81c663; the first try failed on "clock_drift", fixed in f5bf53e, 39bf126): 168
+   windows, 162 valid, 6 overloaded (Oat++ both shapes, actix-router; m = 100,000); reference 3,169.8 MHz, drift
+   at most 0.34%; start-up at most 5.75 s; spacing 6.29, 6.81 s.
 6. The campaign, decision 21 (a): round-robin, every contestant, mixed-disjoint, m = 1,000 and 100,000, pair
    (111, 211), R = 7, 1.5 s windows, the A/A run first in the same job (`t3/jobs/rr.py`, `t3/plans/rr-*.json`,
-   analysis `t3/rr_results.py`; `t3/jobs/requests-2026-10-28-rr.json`, about 15 min per system). The 24 h design does not run.
-7. A/A pilot (p2r3-pilot-l, -w at dec7e54, `t3/jobs/requests-2026-10-26-pilot.json`; `t3/jobs/pilot.py`,
-   `t3/plans/pilot-L.json`, `pilot-W.json`; rule in `hypotheses-round3.md` 3a, analysis `t3/pilot_analysis.py`):
-   v2 against v2 in all three programs, one 4-window round at every H8 cell, 1,920 windows per system, the
-   bring-ups' binaries; desktop count check 96 of 96 reduced windows; review 7 fixed. W DONE
-   2026-10-27 03:13 to 06:40 (gap17-w-q1, tools ed917f3, exit 0, archive 6c1e18ba checked): 1,919 of 1,920
-   valid (seq 831: PDH status 0x800007d6 at its end, failed closed); drift at most 0.14%, 13 CPUs counted in
-   every window; others median 0.52%, 8 windows above 10% in 5 bursts (taskhostw.exe and sppsvc.exe start,
-   then System up to 37.8%: 03:31, 03:40, 04:28, 05:27, 06:18); 474 of 480 replicates count. L DONE 2026-10-27
-   19:48 to 23:03 (gap17-a-q1, tools 3200992, exit 0, archive 3058490f checked, Papers 3c075c3): 1,920 of 1,920
-   valid, drift at most 0.95%, others median 0.66% and at most 1.83%; 480 of 480 count. Analysis
-   (`design/round3/aa-pilot.json`): 954 replicates, delta = 1.02, the floor. |d| median and q97.5 in ns: L C++ 23.5,
-   76.0; Go 36.5, 123.7; Rust 28.0, 92.7; W 45.7, 154.6; 77.1, 315.0; 47.2, 167.2. Decision 20 (H9, H10): moot.
-8. p2gen against t1gen on L (p2r3-gencheck-l at 606c59b, `t3/jobs/requests-2026-10-26-gencheck.json`;
-   `gencheck.py`, `plans/gencheck-L.json`, `gencheck_analysis.py`; hypotheses 3b; decision 17): 64 windows,
-   about 7 min, timeout 1 h; t1gen equal to its records' 1eaee40c3; review 8 no HIGH. DONE 2026-10-26, ending
-   23:53 EET, exit 0 (archive 9761e71f checked): 64 of 64 valid, t1gen's 7 self-tests passed, quiet passed, drift
-   at most 0.83%, others at most 1.16%. Median q = X_p2gen / X_t1gen 0.99805, [0.99439, 1.00309] (97.87%), 16 pairs.
+   `t3/rr_results.py`; `t3/jobs/requests-2026-10-28-rr.json`). L DONE 2026-10-28 10:43:31 to 10:56:39 (chain A12,
+   gap33-a-q1, exit 0, archive cbd18218 checked; `design/round3/rr-L.json`, `rr-L.md`): A/A 84 of 84 valid; campaign
+   294 valid, 14 overloaded (Drogon and actix-router at m = 100,000, every round); no rerun; 448 settles quiet (at
+   most 3.2 s); others at most 3.7%; spacing 1.683 s (A/A), 1.761 s; campaign windows 10:46:50 to 10:56:34; peak
+   memory at m = 100,000 4.26 GiB (actix-router 2.13). v2 first in every program at both sizes. A/A: Rust at
+   m = 100,000, entry 1 6.4% faster in all 7 rounds (d 516 ns, 485 to 540; rates 117,240 at most against 124,057
+   at least; both servers at 100% of CPU 14), where the pilot's |d| was at most 168 ns over 16 replicates; Rust at
+   m = 1,000 28 ns in all 7; C++ and Go mixed signs. Cause not known. W (p2r3-rr-w) did not run in A12 (the
+   chain's memory check failed to parse; skipped); queued again as chain A15.
+7. A/A pilot (p2r3-pilot-l, -w at dec7e54; `t3/jobs/pilot.py`, `t3/plans/pilot-*.json`, `t3/pilot_analysis.py`,
+   hypotheses 3a): v2 against v2 in all three programs, a fresh server per window, one 4-window round at every H8
+   cell, 1,920 windows per system. W DONE 2026-10-27 03:13 to 06:40 (gap17-w-q1, archive 6c1e18ba checked): 1,919
+   valid (seq 831 failed closed on a PDH status), drift at most 0.14%, others median 0.52%, 8 windows above 10% in
+   5 bursts (taskhostw.exe, sppsvc.exe, then System up to 37.8%); 474 of 480 replicates count. L DONE 19:48 to
+   23:03 (gap17-a-q1, archive 3058490f checked): 1,920 valid, drift at most 0.95%, others at most 1.83%; 480 of
+   480. `design/round3/aa-pilot.json`: 954 replicates, delta = 1.02 (the floor). |d| median and q97.5 in ns: L C++
+   23.5, 76.0; Go 36.5, 123.7; Rust 28.0, 92.7; W 45.7, 154.6; 77.1, 315.0; 47.2, 167.2. Decision 20: moot.
+8. p2gen against t1gen on L (p2r3-gencheck-l at 606c59b; `gencheck.py`, `plans/gencheck-L.json`,
+   `gencheck_analysis.py`; hypotheses 3b; decision 17): DONE 2026-10-26 (archive 9761e71f checked), 64 of 64 valid,
+   t1gen's self-tests passed, drift at most 0.83%. Median q = X_p2gen / X_t1gen 0.99805, [0.99439, 1.00309], 16 pairs.
 
 ## Lab requests
 
@@ -193,7 +191,8 @@ to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); 3caa3
 
 ## Next engineering
 
-Row 6's request (ed3b7e0) is queued as chain A12, after P6's A11 (coordinator, 2026-10-28): run as is, and
-propose a cut if W's start-to-start spacing puts it over 10 min; the settle rule accepted, to be disclosed in the
-method; no sign tests (the rounds-ahead count is descriptive); the chain skips a job with under 6 GiB free; no
-freeze step in the new loop. Then `t3/rr_results.py` over its four records.
+Coordinator (2026-10-28): run as is; propose a cut if W's spacing puts it over 10 min; the settle rule disclosed
+in the method; no sign tests (rounds ahead descriptive); the chain skips a job under 6 GiB free; no freeze step.
+Arch's job took 13.1 min (campaign windows 9.7 min). When W's record (chain A15) arrives: `t3/rr_results.py` over
+it, rr-W.json, the same A/A check, and the cut question. The Rust A/A gap is the coordinator's and Alex's call
+(accept it as the floor, or more server processes per contestant); W runs unchanged.
