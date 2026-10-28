@@ -31,7 +31,11 @@ order, while the servers still run ({"type": "rerun", ...} for the cell). Then e
 read and every server is stopped ({"type": "cell_end", ...}: per server its exit code, how it was stopped,
 its memory in KiB, and whether its windows in the cell count: not when it never became ready, died, or did
 not exit 0 on the stop). A window of a server that never became ready or has died runs nothing and is
-invalid (not_ready, server_died). Server, warm-up and cell_end lines are not windows: the session's
+invalid (not_ready, server_died). Before each warm-up and window the cell's servers settle: together they use
+at most SETTLE_SHARE of one CPU, judged over the span since the last window or warm-up ended and then over
+polls, for up to SETTLE_LIMIT_S; a window whose servers do not settle runs nothing and is invalid (unsettled).
+An overloaded server keeps working through queued requests after its window, and on the shared server CPU
+that work would fall into the next contestant's window. Server, warm-up and cell_end lines are not windows: the session's
 "windows" and the end line count windows only, and only windows feed the consecutive-fault rule.
 warmup_s is p2gen's lead-in before each window in both schedules.
 
@@ -189,6 +193,14 @@ SESSION_CLOCK_SAMPLES = 4  # Linux: /proc/cpuinfo read four times, 0.5 s apart
 SESSION_CLOCK_GAP_S = 0.5
 SESSION_CLOCK_PDH_S = 10.0  # Windows: one PDH interval, labrec's sample length (WindowsSampler.session_mhz)
 OTHERS_TOP = 6  # the busiest other processes a timed window keeps, as lab/laptop/aa_trial.py
+# Round-robin's settle step: before a window or warm-up the cell's servers together use at most this share of one
+# CPU (the others guard's 10%) over the time since the last window ended, or over one poll; else it waits, up to
+# the limit, after which the window is invalid ("unsettled"). An overloaded server keeps working through queued
+# requests after its window; on the shared server CPU that work would fall into the next contestant's window.
+SETTLE_SHARE = 0.10
+SETTLE_POLL_S = 0.1
+SETTLE_MIN_S = 0.05  # the shortest span a reading is judged over
+SETTLE_LIMIT_S = 30.0
 
 
 class PlanError(ValueError):
@@ -960,6 +972,12 @@ class LinuxHost:
     def make_sampler(self, cpus: Sequence[int]) -> LinuxSampler:
         return LinuxSampler(cpus)
 
+    def process_cpu_s(self, pid: int) -> float:
+        """The process's user and system CPU time in seconds (/proc/PID/stat, fields 14 and 15)."""
+        with open(f"/proc/{pid}/stat") as f:
+            fields = f.read().rsplit(")", 1)[1].split()
+        return (int(fields[11]) + int(fields[12])) / os.sysconf("SC_CLK_TCK")
+
     def memory(self, sp: Spawned) -> dict[str, int]:
         """The process's peak and current resident memory in KiB (/proc/PID/status: VmHWM, VmRSS)."""
         names = {"VmHWM": "peak_resident_kib", "VmRSS": "resident_kib"}
@@ -1003,6 +1021,7 @@ if IS_WINDOWS:
         (_k32.SetThreadAffinityMask, [wintypes.HANDLE, ctypes.c_size_t], ctypes.c_size_t),
         (_k32.AllocConsole, [], wintypes.BOOL),
         (_k32.K32GetProcessMemoryInfo, [wintypes.HANDLE, ctypes.c_void_p, wintypes.DWORD], wintypes.BOOL),
+        (_k32.GetProcessTimes, [wintypes.HANDLE, *[ctypes.POINTER(ctypes.c_uint64)] * 4], wintypes.BOOL),
         (_k32.GetActiveProcessorCount, [wintypes.WORD], wintypes.DWORD),
         (_nt.NtResumeProcess, [wintypes.HANDLE], ctypes.c_long),
         (_nt.NtQuerySystemInformation, [ctypes.c_ulong, ctypes.c_void_p, ctypes.c_ulong,
@@ -1246,6 +1265,20 @@ if IS_WINDOWS:
         def make_sampler(self, cpus: Sequence[int]) -> WindowsSampler:
             return WindowsSampler(cpus)
 
+        def process_cpu_s(self, pid: int) -> float:
+            """The process's kernel and user CPU time in seconds (GetProcessTimes, 100 ns units)."""
+            handle = _k32.OpenProcess(0x1000, False, pid)  # QUERY_LIMITED_INFORMATION
+            if not handle:
+                raise ctypes.WinError(ctypes.get_last_error())
+            try:
+                created, exited, kernel, user = (ctypes.c_uint64() for _ in range(4))
+                if not _k32.GetProcessTimes(handle, ctypes.byref(created), ctypes.byref(exited), ctypes.byref(kernel),
+                                            ctypes.byref(user)):
+                    raise ctypes.WinError(ctypes.get_last_error())
+            finally:
+                _k32.CloseHandle(handle)
+            return (kernel.value + user.value) / 1e7
+
         def memory(self, sp: Spawned) -> dict[str, int]:
             """The process's peak and current working set, its private bytes and its peak commit, in KiB."""
             handle = _k32.OpenProcess(_PROCESS_MEMORY_RIGHTS, False, sp.proc.pid)
@@ -1477,6 +1510,7 @@ class Runner:
         self.sampler, self.session_mhz, self.labrec = sampler, session_mhz, labrec
         self.programs = {p.name: p for p in plan.programs}
         self._live: list[Spawned] = []
+        self._cpu_mark: tuple[float, dict[int, float]] | None = None  # round-robin: servers' CPU when the last window ended
         # Every arm of a program runs from its one binary, and so must every window of the session.
         self._signatures = {b: s for b in (binary_of(plan.p2gen), *(p.binary for p in plan.programs))
                             if (s := file_signature(b)) is not None}
@@ -1660,16 +1694,61 @@ class Runner:
 
     # ------------------------------------------------ round-robin: a cell's servers, warm-ups and windows
 
+    @staticmethod
+    def _servers_cpu(pids: Sequence[int]) -> dict[int, float]:
+        out = {}
+        for pid in pids:
+            try:
+                out[pid] = HOST.process_cpu_s(pid)
+            except (OSError, ValueError, IndexError):  # it has exited; its windows say so
+                pass
+        return out
+
+    def mark_cpu(self, pids: Sequence[int]) -> None:
+        """The cell's servers' CPU now, as a window or warm-up ends: the settle step's first reading."""
+        self._cpu_mark = (time.monotonic(), self._servers_cpu(pids))
+
+    def settle(self, pids: Sequence[int]) -> dict[str, Any]:
+        """Waits until the cell's live servers (pids) together use at most SETTLE_SHARE of one CPU: judged over the
+        span since the last mark, then over polls of SETTLE_POLL_S, for up to SETTLE_LIMIT_S. Count mode keeps only
+        whether they settled."""
+        t0 = time.monotonic()
+        then, before = self._cpu_mark or (t0, self._servers_cpu(pids))
+        self._cpu_mark = None
+        while True:
+            now, after = time.monotonic(), self._servers_cpu(pids)
+            span = now - then
+            if span < SETTLE_MIN_S:
+                time.sleep(SETTLE_MIN_S - span)
+                continue
+            if sum(after[p] - before[p] for p in after.keys() & before.keys()) <= SETTLE_SHARE * span:
+                quiet = True
+                break
+            if now - t0 >= SETTLE_LIMIT_S:
+                quiet = False
+                break
+            then, before = now, after
+            time.sleep(SETTLE_POLL_S)
+        out: dict[str, Any] = {"quiet": quiet}
+        if self.timed:
+            out["settle_s"] = round(time.monotonic() - t0, 3)
+        return out
+
     def _cell_row(self, kind: str, slot: Slot) -> dict[str, Any]:
         shape, m, table_seed, ring_seed = slot.cell
         return {"type": kind, "cell": cell_name(slot.cell), "shape": shape, "m": m, "table_seed": table_seed,
                 "ring_seed": ring_seed, **slot.who(), "port": slot.port}
 
-    def start_server(self, c: Contestant, cell: Cell) -> tuple[Slot, dict[str, Any]]:
-        """Starts the contestant's server for the cell, pinned, waits for it and probes GET /."""
-        plan, program = self.plan, self.programs[c.program]
-        cell_dir = Path(plan.data_root) / cell[0] / f"m{cell[1]}" / f"t{cell[2]}"
-        slot = Slot(c, cell, cell_dir, free_port(), self.workdir / f"{cell[0]}-m{cell[1]}-t{cell[2]}-{c.program}-{c.entry}.server.log")
+    def new_slot(self, c: Contestant, cell: Cell) -> Slot:
+        """The contestant's slot in the cell, with its port, before anything starts: the caller keeps it first, so
+        the cell's stop reaches a server whose start an interrupt cuts short."""
+        cell_dir = Path(self.plan.data_root) / cell[0] / f"m{cell[1]}" / f"t{cell[2]}"
+        return Slot(c, cell, cell_dir, free_port(), self.workdir / f"{cell[0]}-m{cell[1]}-t{cell[2]}-{c.program}-{c.entry}.server.log")
+
+    def start_server(self, slot: Slot) -> dict[str, Any]:
+        """Starts the slot's server, pinned, waits for it and probes GET /."""
+        plan, c = self.plan, slot.contestant
+        program, cell_dir = self.programs[c.program], slot.cell_dir
         row = self._cell_row("server", slot)
         row["server_cpu"] = plan.server_cpu
         cmd = [*program.argv, "--port", str(slot.port), "--workers", "1", "--routes", str(cell_dir / "routes.txt"),
@@ -1697,14 +1776,16 @@ class Runner:
         row.update(ready=slot.ready, status="invalid" if codes else "valid", reason_codes=codes)
         if codes:
             row["server_log_tail"] = scrub(tail(slot.log), self.count is not None)
-        return slot, row
+        return row
 
-    def warm_up(self, slot: Slot) -> dict[str, Any]:
-        """The server's one warm-up of the cell: p2gen for server_warmup_s, nothing sampled."""
+    def warm_up(self, slot: Slot, pids: Sequence[int] = ()) -> dict[str, Any]:
+        """The server's one warm-up of the cell: p2gen for server_warmup_s, nothing sampled. pids: the cell's live
+        servers, which settle first (an unsettled warm-up still runs: nothing is measured over it)."""
         row = self._cell_row("warmup", slot)
         probe = generator = gen_exit = None
         try:
             if slot.alive() and slot.ready:
+                row["settle"] = self.settle(pids)
                 try:
                     probe = probe_server(slot.port)
                 except (OSError, ValueError) as e:
@@ -1727,6 +1808,7 @@ class Runner:
                 if sp.proc.poll() is None:
                     HOST.kill(sp)
             self._live.clear()
+            self.mark_cpu(pids)
         return row
 
     def _rr_window(self, w: Window, row: dict[str, Any], slot: Slot, idle: Mapping[int, Mapping[str, Any]]) -> None:
@@ -1737,12 +1819,18 @@ class Runner:
             raise RuntimeError(f"a binary changed since the session started: {changed}")
         row["routes_sha256"], row["ring_sha256"] = cell_digests(str(slot.cell_dir))
         row.update(port=slot.port, server_cpu=plan.server_cpu, generator_cpus=list(plan.generator_cpus))
+        pids = [*idle, *([slot.server.proc.pid] if slot.alive() else [])]
         if not slot.ready:
             verdict = Verdict("invalid", (("not_ready", "the server did not become ready at the cell's start"),))
         elif not slot.alive():
             verdict = Verdict("invalid", (("server_died", f"the server had exited (code "
                                                           f"{slot.server.proc.returncode}) before the window"),))
+        elif not (settled := self.settle(pids))["quiet"]:
+            row["settle"] = settled
+            verdict = Verdict("invalid", (("unsettled", f"the cell's servers used more than {100 * SETTLE_SHARE:g}% of "
+                                                        f"one CPU for {SETTLE_LIMIT_S:g} s before the window"),))
         else:
+            row["settle"] = settled
             row["server_affinity"] = list(slot.server.affinity)
             probe, generator, gen_exit, reading = None, None, None, None
             try:
@@ -1757,6 +1845,7 @@ class Runner:
             obs = self._observed(True, probe, generator, gen_exit, alive, 0 if alive else slot.server.proc.returncode,
                                  reading, row)
             verdict = judge(obs, plan.thresholds, self.count)
+        self.mark_cpu(pids)
         row.update(status=verdict.status, valid=verdict.valid, reasons=[t for _, t in verdict.reasons],
                    reason_codes=[c for c, _ in verdict.reasons])
         if {"server_died", "probe"} & set(row["reason_codes"]):
@@ -2169,23 +2258,27 @@ def _run_round_robin(plan: Plan, runner: Runner, sink: Any) -> int:
                 return False
         return True
 
-    code = 0
+    code, stopped_planned = 0, False
     for cell in cells(plan):
         slots: dict[tuple[str, int], Slot] = {}
         try:
             for c in contestants(plan):
-                slot, row = runner.start_server(c, cell)
-                slots[(c.program, c.entry)] = slot
-                write(row)
+                slot = slots[(c.program, c.entry)] = runner.new_slot(c, cell)
+                write(runner.start_server(slot))
+
+            def live() -> list[int]:
+                return [s.server.proc.pid for s in slots.values() if s.alive()]
+
+            runner.mark_cpu(live())  # the first warm-up's settle starts from here, not from the last cell
             for slot in slots.values():
-                row = runner.warm_up(slot)
+                row = runner.warm_up(slot, live())
                 write(row)
                 tallies["warmup"][row["status"]] = tallies["warmup"].get(row["status"], 0) + 1
             orders = round_orders(plan, *cell[:3])
             failed: dict[int, list[dict[str, Any]]] = {}
             for round_no, order in enumerate(orders, 1):
                 if not run(rr_round(seq, cell, round_no, order), slots, "planned", streak, failed):
-                    code = 3
+                    code, stopped_planned = 3, True
                     break
                 seq += len(order)
             if code == 0 and plan.rerun_host_faults:
@@ -2217,7 +2310,7 @@ def _run_round_robin(plan: Plan, runner: Runner, sink: Any) -> int:
         if code:
             break
     end: dict[str, Any] = {"type": "end"}
-    if plan.rerun_host_faults and code == 0:
+    if plan.rerun_host_faults and not stopped_planned:  # as mirrored: kept when a rerun pass was stopped
         end["rerun"] = {"rounds": rerun_rounds, "windows_run": sum(tallies["rerun"].values()),
                         "by_status": tallies["rerun"], "rounds_with_host_faults": rerun_again}
     windows_all = {k: tallies["planned"].get(k, 0) + tallies["rerun"].get(k, 0) for k in {*tallies["planned"], *tallies["rerun"]}}

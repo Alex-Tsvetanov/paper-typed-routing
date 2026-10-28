@@ -995,6 +995,62 @@ class WarmupJudgeTests(unittest.TestCase):
         self.assertEqual(p2run.judge_warmup(self.obs(generator={**line, "completed": 99}), 100).status, "invalid")
 
 
+class SettleTests(unittest.TestCase):
+    """The settle step on a stand-in CPU clock: each read of a pid's CPU time returns the next value of a script.
+    Nothing here looks at how long it waited."""
+
+    def runner(self, count=100):
+        return p2run.Runner(rr_plan(), Path("w"), count, None, None)
+
+    def cpu(self, script: list[float]):
+        values = iter(script)
+        last = [0.0]
+
+        def read(pid):
+            last[0] = next(values, last[0])
+            return last[0]
+        return mock.patch.object(p2run.HOST, "process_cpu_s", side_effect=read, create=True)
+
+    def test_quiet_servers_settle_at_once_and_count_mode_keeps_no_time(self) -> None:
+        r = self.runner()
+        with self.cpu([1.0, 1.0, 1.0]):
+            r.mark_cpu([7])
+            self.assertEqual(r.settle([7]), {"quiet": True})
+
+    def test_a_busy_server_is_waited_for(self) -> None:
+        r = self.runner()
+        with self.cpu([0.0, 5.0, 10.0, 10.0, 10.0]) as read:  # busy from the mark to two polls, then idle
+            r.mark_cpu([7])
+            self.assertEqual(r.settle([7]), {"quiet": True})
+        self.assertGreaterEqual(read.call_count, 4)
+
+    def test_servers_that_never_settle_fail_after_the_limit(self) -> None:
+        r = self.runner()
+        with self.cpu([float(i) for i in range(10_000)]), mock.patch.object(p2run, "SETTLE_LIMIT_S", 0.3):
+            self.assertEqual(r.settle([7]), {"quiet": False})
+
+    def test_a_server_that_exits_is_left_out(self) -> None:
+        r = self.runner()
+
+        def read(pid):
+            if pid == 8:
+                raise OSError("gone")
+            return 2.0
+        with mock.patch.object(p2run.HOST, "process_cpu_s", side_effect=read, create=True):
+            r.mark_cpu([7, 8])
+            self.assertEqual(r.settle([7, 8]), {"quiet": True})
+
+    def test_this_hosts_process_cpu_time(self) -> None:
+        child = subprocess.Popen([sys.executable, "-c", "import time; sum(range(10**6)); time.sleep(5)"])
+        try:
+            v = p2run.HOST.process_cpu_s(child.pid)
+            self.assertIsInstance(v, float)
+            self.assertGreaterEqual(v, 0.0)
+        finally:
+            child.kill()
+            child.wait()
+
+
 class ScriptedRoundRobin:
     """The runner's round-robin parts without a process: each window's status and reason codes come from a
     script keyed by seq, or by ("rerun", seq) for a rerun window. Every call is logged in order."""
@@ -1002,12 +1058,17 @@ class ScriptedRoundRobin:
     def __init__(self, script: dict, count: int | None = None, dead: frozenset = frozenset()) -> None:
         self.script, self.count, self.dead, self.log = script, count, dead, []
 
-    def start_server(self, c, cell):
-        self.log.append(("start", p2run.cell_name(cell), c.program, c.entry))
-        slot = p2run.Slot(c, cell, Path("."), 1000 + c.entry, Path("x.log"), None, True)
-        return slot, {"type": "server", "cell": p2run.cell_name(cell), **slot.who(), "status": "valid", "reason_codes": []}
+    def new_slot(self, c, cell):
+        return p2run.Slot(c, cell, Path("."), 1000 + c.entry, Path("x.log"), None, True)
 
-    def warm_up(self, slot):
+    def start_server(self, slot):
+        self.log.append(("start", p2run.cell_name(slot.cell), slot.contestant.program, slot.contestant.entry))
+        return {"type": "server", "cell": p2run.cell_name(slot.cell), **slot.who(), "status": "valid", "reason_codes": []}
+
+    def mark_cpu(self, pids):
+        pass
+
+    def warm_up(self, slot, pids=()):
         self.log.append(("warmup", p2run.cell_name(slot.cell), slot.contestant.program, slot.contestant.entry))
         return {"type": "warmup", **slot.who(), "status": "valid", "reasons": [], "reason_codes": []}
 
@@ -1076,6 +1137,15 @@ class RoundRobinLoopTests(unittest.TestCase):
         self.assertEqual(rc, 3)
         self.assertEqual([r["type"] for r in rows][-3:], ["window", "cell_end", "end"])
         self.assertEqual((rows[-1]["exit"], rows[-1]["planned"]["windows_run"]), (3, 7))
+        self.assertEqual(runner.log[-1], ("stop", "mixed-disjoint/m10/t111"))
+
+    def test_a_rerun_pass_stopped_by_the_rule_keeps_its_tally_in_the_end_line(self) -> None:
+        plan = rr_plan(rerun_host_faults=True, abort_after_consecutive=2)
+        rc, rows, runner = self.run_loop(plan, {6: ("invalid", ["sampler"]), ("rerun", 30): ("invalid", ["sampler"]),
+                                                ("rerun", 31): ("invalid", ["sampler"])})
+        self.assertEqual(rc, 3)
+        self.assertEqual(rows[-1]["rerun"], {"rounds": 1, "windows_run": 2, "by_status": {"invalid": 2},
+                                             "rounds_with_host_faults": 1})
         self.assertEqual(runner.log[-1], ("stop", "mixed-disjoint/m10/t111"))
 
     def test_the_streak_runs_across_cells(self) -> None:
@@ -1506,6 +1576,31 @@ class OrchestrationTests(unittest.TestCase):
         self.assertTrue(all(s["windows_count"] for s in t["cell_end"][1]["servers"]))
         self.assertEqual(self.end["servers_not_counting"], 1)
 
+    def test_a_window_whose_servers_do_not_settle_runs_nothing(self) -> None:
+        original = p2run.Runner.settle
+
+        def never_for_b_in_round_2(runner, pids):
+            out = original(runner, pids)
+            return {**out, "quiet": False} if never_for_b_in_round_2.next_is_b else out
+
+        def run_window(runner, w, slot=None, idle=None):
+            never_for_b_in_round_2.next_is_b = w.arm == "b" and w.round_no == 2
+            return p2run.Runner.run_window.__wrapped__(runner, w, slot, idle)
+
+        never_for_b_in_round_2.next_is_b = False
+        run_window.__wrapped__ = p2run.Runner.run_window
+        with mock.patch.object(p2run.Runner, "settle", never_for_b_in_round_2), \
+                mock.patch.object(p2run.Runner, "run_window", run_window):
+            rc, rows, err = self.run_main(self.plan("rr-unsettled", sizes=[10], abort_after_consecutive=0, **self.RR),
+                                          "rr-unsettled")
+        self.assertEqual(rc, 1, err)
+        t = self.by_type(rows)
+        got = {(w["arm"], w["round"]): (w["reason_codes"], w["settle"]["quiet"], "generator" in w) for w in t["window"]}
+        self.assertEqual(got[("b", 2)], (["unsettled"], False, False))
+        self.assertEqual(got[("a", 2)], ([], True, True))
+        self.assertTrue(all("settle" in r and r["settle"] == {"quiet": True} for r in t["warmup"]))
+        self.assertNotIn("unsettled", p2run.RERUN_CODES | p2run.SYSTEMATIC)
+
     def test_a_server_that_exits_nonzero_on_the_cell_stop_does_not_count(self) -> None:
         rc, rows, err = self.run_main(self.plan("rr-badexit", sizes=[10], **self.RR), "rr-badexit", {"FAKE_SERVER": "badexit"})
         self.assertEqual(rc, 1, err)
@@ -1513,6 +1608,27 @@ class OrchestrationTests(unittest.TestCase):
         self.assertTrue(all(w["status"] == "valid" for w in t["window"]))
         self.assertEqual({(s["exit"], s["windows_count"], tuple(s["reason_codes"])) for s in t["cell_end"][0]["servers"]},
                          {(3, False, ("server_exit",))})
+
+    def test_an_interrupt_during_a_start_still_stops_that_server(self) -> None:
+        calls, original = [], p2run.wait_ready
+
+        def interrupt_the_fourth(proc, port, timeout_s, poll_s=0.01):
+            calls.append(port)  # the preflight starts a and b, then the cell starts a, then b: interrupted
+            if len(calls) == 4:
+                raise KeyboardInterrupt
+            return original(proc, port, timeout_s, poll_s)
+
+        with mock.patch.object(p2run, "wait_ready", interrupt_the_fourth):
+            rc, rows, err = self.run_main(self.plan("rr-int", sizes=[10], **self.RR), "rr-int")
+        self.assertEqual((rc, self.end), (130, None), err)
+        end = rows[-1]
+        self.assertEqual(end["type"], "cell_end")
+        self.assertEqual([(s["arm"], s["reason_codes"]) for s in end["servers"]], [("a", []), ("b", ["not_ready"])])
+        self.assertTrue(all(s["exit"] is not None for s in end["servers"]))  # both were stopped
+        for port in (s["port"] for s in end["servers"]):
+            with socket.socket() as s:
+                s.settimeout(0.5)
+                self.assertNotEqual(s.connect_ex(("127.0.0.1", port)), 0)
 
     def test_a_server_that_never_starts_runs_no_window(self) -> None:
         rc, rows, err = self.run_main(self.plan("rr-refuse", sizes=[10], abort_after_consecutive=0, **self.RR), "rr-refuse",

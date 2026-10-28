@@ -29,6 +29,8 @@ Per program and cell: the routers (every arm but null) that are ranked, by media
 router's routing cost, per round t_router - t_null over the rounds where both count, as its median and
 standard deviation; and for each competitor of v2, the rounds in which v2's X was above the competitor's, of
 the rounds where both count. That is a count, not a test: no comparison was named in advance (decision 21).
+For a router that does not sustain the load, "count" means its valid and overloaded windows, as in its own
+statistics.
 A/A record, per program and cell: each entry's statistics as above, and per round r = X_0 / X_1 and
 d = t_0 - t_1 (ns), each as a median and a standard deviation over the rounds where both entries count. The
 A/A run has 6 servers per cell and the campaign 21 or 22, so it has fewer idle neighbours on the server CPU and

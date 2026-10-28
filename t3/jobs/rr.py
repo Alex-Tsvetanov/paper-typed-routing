@@ -8,8 +8,8 @@ The same guards as t3/jobs/probe.py, for both plans: it refuses (exit 2) before 
 clone is clean, no compiled source changed since the plans' _build_commit, each file of _expect_sha256 is the
 bring-up's, and both plans name the same build; afterwards each run's session line must name the same
 binaries, and they are hashed again. t3/p2run.py runs the A/A plan into OUT/aa.jsonl, then, if that run
-finished (exit 0, or 1 in count mode), the campaign into OUT/rr.jsonl; every server log and p2gen result is
-kept in OUT/aa.work and OUT/rr.work.
+finished (exit 0, or 1 in count mode) with the expected binaries, the campaign into OUT/rr.jsonl; every
+server log and p2gen result is kept in OUT/aa.work and OUT/rr.work.
 
 OUT/rr-summary.json holds, per run, the windows, warm-ups and servers by verdict, every window that was not
 valid, the other processes' and the idle servers' largest share of one CPU, each server's start-up at the
@@ -17,7 +17,7 @@ larger size, its peak memory, and the mean seconds from one window's start to th
 count of answers: the medians and spreads come from the two records by t3/rr_results.py.
 
 --count N is for a development run on the desktop only (D7): p2run in count mode, nothing timed.
-Exit status: 2 refused (or a binary that changed), else the A/A run's if it did not finish, else the campaign's.
+Exit status: 2 refused (or a binary that changed), else the larger of the two runs' p2run exits.
 """
 
 from __future__ import annotations
@@ -120,8 +120,8 @@ def main() -> int:
         session = next((r for r in rows if r.get("type") == "session"), None)
         summary[name] = {"p2run_exit": codes[name], **summarize(rows),
                          "session_binaries_differ": probe.session_differs(session, want) if session else ["no session line"]}
-        if codes[name] not in (0, 1) or (codes[name] == 1 and a.count is None):
-            break  # the A/A run did not finish: the campaign does not start on a host that just failed
+        if codes[name] not in (0, 1) or (codes[name] == 1 and a.count is None) or summary[name]["session_binaries_differ"]:
+            break  # the A/A run did not finish, or ran other binaries: the campaign does not start
     summary["binaries_after_run"] = probe.binary_problems(want)
     (out / "rr-summary.json").write_text(json.dumps(summary, indent=1) + "\n", encoding="utf-8")
     print(json.dumps({name: {k: summary[name].get(k) for k in ("p2run_exit", "windows", "by_status", "servers_not_counting",
@@ -129,7 +129,7 @@ def main() -> int:
                       for name in RUNS if name in summary}))
     if summary["binaries_after_run"] or any(summary[n]["session_binaries_differ"] for n in RUNS if n in summary):
         return 2
-    return codes["rr"] if "rr" in codes else codes["aa"]
+    return max(codes.values())  # the campaign runs only after an A/A exit of 0 (timed) or 0 or 1 (count)
 
 
 if __name__ == "__main__":

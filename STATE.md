@@ -95,15 +95,16 @@ windows. Not run on the desktop, by rule: any timed mode. Kernel features used: 
    (a vacuous post-run binary check), 5 LOW; all but 1 LOW fixed. 6. The Windows clock (Sonnet): 5 LOW, 4 fixed.
 7. The A/A pilot (Sonnet, 2026-10-26): 2 HIGH (the analysis took incomplete or doubled files), 3 MEDIUM, 6 LOW; fixed.
 9. The rerun (Sonnet, 2026-10-27): no HIGH, 3 MEDIUM (streak across phases, rerun bookkeeping, an arm's second draw), 4 LOW; fixed.
+10. Round-robin (Opus, 2026-10-28): no HIGH, 1 MEDIUM (a server mid-start missed by the stop), 3 LOW; 3 fixed, 1 by design.
 
-## To settle in the frozen text (with the freeze proposal and its hours)
+## Method the paper must state (the new loop has no frozen text)
 
-- delta for H8: 1.02 (the pilot, row 7); the minimum D_T0 for H9 and H10's margin in ns: decision 20.
 - The runner's validity additions beyond lab/t1 (connect errors, server alive and exit 0, sample span within
   50 ms of the window, a missing generator key, the stop after 8 consecutive faults), its reconnect rule
   (reconnects only as far as timeouts, connect errors and lost requests explain them; `peer_closes` above 0
   invalidates), and the overload edges (zero completions with timeouts, or connect errors: invalid).
-- What an invalid window costs: decision 18's rerun (about 22 rounds, about 0.6 h more on W at its pilot's rate).
+- Round-robin: one warm-up per server per size; before each window the size's servers settle (together at most
+  10% of one CPU, up to 30 s, else the window is invalid); idle servers' CPU recorded; reruns within the size.
 - Boost off; each system's clock reference (Arch's idle CPUs read 3,201 MHz, busy ones about 3,168: 1% bias).
 
 ## Laptop requests
@@ -131,8 +132,7 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
    timing the bring-ups' binaries (refused unless their sha256s and compiled sources equal 3ff814e's).
    Pre-freeze: never analysed for H8 to H10, never cited. Approved by Alex (2026-10-25, via the coordinator).
    DONE on both. Every archive's sha256 checked, every binary check empty, quiet passed:
-   - W at 25fbd22 (p2r3-probe-w): exit 3 after 8 windows, "clock_drift" 67.8% (idle CPUs without PDH data
-     read 0 in 0.5 s); fixed in f5bf53e and 39bf126 (one 10 s interval, zeros left out, `cpus_counted`).
+   - W at 25fbd22 (p2r3-probe-w): exit 3, "clock_drift" (idle CPUs read 0 in 0.5 s); fixed in f5bf53e, 39bf126.
    - L at 25fbd22 (p2r3-probe-l, 15:26 to 15:56 EET, archive 022e401c): exit 0, 176 windows, 172 valid, 4
      overloaded on the error share only (Drogon, actix-router; m = 100,000, mixed-disjoint); reference 3,197.8
      MHz, drift at most 0.96%; start-up at m = 100,000 at most 5.0 s; spacing 6.05 s at m = 10, 6.56 s at 100,000.
@@ -140,8 +140,10 @@ The coordinator schedules them. Jobs drafted in the lab queue's format with `pla
      overloaded on the error share only (Oat++ at m = 100,000 on both shapes, actix-router mixed-disjoint);
      reference 3,169.8 MHz, 13 of 13 CPUs over 10.001 s, drift at most 0.34%; start-up at most 5.75 s; 6.29, 6.81 s.
 6. The campaign, decision 21 (a) (Alex, 2026-10-28): the new loop, round-robin, every contestant, mixed-disjoint,
-   m = 1,000 and 100,000, pair (111, 211), R = 7, 1.5 s windows, about 10 min per system; the A/A run (v2 twice
-   per program) first, in the same job. The 24 h design (H8 to H10 tested, 24.28 h) does not run.
+   m = 1,000 and 100,000, pair (111, 211), R = 7, 1.5 s windows; the A/A run (v2 twice per program) first, in the
+   same job (`t3/jobs/rr.py`, `t3/plans/rr-aa-L.json`, `rr-L.json`, `rr-aa-W.json`, `rr-W.json`; analysis
+   `t3/rr_results.py`, rules fixed before the runs; request `t3/jobs/requests-2026-10-28-rr.json`, about 15 min
+   per system). The 24 h design (H8 to H10 tested, 24.28 h) does not run. Desktop count check: see Functional checks.
 7. A/A pilot (p2r3-pilot-l, -w at dec7e54, `t3/jobs/requests-2026-10-26-pilot.json`; `t3/jobs/pilot.py`,
    `t3/plans/pilot-L.json`, `pilot-W.json`; rule in `hypotheses-round3.md` 3a, analysis `t3/pilot_analysis.py`):
    v2 against v2 in all three programs, one 4-window round at every H8 cell, 1,920 windows per system, the
@@ -182,8 +184,7 @@ Windows Update and Defender's real-time protection off on W for good (Alex runs 
 (2026-10-27) 18. Host-spoiled rounds rerun once at each system's end (p2run 668f289). 19. Alex quiets
 SvcRestartTask on W after P4's c3 (the coordinator's script; sppsvc may rewrite it, -Check shows; reruns cover).
 
-Laptop time (Alex, 2026-10-26, AGENTS.md bc1a76d): "Do not wait on me. Laptop is available 24/7 so just carry
-on and use it." Requests go to the coordinator when final; design, scope and pushes still go to Alex.
+Laptop time (Alex, 2026-10-26): 24/7, no approval; requests to the coordinator; design, scope, pushes to Alex.
 The new loop (Alex, 2026-10-27, via the coordinator; covers round 3): campaigns of 5 to 10 minutes, median and
 std dev per contestant, one fixed A/A run per OS, replacing D9's Holm test. (2026-10-28) 21. Round 3 in it: (a),
 1.5 s windows, m = 1,000 and 100,000, R = 7, the A/A run per OS (row 6); 20 moot. No frozen file precedes it.

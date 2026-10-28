@@ -1,0 +1,61 @@
+{
+ "about": "P2 round 3 in the new loop (decision 21 (a), Alex 2026-10-28; STATE.md row 6), one job per system, drafted in the lab queue's job format for the operator to copy into queues; not a queue itself. Commit: COMMIT on branch round3 of p2-typed-routing/typed-routing (local; bundled from that checkout as before). Each job runs the fixed A/A run (v2 twice in each program) and then the campaign (every contestant), both round-robin: mixed-disjoint, m = 1,000 and 100,000, pair (111, 211), 7 rounds of 1.5 s windows, every server started once per size and kept running. It times the Release builds of p2r3-bringup-l and p2r3-bringup-w at 3ff814e50, the builds the probe and the A/A pilot timed: t3/jobs/rr.py refuses (exit 2) before the first window unless the clone is clean, each binary's sha256 is the bring-up's and no compiled source changed since 3ff814e50 (none did). No build, no download. The analysis, t3/rr_results.py (the median and standard deviation per contestant), is committed with the plans before the runs; no frozen hypotheses file precedes this campaign (the draft hypotheses-round3.md is not frozen, by Alex's answer). rr-summary.json holds verdicts, shares, start-ups, memory and spacing, no rate. Either system may go first; each is quiet-checked at its start. Connection churn: p2gen opens 64 connections per window, one window about every 1.8 s, about 3.5 times the pilot's rate; on Windows that leaves on the order of 4,000 client ports in TIME_WAIT at once. A connect error makes a window invalid (connect_errors), so it would show in the record. Before each window the size's servers settle (together at most 10% of one CPU, waited for up to 30 s): an overloaded server keeps working through its queued requests after its window, which on the shared server CPU would fall into the next contestant's window. That wait comes after overloaded windows only (in the probes Drogon and actix-router on Arch, Oat++ and actix-router on Windows, at m = 100,000) and is not in expected_s's basis; the timeout covers it.",
+ "jobs": [
+  {
+   "id": "p2r3-rr-l",
+   "paper": "P2",
+   "os": "linux",
+   "repo": {
+    "name": "typed-routing",
+    "path": "p2-typed-routing/typed-routing"
+   },
+   "commit": "COMMIT",
+   "build": "",
+   "run": "\"$LAB_PYTHON\" \"$LAB_SRC/t3/jobs/rr.py\" \"$LAB_SRC/t3/plans/rr-aa-L.json\" \"$LAB_SRC/t3/plans/rr-L.json\" \"$LAB_OUT/rr\"",
+   "outputs": [
+    "out/rr/rr-summary.json",
+    "out/rr/aa.jsonl",
+    "out/rr/rr.jsonl",
+    "out/rr/aa.out",
+    "out/rr/rr.out",
+    "record.json"
+   ],
+   "quiet": true,
+   "boost": false,
+   "poll_s": 120,
+   "expected_s": 900,
+   "timeout_s": 2700,
+   "note": "The A/A run (84 windows, 6 servers per size) then the campaign (308 windows, 22 servers per size); server on CPU 14, p2gen on 2 to 13, the runner on 0 and 1; reads ~/lab/p2r3/build-3ff814e50, progs-3ff814e50 and sets, writes only in LAB_OUT. expected_s from p2r3-pilot-l's and p2r3-probe-l's measured spacing (6.05 s for a 1 s warm-up and a 5 s window, so 0.05 s more per window): a window costs 0.1 + 1.5 + 0.05 = 1.65 s; campaign 308 x 1.65 = 508 s, 44 warm-ups x 1.15 = 51 s, server starts at most 2 x 13.9 s (the probe's sum at m = 100,000), preflight and session clock about 3 s: about 590 s; A/A 84 x 1.65 = 139 s, 12 warm-ups 14 s, starts and the rest about 6 s: about 158 s; together about 750 s, rounded up to 900. timeout_s three times that. Boost off, the lab's default.",
+   "run_label": "P2 round 3 new loop on Arch: t3/jobs/rr.py, the A/A run (t3/plans/rr-aa-L.json) then the campaign (rr-L.json), round-robin, 7 rounds of 1.5 s windows at m = 1,000 and 100,000",
+   "plain": "Run every routing library of P2 on Arch in short turns, first P2's own library against itself to measure the noise, then all contestants, about 13 minutes"
+  },
+  {
+   "id": "p2r3-rr-w",
+   "paper": "P2",
+   "os": "windows",
+   "repo": {
+    "name": "typed-routing",
+    "path": "p2-typed-routing/typed-routing"
+   },
+   "commit": "COMMIT",
+   "build": "",
+   "run": "\"%LAB_PYTHON%\" \"%LAB_SRC%\\t3\\jobs\\rr.py\" \"%LAB_SRC%\\t3\\plans\\rr-aa-W.json\" \"%LAB_SRC%\\t3\\plans\\rr-W.json\" \"%LAB_OUT%\\rr\"",
+   "outputs": [
+    "out/rr/rr-summary.json",
+    "out/rr/aa.jsonl",
+    "out/rr/rr.jsonl",
+    "out/rr/aa.out",
+    "out/rr/rr.out",
+    "record.json"
+   ],
+   "quiet": true,
+   "boost": false,
+   "poll_s": 120,
+   "expected_s": 1000,
+   "timeout_s": 3000,
+   "note": "The A/A run (84 windows) then the campaign (294 windows, 21 servers per size), as p2r3-rr-l; reads C:\\Users\\alext\\lab\\p2r3\\build-3ff814e50, progs-3ff814e50 (p2v2.dll beside mserver-go.exe) and sets, writes only in LAB_OUT. expected_s from p2r3-pilot-w's and p2r3-probe-w-2's measured spacing (6.29 s, so 0.29 s more per window): a window costs 1.89 s; campaign 294 x 1.89 = 556 s, 42 warm-ups x 1.39 = 58 s, starts at most 2 x 18.8 s, preflight about 6 s and the 10 s session clock: about 668 s; A/A 84 x 1.89 = 159 s, 12 warm-ups 17 s, starts, preflight and the session clock about 14 s: about 190 s; together about 860 s, rounded up to 1,000. timeout_s three times that. W quiet hours: the whole job, about a quarter of an hour. Boost off, the lab's default.",
+   "run_label": "P2 round 3 new loop on Windows: t3/jobs/rr.py, the A/A run (t3/plans/rr-aa-W.json) then the campaign (rr-W.json), as p2r3-rr-l",
+   "plain": "Run every routing library of P2 on Windows in short turns, first P2's own library against itself to measure the noise, then all contestants, about 15 minutes"
+  }
+ ]
+}
