@@ -7,8 +7,8 @@ run (rr-aak-L.json, rr-aak-W.json: v2 seven times in each program).
 
 The guards of t3/jobs/rr.py, for every plan: it refuses (exit 2) before the first window unless the clone is
 clean, no compiled source changed since the plans' _build_commit, each file of _expect_sha256 is the bring-up's,
-every plan names the same build, is round-robin and repeats one arm in each program (an A/A plan), and no two
-plans share a file name. t3/p2run.py then runs the plans in the order given, each into OUT/<plan's stem>.jsonl
+every plan names the same build, is round-robin and is an A/A plan as t3/rr_results.py reads one (v2 twice in
+every program, or v2 k > 2 times in every program), and no two plans share a file name. t3/p2run.py then runs the plans in the order given, each into OUT/<plan's stem>.jsonl
 with its server logs and p2gen results in OUT/<stem>.work; a run that did not finish (exit 0, or 1 in count mode)
 or ran other binaries stops the rest. Afterwards the binaries are hashed again.
 
@@ -31,12 +31,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import labsteps as L  # noqa: E402
 import probe  # noqa: E402
 import rr  # noqa: E402
+import rr_results  # noqa: E402
 
 
 def is_aa(plan: dict) -> bool:
-    """Every program repeats one arm: ["v2", "v2"], or ["v2"] * k."""
-    arms = [p.get("arms") for p in plan.get("programs") or []]
-    return bool(arms) and all(isinstance(a, list) and len(a) >= 2 and all(x == a[0] for x in a) for a in arms)
+    """An A/A plan as t3/rr_results.py reads one: v2 twice in every program, or v2 k > 2 times in every program."""
+    return bool(plan.get("programs")) and rr_results.kind_of(plan) in ("aa", "aak")
 
 
 def plan_refusals(plans: list[tuple[Path, dict]]) -> list:
@@ -49,7 +49,7 @@ def plan_refusals(plans: list[tuple[Path, dict]]) -> list:
         if plan.get("schedule") != "round-robin":
             out.append(f"{path.name} is not round-robin")
         if not is_aa(plan):
-            out.append(f"{path.name} is not an A/A plan (one arm repeated in every program)")
+            out.append(f"{path.name} is not an A/A plan (v2 twice, or more than twice, in every program)")
     return list(dict.fromkeys(out))
 
 

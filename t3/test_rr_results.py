@@ -222,6 +222,14 @@ class StatisticsTests(Fixture):
         self.assertAlmostEqual(f["neighbours"][0]["gap_ns"], gin - v2)
         self.assertIn("| mixed-disjoint/m100000/t111 | mserver-go | v2 | gin |", (self.dir / "out.md").read_text())
 
+    def test_the_floor_with_a_contestant_whose_windows_do_not_count(self) -> None:
+        cell = "mixed-disjoint/m1000/t111"
+        rc, res, err = self.run_main(self.write("rr.jsonl", record(self.rr, not_counting=[(cell, "mserver", 1)])),
+                                     self.write("aa.jsonl", record(self.aa)))
+        self.assertEqual(rc, 0, err)
+        f = res["systems"]["linux"]["floor"][cell]["mserver"]
+        self.assertEqual(f["neighbours"], [])  # crow does not count, so v2 has no ranked neighbour
+
     def test_a_gap_at_or_below_the_floor_does_not_clear_it(self) -> None:
         aa = {"cells": {"c": {"programs": {"p": {"d_ns": {"n": 3, "min": -50.0, "max": 20.0}}}}}}
         rr = {"cells": {"c": {"programs": {"p": {"ranking": ["v2", "x", "y"], "contestants": [

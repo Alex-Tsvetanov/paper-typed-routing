@@ -48,7 +48,9 @@ The floor (Alex, 2026-10-28: "Largest, A/A redone"), when a system's A/A record 
 per program and cell the A/A floor is the largest |d| over the rounds where both entries count; each pair of
 neighbours in the campaign's ranking gets its gap, the lower-ranked router's median t minus the higher-ranked
 one's (ns per request), which clears the floor when it is larger. No rank claim between neighbours whose gap
-does not clear it.
+does not clear it. Without a counted A/A pair in the cell the floor is null and no gap clears it; with an even n
+the median t need not follow the median X, so a gap can be negative, and it does not clear. Entry 0's rank is
+null when entry 0 has no counted window.
 Per cell also: the largest other-processes share and the largest single idle server's share of one CPU over
 the counted windows (recorded by p2run, never judged here), and each server's peak resident memory (KiB).
 """
@@ -262,7 +264,7 @@ def floor(aa: dict, rr: dict) -> dict:
         for program, p in c["programs"].items():
             d = aa["cells"].get(cell, {}).get("programs", {}).get(program, {}).get("d_ns", {})
             limit = max(abs(d["min"]), abs(d["max"])) if d.get("n") else None
-            ns = {s["arm"]: s["ns_per_request"]["median"] for s in p["contestants"]}
+            ns = {s["arm"]: s["ns_per_request"]["median"] for s in p["contestants"] if s["arm"] in p["ranking"]}
             out.setdefault(cell, {})[program] = {
                 "aa_largest_abs_d_ns": limit,
                 "neighbours": [{"ahead": hi, "behind": lo, "gap_ns": ns[lo] - ns[hi],
@@ -314,7 +316,9 @@ def markdown(result: dict) -> str:
                         mv = p["medians_ns"]
                         out.append(f"{program}: the {mv['n']} entries' median ns per request span {_f(mv['range'], 1)} "
                                    f"(SD {_f(mv['sd'], 1)}); within one process the pooled SD is "
-                                   f"{_f(p['within_process_sd_ns'], 1)}; entry 0 ranks {p['entry0_rank']}.")
+                                   f"{_f(p['within_process_sd_ns'], 1)}; "
+                                   + (f"entry 0 ranks {p['entry0_rank']}." if p["entry0_rank"] is not None
+                                      else "entry 0 has no counted window."))
                     out.append("")
     for system, kinds in sorted(result["systems"].items()):
         if "floor" in kinds:

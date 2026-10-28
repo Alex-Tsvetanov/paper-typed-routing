@@ -35,9 +35,13 @@ class RefusalTests(unittest.TestCase):
         self.assertEqual(self.refusals(("rr-aa-W.json", plan()), ("rr-aak-W.json", plan(["v2"] * 7))), [])
 
     def test_refusals(self) -> None:
-        self.assertIn("rr-W.json is not an A/A plan (one arm repeated in every program)",
-                      self.refusals(("rr-W.json", plan(["v2", "crow"]))))
-        self.assertIn("x.json is not an A/A plan (one arm repeated in every program)", self.refusals(("x.json", plan(["v2"]))))
+        for arms in (["v2", "crow"], ["v2"], ["crow", "crow"]):
+            self.assertIn("x.json is not an A/A plan (v2 twice, or more than twice, in every program)",
+                          self.refusals(("x.json", plan(arms))))
+        mixed = {**BUILD, "programs": [{"name": "a", "path": "/b/a", "arms": ["v2"] * 3},
+                                       {"name": "b", "path": "/b/b", "arms": ["v2"] * 2}]}
+        self.assertIn("x.json is not an A/A plan (v2 twice, or more than twice, in every program)",
+                      self.refusals(("x.json", mixed)))
         self.assertIn("x.json is not round-robin", self.refusals(("x.json", plan(schedule="mirrored"))))
         self.assertIn("the plans name different builds",
                       self.refusals(("a.json", plan()), ("b.json", plan(_build_commit="other"))))
@@ -95,7 +99,8 @@ class RunTests(unittest.TestCase):
         self.paths[1].write_text(json.dumps(plan(["v2", "crow"])))
         rc, calls, summary = self.main([])
         self.assertEqual((rc, calls), (2, []))
-        self.assertIn("rr-aak-W.json is not an A/A plan (one arm repeated in every program)", summary["refused"])
+        self.assertIn("rr-aak-W.json is not an A/A plan (v2 twice, or more than twice, in every program)",
+                      summary["refused"])
 
 
 class RunAndSummarizeTests(unittest.TestCase):
