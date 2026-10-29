@@ -103,6 +103,8 @@ Round-robin count checks (2026-10-28, ed3b7e0, 500 requests a window): W A/A 84 
   "Keep every neighbour"; in `t3/rr_results.py` before the runs): no rank claim between ranking neighbours whose gap
   in median ns per request is at most the A/A run's largest |d| over the rounds (same program and size); W's from
   row 9's p2r3-rr-w2. The k-server A/A run ("More A/A servers") is descriptive, outside the floor.
+- Disclosed as diagnostics found after the floor table, no cause claimed (Alex, 2026-10-29, "Keep, disclose
+  (Recommended)"): W's first 30 s of a job after idle ran slow; L's Rust m = 100,000 floor is one A/A process (row 9).
 
 ## Laptop requests
 
@@ -192,8 +194,6 @@ to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); 3caa3
 
 ## Next engineering
 
-Coordinator (2026-10-28): run as is, no cut (W's planned windows 9.3 min; its overrun is reruns); settle rule
-disclosed; no sign tests; a 6 GiB free-memory gate; no freeze step; W timed jobs start at least 15 min after boot.
-Alex (2026-10-28): the floor's statistic is the largest |d|, W's A/A run again; more A/A servers. (2026-10-29)
-"17.8min is still fine" (p2r3-rr-w again); "Keep every neighbour". Row 9 done; result, findings and a question for
-Alex sent to the coordinator 2026-10-29: (a) keep, disclosed; (b) W again with an untimed start-up load; (c) both.
+Coordinator (2026-10-28): run as is, no cut; settle rule disclosed; no sign tests; a 6 GiB free-memory gate; no
+freeze step; W timed jobs start at least 15 min after boot. Alex (2026-10-29), row 9's floor result: "Keep, disclose
+(Recommended)": it stands as the rule gives it (v2 clears in 8 of 12 cells); no rerun, no rr.py change. None queued.

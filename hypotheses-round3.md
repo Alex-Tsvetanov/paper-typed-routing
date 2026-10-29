@@ -161,3 +161,16 @@ Alex answered the design questions on 2026-10-23 (`design/round3/decisions-for-a
 - 2026-10-28: Alex's answer to decision 21: (a). Round 3 runs in the new loop (mixed-disjoint, m = 1,000 and
   100,000, pair (111, 211), R = 7 round-robin rounds of 1.5 s windows, every contestant, one A/A run per
   system), with no tested family. H8 to H10 are not tested and this draft is not frozen; decision 20 is moot.
+- 2026-10-28: Alex's answers on the A/A run (via the coordinator), "Largest, A/A redone" and "More A/A servers": no
+  rank claim between neighbours in a campaign's ranking whose gap in median ns per request is at most the A/A run's
+  largest |d| over the rounds (same program and size); Windows' A/A run done again; a k-server A/A run (v2 seven times
+  per program), descriptive and outside that floor. The rule is in `t3/rr_results.py` at d063274, before the runs.
+- 2026-10-29: Alex's answers "17.8min is still fine" (Windows' A/A run and campaign again in one job, at least 15
+  min after boot) and "Keep every neighbour". Chain A17 ran p2r3-rr-w2, p2r3-aa-w and p2r3-aa-l, every job exit 0
+  (`design/round3/floor-W.*`, `floor-L.*`); p2r3-rr-w2's record replaces A15's. v2 is first in every program at both
+  sizes on both systems and clears the floor in 8 of 12 cells, not in Windows' Go and Rust at m = 1,000 nor Arch's
+  Rust at both sizes. Two diagnostics, found after the floor table, no cause claimed: on Windows the first 30 s of a
+  job after idle ran 2.9 to 9.8% slow (A15 the same; Windows' Go and Rust m = 1,000 floors come from the round where
+  it ends); Arch's Rust m = 100,000 floor is one A/A process faster than all seven of the k-server run. Alex's
+  answer (via the coordinator), "Keep, disclose (Recommended)": the result stands as the rule gives it, the paper
+  discloses both diagnostics, nothing runs again.
