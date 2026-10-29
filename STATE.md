@@ -157,6 +157,7 @@ The coordinator schedules them, from `t3/jobs/requests-*.json` (the lab queue's 
    15 min after boot: p2r3-rr-w2 (p2r3-rr-w unchanged, ed3b7e0; A15 took 17.8 min), then p2r3-aa-w at d063274,
    rr-aak-W.json (v2 seven times per program, 21 servers per cell, 294 windows), about 11 min; L p2r3-aa-l, 10 min.
    Desktop count checks, 500 requests a window: W 84 of 84 and 294 of 294 valid; L (container, p2run) 294 of 294.
+   RUNNING: chain A17 (gap38-*, tools c713039, specs from 848ef65); rr-w2 began 2026-10-29 17:44:58, W up about 17 h.
 
 ## Lab requests
 
