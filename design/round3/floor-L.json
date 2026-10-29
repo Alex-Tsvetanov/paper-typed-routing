@@ -1,0 +1,4847 @@
+{
+ "_note": "The floor runs on Arch (Alex, 2026-10-28 and 29): t3/rr_results.py at d063274 over p2r3-rr-l's aa.jsonl and rr.jsonl (chain A12, the records of rr-L.json) and p2r3-aa-l's rr-aak-L.jsonl (chain A17, begun 29 s after boot), run on the desktop on 2026-10-29. No round ran again. The floor is the rule fixed before the runs; the k-server run is descriptive. The bring-up's Release binaries at 3ff814e50, covered by p2r3-3ff814e50-L-asan, -tsan and -msan.",
+ "inputs": [
+  {
+   "system": "linux",
+   "job": "p2r3-rr-l",
+   "queue": "gap33-a-q1-p2-rr-bfc4e1a1",
+   "archive": "p2r3-rr-l.tar.gz",
+   "archive_sha256": "cbd182187da7f60256cc8f6a3dda8c5f38fb53e4c881287e7b2ba26bd8d6566b",
+   "file": "out/rr/aa.jsonl",
+   "sha256": "91de3d75789c9ccb51428896576717d527ab30e5579a1ce9642acd17fca1c699"
+  },
+  {
+   "system": "linux",
+   "job": "p2r3-rr-l",
+   "queue": "gap33-a-q1-p2-rr-bfc4e1a1",
+   "archive": "p2r3-rr-l.tar.gz",
+   "archive_sha256": "cbd182187da7f60256cc8f6a3dda8c5f38fb53e4c881287e7b2ba26bd8d6566b",
+   "file": "out/rr/rr.jsonl",
+   "sha256": "f4ad1378a384d4ee48a4e3029e2b509cf0d00be6f3d862929ac19aade74e475d"
+  },
+  {
+   "system": "linux",
+   "job": "p2r3-aa-l",
+   "queue": "gap38-a-q1-p2-aa-l-eaf13044",
+   "archive": "p2r3-aa-l.tar.gz",
+   "archive_sha256": "0861f826623585cf5ca61e0345b4bdd00b4f25fbde8ea3cd3badc429801f6d98",
+   "file": "out/aa/rr-aak-L.jsonl",
+   "sha256": "193d08603ead5064b3e4dbb7eb68434c7b1b6efb851d2fad13d1a2ed7f62224a"
+  }
+ ],
+ "analysis": {
+  "rule": "t3/rr_results.py's docstring (decision 21 (a))",
+  "systems": {
+   "linux": {
+    "aa": {
+     "session": {
+      "host": "alex-laptop",
+      "os": "Linux-7.2.6-arch2-1-x86_64-with-glibc2.44",
+      "cpu_model": "AMD Ryzen 7 5800H with Radeon Graphics",
+      "started": "2026-10-28T10:43:45+0200",
+      "plan_sha256": "e5a444e2406ab622ac366bbc16088a0b804a5ba788fa27ae8531cc4bba644c38",
+      "runner_sha256": "73ff9b8f9839ac8db674590f7928ed15d8368c7b4a36e721241e3b9f7b608c7e"
+     },
+     "cells": {
+      "mixed-disjoint/m1000/t111": {
+       "m": 1000,
+       "rounds": 7,
+       "others_max_pct_of_one_cpu": 2.47,
+       "idle_server_max_pct_of_one_cpu": 0.0,
+       "programs": {
+        "mserver": {
+         "entries": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 126951.16299142182,
+            "sd": 776.6700112164912,
+            "min": 125729.05608205675,
+            "max": 128385.9330773141
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7877.044813426173,
+            "sd": 48.086513454445935,
+            "min": 7789.01532302452,
+            "max": 7953.610972370241
+           },
+           "peak_resident_kib": 9860
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 126658.55323953409,
+            "sd": 863.0253548319831,
+            "min": 125967.11827029855,
+            "max": 128609.37876641544
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7895.24255901471,
+            "sd": 53.18990003039296,
+            "min": 7775.482702674683,
+            "max": 7938.579636744674
+           },
+           "peak_resident_kib": 9952
+          }
+         ],
+         "r": {
+          "n": 7,
+          "median": 1.0018817244439044,
+          "sd": 0.0025044066781876196,
+          "min": 0.9981101243601447,
+          "max": 1.0043780000780091
+         },
+         "d_ns": {
+          "n": 7,
+          "median": -14.811869831747572,
+          "sd": 19.73441849106829,
+          "min": -34.485702807661255,
+          "max": 15.031335625567408
+         }
+        },
+        "mserver-go": {
+         "entries": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 58680.4283212885,
+            "sd": 239.6330134577299,
+            "min": 58490.426093411115,
+            "max": 59238.61468054654
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17041.457068526764,
+            "sd": 69.07443839769036,
+            "min": 16880.880915137124,
+            "max": 17096.81509932869
+           },
+           "peak_resident_kib": 23216
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 58683.08717948845,
+            "sd": 237.3873088723471,
+            "min": 58270.976350034616,
+            "max": 59079.21754900832
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17040.684941155087,
+            "sd": 68.9581061696397,
+            "min": 16926.42593261267,
+            "max": 17161.202070701293
+           },
+           "peak_resident_kib": 23476
+          }
+         ],
+         "r": {
+          "n": 7,
+          "median": 0.9994339666397658,
+          "sd": 0.0032322740287034826,
+          "min": 0.9981344269055289,
+          "max": 1.0073139824253385
+         },
+         "d_ns": {
+          "n": 7,
+          "median": 9.643406747098197,
+          "sd": 55.04485439546453,
+          "min": -124.60536886481714,
+          "max": 31.895358250454592
+         }
+        },
+        "mserver-rs": {
+         "entries": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 117427.48326928353,
+            "sd": 555.5990365897986,
+            "min": 116902.13826750398,
+            "max": 118558.64318151257
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8515.893998228761,
+            "sd": 40.082671820663066,
+            "min": 8434.644435572749,
+            "max": 8554.163463731751
+           },
+           "peak_resident_kib": 7296
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 116796.18177115078,
+            "sd": 600.5069578231809,
+            "min": 116558.15454509335,
+            "max": 118253.87412233188
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8561.923727604295,
+            "sd": 43.57018391400465,
+            "min": 8456.382570312368,
+            "max": 8579.408312552905
+           },
+           "peak_resident_kib": 7240
+          }
+         ],
+         "r": {
+          "n": 7,
+          "median": 1.0033065912617858,
+          "sd": 0.001997218328896958,
+          "min": 1.0009767946758203,
+          "max": 1.0071889177340918
+         },
+         "d_ns": {
+          "n": 7,
+          "median": -28.275102351219175,
+          "sd": 17.019324196863614,
+          "min": -61.22006138551296,
+          "max": -8.355661327470443
+         }
+        }
+       }
+      },
+      "mixed-disjoint/m100000/t111": {
+       "m": 100000,
+       "rounds": 7,
+       "others_max_pct_of_one_cpu": 2.47,
+       "idle_server_max_pct_of_one_cpu": 0.0,
+       "programs": {
+        "mserver": {
+         "entries": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 126418.46613810804,
+            "sd": 391.65330477496644,
+            "min": 126073.5515264851,
+            "max": 127073.17774233558
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7910.23677591162,
+            "sd": 24.437584851004164,
+            "min": 7869.481331675559,
+            "max": 7931.8777641472525
+           },
+           "peak_resident_kib": 44800
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 126867.19773825309,
+            "sd": 467.80427397186725,
+            "min": 126141.63655867284,
+            "max": 127292.52948299402
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7882.258123673203,
+            "sd": 29.15325858780787,
+            "min": 7855.9205639290685,
+            "max": 7927.5965278511785
+           },
+           "peak_resident_kib": 44636
+          }
+         ],
+         "r": {
+          "n": 7,
+          "median": 0.997594440615463,
+          "sd": 0.003312924932085115,
+          "min": 0.994070817945481,
+          "max": 1.00349020966693
+         },
+         "d_ns": {
+          "n": 7,
+          "median": 18.94345303796854,
+          "sd": 26.168821454719694,
+          "min": -27.466139817539442,
+          "max": 46.90123393873091
+         }
+        },
+        "mserver-go": {
+         "entries": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 58003.77389249638,
+            "sd": 130.8966017945493,
+            "min": 57779.135954273566,
+            "max": 58220.45370722125
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17240.257536576675,
+            "sd": 38.920413520783214,
+            "min": 17176.09424737216,
+            "max": 17307.285467048183
+           },
+           "peak_resident_kib": 79936
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 58217.05964666315,
+            "sd": 152.25479951369942,
+            "min": 58019.68393157703,
+            "max": 58507.10152143869
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17177.0956154313,
+            "sd": 44.83362822825058,
+            "min": 17091.942242833054,
+            "max": 17235.529948410374
+           },
+           "peak_resident_kib": 80184
+          }
+         ],
+         "r": {
+          "n": 7,
+          "median": 0.9974541548509814,
+          "sd": 0.003662593021415883,
+          "min": 0.9912941336811844,
+          "max": 1.000942562065021
+         },
+         "d_ns": {
+          "n": 7,
+          "median": 43.841840082674025,
+          "sd": 63.23825860412886,
+          "min": -16.18953486279861,
+          "max": 150.10697555774823
+         }
+        },
+        "mserver-rs": {
+         "entries": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 117010.0184046822,
+            "sd": 126.2308695495529,
+            "min": 116908.1532325642,
+            "max": 117240.23654892828
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8546.276751632275,
+            "sd": 9.20979203825665,
+            "min": 8529.494902397833,
+            "max": 8553.723349052569
+           },
+           "peak_resident_kib": 76700
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 124503.72071486003,
+            "sd": 311.0146266957283,
+            "min": 124057.24347987532,
+            "max": 124942.51521676652
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8031.888478981383,
+            "sd": 20.06139180277242,
+            "min": 8003.680718809526,
+            "max": 8060.7949358654005
+           },
+           "peak_resident_kib": 76412
+          }
+         ],
+         "r": {
+          "n": 7,
+          "median": 0.9395253036233226,
+          "sd": 0.0019078406494918946,
+          "min": 0.9367630453026753,
+          "max": 0.9431937638019796
+         },
+         "d_ns": {
+          "n": 7,
+          "median": 516.118208409709,
+          "sd": 16.19071602890354,
+          "min": 485.4818157668742,
+          "max": 540.2950058343467
+         }
+        }
+       }
+      }
+     }
+    },
+    "rr": {
+     "session": {
+      "host": "alex-laptop",
+      "os": "Linux-7.2.6-arch2-1-x86_64-with-glibc2.44",
+      "cpu_model": "AMD Ryzen 7 5800H with Radeon Graphics",
+      "started": "2026-10-28T10:46:24+0200",
+      "plan_sha256": "c787694ee492e3fd1c1506d396c3050dc77891d8151b271be94cdf8ec5d88571",
+      "runner_sha256": "73ff9b8f9839ac8db674590f7928ed15d8368c7b4a36e721241e3b9f7b608c7e"
+     },
+     "cells": {
+      "mixed-disjoint/m1000/t111": {
+       "m": 1000,
+       "rounds": 7,
+       "others_max_pct_of_one_cpu": 3.09,
+       "idle_server_max_pct_of_one_cpu": 0.619,
+       "programs": {
+        "mserver": {
+         "contestants": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 127145.20154009388,
+            "sd": 382.10270246281317,
+            "min": 126558.24868695467,
+            "max": 127735.80044361297
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7865.023515532835,
+            "sd": 23.642703072875893,
+            "min": 7828.658813951182,
+            "max": 7901.4999841972185
+           },
+           "peak_resident_kib": 10036
+          },
+          {
+           "arm": "crow",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 113646.30294018668,
+            "sd": 504.43277790581186,
+            "min": 112872.2891030543,
+            "max": 114248.95333312641
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8799.230367628512,
+            "sd": 39.13856519609961,
+            "min": 8752.815416034544,
+            "max": 8859.570475149867
+           },
+           "peak_resident_kib": 10616
+          },
+          {
+           "arm": "drogon",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 20909.20607744524,
+            "sd": 41.93441573814829,
+            "min": 20881.18316987676,
+            "max": 20996.538642341104
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 47825.82352941176,
+            "sd": 95.6580422488411,
+            "min": 47626.8977965456,
+            "max": 47890.0066085624
+           },
+           "peak_resident_kib": 12520
+          },
+          {
+           "arm": "oatpp",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 53736.64373280113,
+            "sd": 25.518901886574444,
+            "min": 53700.58956366274,
+            "max": 53769.27759046631
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 18609.275357284638,
+            "sd": 8.8385069332226,
+            "min": 18597.980943997423,
+            "max": 18621.769483824515
+           },
+           "peak_resident_kib": 10796
+          },
+          {
+           "arm": "pistache",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 105560.59498339698,
+            "sd": 174.15975022909512,
+            "min": 105287.33655584612,
+            "max": 105775.96450591947
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 9473.231939979916,
+            "sd": 15.636005681138164,
+            "min": 9453.943574714818,
+            "max": 9497.81837694777
+           },
+           "peak_resident_kib": 10728
+          },
+          {
+           "arm": "boost-url",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 116524.84425255012,
+            "sd": 409.53673257969393,
+            "min": 115775.65324169092,
+            "max": 117164.22497089802
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8581.860859068389,
+            "sd": 30.20403240198142,
+            "min": 8535.02850591455,
+            "max": 8637.394581677896
+           },
+           "peak_resident_kib": 10124
+          },
+          {
+           "arm": "r3",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 123585.13165210387,
+            "sd": 338.02561981781537,
+            "min": 123003.12407415961,
+            "max": 123776.59013188175
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8091.588256870837,
+            "sd": 22.2043112350815,
+            "min": 8079.0721325778795,
+            "max": 8129.874810310441
+           },
+           "peak_resident_kib": 11616
+          },
+          {
+           "arm": "uwebsockets",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 124611.2719991178,
+            "sd": 315.33293889478574,
+            "min": 124299.26005488323,
+            "max": 125275.75176485626
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8024.956201450857,
+            "sd": 20.245514215560693,
+            "min": 7982.390733340074,
+            "max": 8045.10018449393
+           },
+           "peak_resident_kib": 10016
+          },
+          {
+           "arm": "glaze",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 117384.87990750282,
+            "sd": 249.60754356082796,
+            "min": 117044.14681186396,
+            "max": 117693.49688988434
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8518.984734558506,
+            "sd": 18.125331450630007,
+            "min": 8496.64617354019,
+            "max": 8543.784778980822
+           },
+           "peak_resident_kib": 11184
+          },
+          {
+           "arm": "cpp-httplib",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 60649.71690205694,
+            "sd": 119.18401805377869,
+            "min": 60488.32798627896,
+            "max": 60810.3202396499
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 16488.123128668467,
+            "sd": 32.399346928722295,
+            "min": 16444.57710564685,
+            "max": 16532.115092135427
+           },
+           "peak_resident_kib": 10316
+          },
+          {
+           "arm": "null",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 129071.02947465493,
+            "sd": 309.72217975987076,
+            "min": 128878.25707654361,
+            "max": 129669.72590432377
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7747.671991694815,
+            "sd": 18.529285463262887,
+            "min": 7711.900314633544,
+            "max": 7759.260737100737
+           },
+           "peak_resident_kib": 9740
+          }
+         ],
+         "ranking": [
+          "v2",
+          "uwebsockets",
+          "r3",
+          "glaze",
+          "boost-url",
+          "crow",
+          "pistache",
+          "cpp-httplib",
+          "oatpp",
+          "drogon"
+         ],
+         "not_ranked": [],
+         "routing_cost_ns_per_request": {
+          "v2": {
+           "n": 7,
+           "median": 122.96420976487025,
+           "sd": 30.677442902548293,
+           "min": 101.24143493269457,
+           "max": 189.59966956367407
+          },
+          "crow": {
+           "n": 7,
+           "median": 1069.915566968667,
+           "sd": 40.49081260583173,
+           "min": 1010.8197410618977,
+           "max": 1117.7750663196884
+          },
+          "drogon": {
+           "n": 7,
+           "median": 40070.005176958286,
+           "sd": 96.62384984348786,
+           "min": 39884.90212157295,
+           "max": 40133.755377952264
+          },
+          "oatpp": {
+           "n": 7,
+           "median": 10862.508746723779,
+           "sd": 14.601067889381177,
+           "min": 10855.82694944843,
+           "max": 10890.694672779184
+          },
+          "pistache": {
+           "n": 7,
+           "median": 1732.1559542200794,
+           "sd": 24.135936015661255,
+           "min": 1694.682837614081,
+           "max": 1767.9590650255222
+          },
+          "boost-url": {
+           "n": 7,
+           "median": 845.3219861620946,
+           "sd": 32.127634088657544,
+           "min": 786.172969586838,
+           "max": 878.1338445771589
+          },
+          "r3": {
+           "n": 7,
+           "median": 365.59735263055154,
+           "sd": 26.6921381745376,
+           "min": 326.57419264377586,
+           "max": 402.0536972880882
+          },
+          "uwebsockets": {
+           "n": 7,
+           "median": 278.4024515411402,
+           "sd": 34.874515857831106,
+           "min": 223.12999623933683,
+           "max": 333.19986986038566
+          },
+          "glaze": {
+           "n": 7,
+           "median": 787.5335483706885,
+           "sd": 25.468041252787515,
+           "min": 737.3854364394529,
+           "max": 810.1367888938757
+          },
+          "cpp-httplib": {
+           "n": 7,
+           "median": 8740.451136973652,
+           "sd": 33.71530878915262,
+           "min": 8695.765908065507,
+           "max": 8790.119417162781
+          }
+         },
+         "v2_above_competitor_in_rounds": {
+          "crow": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "drogon": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "oatpp": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "pistache": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "boost-url": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "r3": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "uwebsockets": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "glaze": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "cpp-httplib": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          }
+         }
+        },
+        "mserver-go": {
+         "contestants": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 59017.079549754766,
+            "sd": 174.23297842127533,
+            "min": 58639.05086691739,
+            "max": 59131.726227441955
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 16944.247455636007,
+            "sd": 50.242687534511056,
+            "min": 16911.395350672483,
+            "max": 17053.48202632955
+           },
+           "peak_resident_kib": 23328
+          },
+          {
+           "arm": "httprouter",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 58493.73894401903,
+            "sd": 93.52076633187414,
+            "min": 58358.44383244672,
+            "max": 58671.114391787036
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17095.846804339897,
+            "sd": 27.311011129928644,
+            "min": 17044.162367912737,
+            "max": 17135.480906089717
+           },
+           "peak_resident_kib": 22876
+          },
+          {
+           "arm": "gin",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 57199.83460492797,
+            "sd": 140.88971697332923,
+            "min": 57048.4820140641,
+            "max": 57438.46298259587
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17482.568033751733,
+            "sd": 43.00692315850185,
+            "min": 17409.936618655775,
+            "max": 17528.950196316724
+           },
+           "peak_resident_kib": 23324
+          },
+          {
+           "arm": "nethttp",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 54539.14834961272,
+            "sd": 103.20041831522224,
+            "min": 54402.578877031294,
+            "max": 54722.57889083683
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 18335.45316090549,
+            "sd": 34.66509565232515,
+            "min": 18273.992568859867,
+            "max": 18381.481551827663
+           },
+           "peak_resident_kib": 23388
+          },
+          {
+           "arm": "chi",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 53015.96825137672,
+            "sd": 134.78681376607668,
+            "min": 52838.6316748321,
+            "max": 53177.08000440488
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 18862.24156575754,
+            "sd": 47.954575729550754,
+            "min": 18805.09422324742,
+            "max": 18925.546864157655
+           },
+           "peak_resident_kib": 23356
+          },
+          {
+           "arm": "null",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 60821.54325567712,
+            "sd": 95.0580060826206,
+            "min": 60681.703723422164,
+            "max": 60926.33343180156
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 16441.542691481434,
+            "sd": 25.71267697007439,
+            "min": 16413.264079305856,
+            "max": 16479.431832663195
+           },
+           "peak_resident_kib": 23036
+          }
+         ],
+         "ranking": [
+          "v2",
+          "httprouter",
+          "gin",
+          "nethttp",
+          "chi"
+         ],
+         "not_ranked": [],
+         "routing_cost_ns_per_request": {
+          "v2": {
+           "n": 7,
+           "median": 475.8440888750083,
+           "sd": 69.41539398352586,
+           "min": 441.30704519629944,
+           "max": 635.373123674297
+          },
+          "httprouter": {
+           "n": 7,
+           "median": 655.7246985592537,
+           "sd": 37.30420893874352,
+           "min": 589.4935987849094,
+           "max": 682.5827250340408
+          },
+          "gin": {
+           "n": 7,
+           "median": 1041.025342270299,
+           "sd": 53.41151867685736,
+           "min": 930.5047859925799,
+           "max": 1084.5980310898121
+          },
+          "nethttp": {
+           "n": 7,
+           "median": 1906.7454449876132,
+           "sd": 29.91354864580169,
+           "min": 1846.1228731616684,
+           "max": 1927.1198403563394
+          },
+          "chi": {
+           "n": 7,
+           "median": 2448.977486451684,
+           "sd": 67.49618669825153,
+           "min": 2325.6623905842243,
+           "max": 2507.437961502401
+          }
+         },
+         "v2_above_competitor_in_rounds": {
+          "httprouter": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "gin": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "nethttp": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "chi": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          }
+         }
+        },
+        "mserver-rs": {
+         "contestants": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 117198.87696323569,
+            "sd": 254.67053738153666,
+            "min": 116760.86030261572,
+            "max": 117435.51513767689
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8532.504968573136,
+            "sd": 18.57379097901808,
+            "min": 8515.311563351499,
+            "max": 8564.513805467375
+           },
+           "peak_resident_kib": 7472
+          },
+          {
+           "arm": "matchit",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 116658.94089089091,
+            "sd": 353.00464128874603,
+            "min": 116169.55543025561,
+            "max": 117225.52589242844
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8571.996217034772,
+            "sd": 25.924641832327733,
+            "min": 8530.56527055077,
+            "max": 8608.107316037438
+           },
+           "peak_resident_kib": 8272
+          },
+          {
+           "arm": "path-tree",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 115605.59057156442,
+            "sd": 396.47883005196496,
+            "min": 114762.10204231198,
+            "max": 115888.88412729392
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8650.100700631434,
+            "sd": 29.823651277276117,
+            "min": 8628.955292222734,
+            "max": 8713.67796688934
+           },
+           "peak_resident_kib": 8084
+          },
+          {
+           "arm": "actix-router",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 15315.415012408184,
+            "sd": 29.805537493899934,
+            "min": 15253.412164002024,
+            "max": 15342.750636121174
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 65293.69260903631,
+            "sd": 127.35580401289461,
+            "min": 65177.3611992179,
+            "max": 65559.1017438049
+           },
+           "peak_resident_kib": 29540
+          },
+          {
+           "arm": "null",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 120148.16022957156,
+            "sd": 247.2255231649059,
+            "min": 119836.62559144251,
+            "max": 120520.77531795799
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8323.057116224358,
+            "sd": 17.113116149588947,
+            "min": 8297.32465097241,
+            "max": 8344.694245724902
+           },
+           "peak_resident_kib": 7248
+          }
+         ],
+         "ranking": [
+          "v2",
+          "matchit",
+          "path-tree",
+          "actix-router"
+         ],
+         "not_ranked": [],
+         "routing_cost_ns_per_request": {
+          "v2": {
+           "n": 7,
+           "median": 217.9869123790886,
+           "sd": 29.09054471797877,
+           "min": 178.5943152487671,
+           "max": 256.9653245795016
+          },
+          "matchit": {
+           "n": 7,
+           "median": 261.5013006214158,
+           "sd": 30.573765612357423,
+           "min": 207.5081543264114,
+           "max": 288.3363846491484
+          },
+          "path-tree": {
+           "n": 7,
+           "median": 350.22910595978465,
+           "sd": 33.72530281674085,
+           "min": 305.4064549065315,
+           "max": 385.3175208969933
+          },
+          "actix-router": {
+           "n": 7,
+           "median": 56977.558322573735,
+           "sd": 116.03142345883712,
+           "min": 56868.49303588342,
+           "max": 57214.40749808
+          }
+         },
+         "v2_above_competitor_in_rounds": {
+          "matchit": {
+           "v2_above": 6,
+           "rounds_both_count": 7
+          },
+          "path-tree": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "actix-router": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          }
+         }
+        }
+       }
+      },
+      "mixed-disjoint/m100000/t111": {
+       "m": 100000,
+       "rounds": 7,
+       "others_max_pct_of_one_cpu": 3.7,
+       "idle_server_max_pct_of_one_cpu": 0.618,
+       "programs": {
+        "mserver": {
+         "contestants": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 126257.87627449697,
+            "sd": 401.2809859849811,
+            "min": 125457.85519064296,
+            "max": 126733.20433105931
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7920.297960864653,
+            "sd": 25.24571596653041,
+            "min": 7890.591935068145,
+            "max": 7970.80420736049
+           },
+           "peak_resident_kib": 44696
+          },
+          {
+           "arm": "crow",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 103521.93421054119,
+            "sd": 345.650396743283,
+            "min": 103042.58762279303,
+            "max": 104073.83225931333
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 9659.788600609187,
+            "sd": 32.233316003781546,
+            "min": 9608.563250638945,
+            "max": 9704.725231286797
+           },
+           "peak_resident_kib": 75968
+          },
+          {
+           "arm": "drogon",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": true,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 97.99531726109957,
+            "sd": 2.0674319538841064,
+            "min": 94.66176388148386,
+            "max": 100.66178832797286
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 10204569.238095239,
+            "sd": 217794.78942017685,
+            "min": 9934256.251655629,
+            "max": 10563927.387323944
+           },
+           "peak_resident_kib": 294628
+          },
+          {
+           "arm": "oatpp",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 258.6545578397596,
+            "sd": 1.8739585659034455,
+            "min": 256.6545701945673,
+            "max": 261.98597344563905
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 3866160.3659793814,
+            "sd": 27842.03684329042,
+            "min": 3816998.2417302798,
+            "max": 3896287.524675324
+           },
+           "peak_resident_kib": 104156
+          },
+          {
+           "arm": "pistache",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 104961.66060505282,
+            "sd": 333.56010556694986,
+            "min": 104498.78506154285,
+            "max": 105511.22296779059
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 9527.288290176502,
+            "sd": 30.25403586632341,
+            "min": 9477.664762783292,
+            "max": 9569.48924727753
+           },
+           "peak_resident_kib": 80448
+          },
+          {
+           "arm": "boost-url",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 37873.87993581542,
+            "sd": 80.1897518755971,
+            "min": 37753.20753036442,
+            "max": 38001.21375359415
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 26403.42108320279,
+            "sd": 55.886607904549315,
+            "min": 26314.948950950813,
+            "max": 26487.815616612515
+           },
+           "peak_resident_kib": 62464
+          },
+          {
+           "arm": "r3",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 116651.7532948179,
+            "sd": 503.65181344816483,
+            "min": 116029.53038778342,
+            "max": 117293.17909394833
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8572.524387804668,
+            "sd": 37.01621162703844,
+            "min": 8525.644949899686,
+            "max": 8618.495624845591
+           },
+           "peak_resident_kib": 181104
+          },
+          {
+           "arm": "uwebsockets",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 84919.428349186,
+            "sd": 121.26179868541999,
+            "min": 84698.10080208351,
+            "max": 84969.37789857197
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 11775.868248759656,
+            "sd": 16.848203789848185,
+            "min": 11768.945762951225,
+            "max": 11806.64017882442
+           },
+           "peak_resident_kib": 36844
+          },
+          {
+           "arm": "glaze",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 115806.87739350958,
+            "sd": 477.03873739641557,
+            "min": 114858.17188354029,
+            "max": 116281.94848784612
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8635.065744860894,
+            "sd": 35.70959149970697,
+            "min": 8599.787095109787,
+            "max": 8706.389659535445
+           },
+           "peak_resident_kib": 134052
+          },
+          {
+           "arm": "cpp-httplib",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 978.6189231114711,
+            "sd": 4.173767120539468,
+            "min": 969.9426809139571,
+            "max": 980.6182391617983
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 1021848.2152588556,
+            "sd": 4388.591574799932,
+            "min": 1019764.8382053026,
+            "max": 1030988.7580756014
+           },
+           "peak_resident_kib": 47260
+          },
+          {
+           "arm": "null",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 129690.99695364085,
+            "sd": 374.9538787902133,
+            "min": 129135.75804432239,
+            "max": 130311.07345955678
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7710.635460358582,
+            "sd": 22.280835771524593,
+            "min": 7673.9449185057865,
+            "max": 7743.788514849441
+           },
+           "peak_resident_kib": 12472
+          }
+         ],
+         "ranking": [
+          "v2",
+          "r3",
+          "glaze",
+          "pistache",
+          "crow",
+          "uwebsockets",
+          "boost-url",
+          "cpp-httplib",
+          "oatpp"
+         ],
+         "not_ranked": [
+          "drogon"
+         ],
+         "routing_cost_ns_per_request": {
+          "v2": {
+           "n": 7,
+           "median": 198.11562648629115,
+           "sd": 32.146887867772044,
+           "min": 175.8207322100643,
+           "max": 260.16874700190783
+          },
+          "crow": {
+           "n": 7,
+           "median": 1956.7543080284622,
+           "sd": 37.344298722791876,
+           "min": 1886.380916260583,
+           "max": 2002.6870768308227
+          },
+          "drogon": {
+           "n": 7,
+           "median": 10196867.199940782,
+           "sd": 217808.83571129464,
+           "min": 9926545.61619527,
+           "max": 10556253.442405438
+          },
+          "oatpp": {
+           "n": 7,
+           "median": 3858416.577464532,
+           "sd": 27835.443449029943,
+           "min": 3809296.203575824,
+           "max": 3888565.3423409457
+          },
+          "pistache": {
+           "n": 7,
+           "median": 1824.253997595778,
+           "sd": 27.717411299799302,
+           "min": 1755.48242840493,
+           "max": 1834.2135460616664
+          },
+          "boost-url": {
+           "n": 7,
+           "median": 18687.761643508573,
+           "sd": 70.61533768134827,
+           "min": 18587.622237097814,
+           "max": 18784.781324031792
+          },
+          "r3": {
+           "n": 7,
+           "median": 870.4862333486935,
+           "sd": 39.97829694860614,
+           "min": 803.9183737595358,
+           "max": 904.0969763112043
+          },
+          "uwebsockets": {
+           "n": 7,
+           "median": 4068.544236386053,
+           "sd": 33.659411388261184,
+           "min": 4026.278132462776,
+           "max": 4132.695260318634
+          },
+          "glaze": {
+           "n": 7,
+           "median": 912.8834104825328,
+           "sd": 43.29594038939104,
+           "min": 872.4603812567857,
+           "max": 995.754199176863
+          },
+          "cpp-httplib": {
+           "n": 7,
+           "median": 1014126.0329244772,
+           "sd": 4398.439664341935,
+           "min": 1012037.5114914495,
+           "max": 1023286.7199211455
+          }
+         },
+         "v2_above_competitor_in_rounds": {
+          "crow": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "drogon": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "oatpp": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "pistache": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "boost-url": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "r3": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "uwebsockets": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "glaze": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "cpp-httplib": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          }
+         }
+        },
+        "mserver-go": {
+         "contestants": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 58245.771827414,
+            "sd": 156.58941972497334,
+            "min": 57934.34458089007,
+            "max": 58391.762310884726
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17168.62818752003,
+            "sd": 46.28388198952692,
+            "min": 17125.70335993424,
+            "max": 17260.918497209597
+           },
+           "peak_resident_kib": 80232
+          },
+          {
+           "arm": "httprouter",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 49050.079395091205,
+            "sd": 249.4141046671589,
+            "min": 48863.45824698656,
+            "max": 49638.06371841047
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 20387.326836826225,
+            "sd": 102.72645754866937,
+            "min": 20145.8301369863,
+            "max": 20465.190878332287
+           },
+           "peak_resident_kib": 79508
+          },
+          {
+           "arm": "gin",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 48339.464110708795,
+            "sd": 218.05255219352924,
+            "min": 47952.747757543904,
+            "max": 48599.452826105684
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 20687.031153464253,
+            "sd": 93.55701014458674,
+            "min": 20576.363350799704,
+            "max": 20853.86232831007
+           },
+           "peak_resident_kib": 116824
+          },
+          {
+           "arm": "nethttp",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 49725.407402004115,
+            "sd": 751.3666789340872,
+            "min": 48842.63885054863,
+            "max": 51092.70862376318
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 20110.443578984057,
+            "sd": 300.82512718757744,
+            "min": 19572.264358967666,
+            "max": 20473.914258806828
+           },
+           "peak_resident_kib": 163672
+          },
+          {
+           "arm": "chi",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 44206.29519896108,
+            "sd": 940.6863714270985,
+            "min": 42520.363362867254,
+            "max": 45536.23049244055
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 22621.21255579684,
+            "sd": 486.2473682377248,
+            "min": 21960.535362407954,
+            "max": 23518.143329727358
+           },
+           "peak_resident_kib": 276440
+          },
+          {
+           "arm": "null",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 60559.67434701261,
+            "sd": 127.85820540661527,
+            "min": 60455.681282800084,
+            "max": 60805.67475046042
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 16512.638332067414,
+            "sd": 34.77379753844464,
+            "min": 16445.8334539315,
+            "max": 16541.042608091568
+           },
+           "peak_resident_kib": 50904
+          }
+         ],
+         "ranking": [
+          "v2",
+          "nethttp",
+          "httprouter",
+          "gin",
+          "chi"
+         ],
+         "not_ranked": [],
+         "routing_cost_ns_per_request": {
+          "v2": {
+           "n": 7,
+           "median": 665.5392116202747,
+           "sd": 58.64841812062116,
+           "min": 626.0782857096492,
+           "max": 764.7701899836429
+          },
+          "httprouter": {
+           "n": 7,
+           "median": 3932.91268861607,
+           "sd": 126.34261773469554,
+           "min": 3604.7875288947325,
+           "max": 3952.552546264873
+          },
+          "gin": {
+           "n": 7,
+           "median": 4208.4928752952765,
+           "sd": 80.64207706679632,
+           "min": 4063.7250187322898,
+           "max": 4337.051526724517
+          },
+          "nethttp": {
+           "n": 7,
+           "median": 3593.632777398503,
+           "sd": 311.024479170084,
+           "min": 3055.9959027396217,
+           "max": 3961.275926739414
+          },
+          "chi": {
+           "n": 7,
+           "median": 6161.048407482875,
+           "sd": 499.0214521919609,
+           "min": 5419.492754316387,
+           "max": 7039.605051558381
+          }
+         },
+         "v2_above_competitor_in_rounds": {
+          "httprouter": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "gin": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "nethttp": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "chi": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          }
+         }
+        },
+        "mserver-rs": {
+         "contestants": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 116498.91973292628,
+            "sd": 421.22512539689365,
+            "min": 115689.5171083384,
+            "max": 116910.8552578741
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8583.770581671482,
+            "sd": 31.148362404596373,
+            "min": 8553.525656743057,
+            "max": 8643.825516736679
+           },
+           "peak_resident_kib": 76664
+          },
+          {
+           "arm": "matchit",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 112449.07353752959,
+            "sd": 304.1624740372484,
+            "min": 112133.74400112436,
+            "max": 112907.6873779729
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8892.914530471899,
+            "sd": 24.021187062801133,
+            "min": 8856.792865240188,
+            "max": 8917.922155439428
+           },
+           "peak_resident_kib": 148672
+          },
+          {
+           "arm": "path-tree",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 109264.31415913357,
+            "sd": 362.8420085262685,
+            "min": 108961.12707062464,
+            "max": 109867.08924092069
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 9152.118948402409,
+            "sd": 30.290914661885573,
+            "min": 9101.906739398204,
+            "max": 9177.584950565319
+           },
+           "peak_resident_kib": 122936
+          },
+          {
+           "arm": "actix-router",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": true,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 21.32855830991795,
+            "sd": 2.3680077861281705,
+            "min": 19.33240937304803,
+            "max": 25.9981047728262
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 46885494.34375,
+            "sd": 4783104.125375661,
+            "min": 38464342.256410256,
+            "max": 51726610.0
+           },
+           "peak_resident_kib": 2231908
+          },
+          {
+           "arm": "null",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 120078.69205172814,
+            "sd": 177.3901257652608,
+            "min": 119757.64882118106,
+            "max": 120281.3733368808
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8327.872188757809,
+            "sd": 12.316567876495446,
+            "min": 8313.83922761862,
+            "max": 8350.197334728686
+           },
+           "peak_resident_kib": 45844
+          }
+         ],
+         "ranking": [
+          "v2",
+          "matchit",
+          "path-tree"
+         ],
+         "not_ranked": [
+          "actix-router"
+         ],
+         "routing_cost_ns_per_request": {
+          "v2": {
+           "n": 7,
+           "median": 269.93135405286193,
+           "sd": 34.70956586942742,
+           "min": 220.62331331524183,
+           "max": 316.10065441655024
+          },
+          "matchit": {
+           "n": 7,
+           "median": 571.1571233907653,
+           "sd": 33.020659099279975,
+           "min": 513.8560354292858,
+           "max": 596.0010552141903
+          },
+          "path-tree": {
+           "n": 7,
+           "median": 815.5929159580191,
+           "sd": 21.788926285044827,
+           "min": 779.9856391729663,
+           "max": 838.8350441041712
+          },
+          "actix-router": {
+           "n": 7,
+           "median": 46877144.14641527,
+           "sd": 4783103.760018538,
+           "min": 38456014.3842215,
+           "max": 51718282.27513768
+          }
+         },
+         "v2_above_competitor_in_rounds": {
+          "matchit": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "path-tree": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          },
+          "actix-router": {
+           "v2_above": 7,
+           "rounds_both_count": 7
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "aak": {
+     "session": {
+      "host": "alex-laptop",
+      "os": "Linux-7.2.6-arch2-1-x86_64-with-glibc2.44",
+      "cpu_model": "AMD Ryzen 7 5800H with Radeon Graphics",
+      "started": "2026-10-29T18:14:52+0200",
+      "plan_sha256": "756ea389fca2dffa59039ed08e976ebb4725408add3896a518e3b4afa5834e23",
+      "runner_sha256": "1e24da3aaa5ea63591558878ac3edd51e76eafc0cb2c9c6abaa69b6aba58d847"
+     },
+     "cells": {
+      "mixed-disjoint/m1000/t111": {
+       "m": 1000,
+       "rounds": 7,
+       "others_max_pct_of_one_cpu": 2.47,
+       "idle_server_max_pct_of_one_cpu": 0.0,
+       "programs": {
+        "mserver": {
+         "entries": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 126166.52411776701,
+            "sd": 355.8200280611392,
+            "min": 125597.87502400258,
+            "max": 126499.8682736633
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7926.0327332674615,
+            "sd": 22.409897568788868,
+            "min": 7905.146571667976,
+            "max": 7961.9181439884505
+           },
+           "peak_resident_kib": 10028
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 125631.8699581171,
+            "sd": 519.6543238328759,
+            "min": 125275.0478773574,
+            "max": 126597.81552277437
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7959.763715475842,
+            "sd": 32.75990902354539,
+            "min": 7899.030452228495,
+            "max": 7982.435584291188
+           },
+           "peak_resident_kib": 10044
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 126108.48849742225,
+            "sd": 356.272828863787,
+            "min": 125648.33252969866,
+            "max": 126702.54009177329
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7929.680324575777,
+            "sd": 22.370942864174193,
+            "min": 7892.501596855747,
+            "max": 7958.720819185059
+           },
+           "peak_resident_kib": 9876
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 126581.77731893594,
+            "sd": 198.11182753241596,
+            "min": 126319.87737483588,
+            "max": 126853.19784534237
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7900.031277649042,
+            "sd": 12.36707679804031,
+            "min": 7883.128032918697,
+            "max": 7916.410471430758
+           },
+           "peak_resident_kib": 9792
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 126669.77712882299,
+            "sd": 204.5043142051788,
+            "min": 126466.98111569877,
+            "max": 126971.68336668568
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7894.542981495905,
+            "sd": 12.731495479678987,
+            "min": 7875.7717743417425,
+            "max": 7907.2022687498675
+           },
+           "peak_resident_kib": 9932
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 126535.79917190132,
+            "sd": 272.32843663422403,
+            "min": 126021.25958429948,
+            "max": 126646.45752914944
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7902.901839197939,
+            "sd": 17.064477481025474,
+            "min": 7895.996615379756,
+            "max": 7935.169060352626
+           },
+           "peak_resident_kib": 10040
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 126314.81789249102,
+            "sd": 349.9191654175196,
+            "min": 125817.27353393592,
+            "max": 126802.53588619061
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7916.727559636901,
+            "sd": 21.930595528375445,
+            "min": 7886.27761275636,
+            "max": 7948.03425564834
+           },
+           "peak_resident_kib": 10072
+          }
+         ],
+         "medians_ns": {
+          "n": 7,
+          "range": 65.220733979937,
+          "sd": 22.531118844539748
+         },
+         "within_process_sd_ns": 21.25712388324732,
+         "entry0_rank": 5,
+         "pairs_d_ns": {
+          "0-1": {
+           "n": 7,
+           "median": -20.51744030273767,
+           "sd": 35.52442320302637,
+           "min": -54.61714380786634,
+           "max": 37.207005580821715
+          },
+          "0-2": {
+           "n": 7,
+           "median": 9.498396301834873,
+           "sd": 19.406604164439486,
+           "min": -24.5337529078015,
+           "max": 33.531136411714215
+          },
+          "0-3": {
+           "n": 7,
+           "median": 24.96659331855244,
+           "sd": 27.422171950070652,
+           "min": 2.9749025608798547,
+           "max": 68.20931635611669
+          },
+          "0-4": {
+           "n": 7,
+           "median": 43.94048174036652,
+           "sd": 24.949681249187982,
+           "min": 3.497502183511642,
+           "max": 66.74998258945743
+          },
+          "0-5": {
+           "n": 7,
+           "median": 23.388758611881713,
+           "sd": 22.82450460346886,
+           "min": -8.019751050184823,
+           "max": 64.37954774991522
+          },
+          "0-6": {
+           "n": 7,
+           "median": 18.868958911615664,
+           "sd": 25.365906315951705,
+           "min": -15.769508910060722,
+           "max": 67.28717193434841
+          },
+          "1-2": {
+           "n": 7,
+           "median": 30.083390900064842,
+           "sd": 28.165650649524423,
+           "min": -27.70860927898684,
+           "max": 51.64581877561159
+          },
+          "1-3": {
+           "n": 7,
+           "median": 56.96640070961712,
+           "sd": 33.85993827312527,
+           "min": -2.035687720413989,
+           "max": 82.40430664214637
+          },
+          "1-4": {
+           "n": 7,
+           "median": 68.5277580396496,
+           "sd": 36.5219497832298,
+           "min": -8.17181652137242,
+           "max": 95.97716280087116
+          },
+          "1-5": {
+           "n": 7,
+           "median": 48.841835117837036,
+           "sd": 42.14694224090694,
+           "min": -35.02203208915125,
+           "max": 77.7403159282585
+          },
+          "1-6": {
+           "n": 7,
+           "median": 28.110890860692052,
+           "sd": 37.75844993754537,
+           "min": -13.50326635735928,
+           "max": 87.80461223708608
+          },
+          "2-3": {
+           "n": 7,
+           "median": 34.43406029673042,
+           "sd": 30.95917537127347,
+           "min": -14.011863253666888,
+           "max": 65.63717145581268
+          },
+          "2-4": {
+           "n": 7,
+           "median": 37.51638714715773,
+           "sd": 25.89297320121403,
+           "min": -14.700671894120205,
+           "max": 64.17783768915342
+          },
+          "2-5": {
+           "n": 7,
+           "median": 17.201279169063127,
+           "sd": 31.28418046376568,
+           "min": -41.55088746189904,
+           "max": 61.80740284961121
+          },
+          "2-6": {
+           "n": 7,
+           "median": 10.686563536718495,
+           "sd": 25.33799028318871,
+           "min": -15.378646625167676,
+           "max": 43.40271181941716
+          },
+          "3-4": {
+           "n": 7,
+           "median": 3.0823268504273074,
+           "sd": 22.35341213606894,
+           "min": -18.521036565767645,
+           "max": 40.09977897281442
+          },
+          "3-5": {
+           "n": 7,
+           "median": -18.364695359636244,
+           "sd": 22.29401433663096,
+           "min": -35.13778270358398,
+           "max": 20.413856051001858
+          },
+          "3-6": {
+           "n": 7,
+           "median": -5.875103185493572,
+           "sd": 21.65334112094739,
+           "min": -54.95060791909418,
+           "max": 5.400305594939709
+          },
+          "4-5": {
+           "n": 7,
+           "median": -26.850215567778832,
+           "sd": 15.552111686760156,
+           "min": -38.22010955401129,
+           "max": 0.15634120613140112
+          },
+          "4-6": {
+           "n": 7,
+           "median": -40.416867178957546,
+           "sd": 30.498242197425686,
+           "min": -59.709990650427244,
+           "max": 15.371456728104022
+          },
+          "5-6": {
+           "n": 7,
+           "median": -4.6838277546003155,
+           "sd": 33.26136928366958,
+           "min": -51.12083931289271,
+           "max": 40.53808829852369
+          }
+         }
+        },
+        "mserver-go": {
+         "entries": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 58359.645149411794,
+            "sd": 97.21773915604051,
+            "min": 58254.32193020898,
+            "max": 58549.12076205974
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17135.128177010156,
+            "sd": 28.50175944520042,
+            "min": 17079.67578307354,
+            "max": 17166.10831378383
+           },
+           "peak_resident_kib": 23600
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 58359.758090439704,
+            "sd": 102.47482401319442,
+            "min": 58291.09818060397,
+            "max": 58547.110806944285
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17135.095016163486,
+            "sd": 30.033366170655267,
+            "min": 17080.26213791219,
+            "max": 17155.278099268067
+           },
+           "peak_resident_kib": 23420
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 58047.09689478417,
+            "sd": 127.71616349461972,
+            "min": 57959.72079193958,
+            "max": 58341.101358371634
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17227.390403564787,
+            "sd": 37.75727828354234,
+            "min": 17140.574598640233,
+            "max": 17253.361236672303
+           },
+           "peak_resident_kib": 23644
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 58545.08945617472,
+            "sd": 117.18409271057871,
+            "min": 58255.74352203042,
+            "max": 58600.414379273476
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17080.851857756115,
+            "sd": 34.33356171783498,
+            "min": 17064.725746268654,
+            "max": 17165.689416045865
+           },
+           "peak_resident_kib": 23164
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 58293.75969308998,
+            "sd": 124.81584362417134,
+            "min": 58067.10030492401,
+            "max": 58461.79345704228
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17154.49484241343,
+            "sd": 36.77595382110223,
+            "min": 17105.188549078637,
+            "max": 17221.455777002204
+           },
+           "peak_resident_kib": 23324
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 58506.42626058373,
+            "sd": 60.48351081919109,
+            "min": 58479.07241543561,
+            "max": 58654.294726090804
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17092.139512095073,
+            "sd": 17.633116563879558,
+            "min": 17049.04994033074,
+            "max": 17100.13443605937
+           },
+           "peak_resident_kib": 23572
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 58312.46630406315,
+            "sd": 87.26068522058023,
+            "min": 58177.14424374973,
+            "max": 58454.41983464667
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17148.991688768976,
+            "sd": 25.658725283145078,
+            "min": 17107.346250784056,
+            "max": 17188.880839702528
+           },
+           "peak_resident_kib": 23396
+          }
+         ],
+         "medians_ns": {
+          "n": 7,
+          "range": 146.5385458086712,
+          "sd": 47.88870590234724
+         },
+         "within_process_sd_ns": 30.800108211751205,
+         "entry0_rank": 4,
+         "pairs_d_ns": {
+          "0-1": {
+           "n": 7,
+           "median": -0.5863548386478215,
+           "sd": 37.133075789719534,
+           "min": -44.60714749547333,
+           "max": 70.8531483650695
+          },
+          "0-2": {
+           "n": 7,
+           "median": -92.26222655463062,
+           "sd": 26.450531169434626,
+           "min": -138.78928979388002,
+           "max": -60.898815566692065
+          },
+          "0-3": {
+           "n": 7,
+           "median": 40.1045308557259,
+           "sd": 47.48790140494636,
+           "min": -51.11746916744232,
+           "max": 89.34040094031297
+          },
+          "0-4": {
+           "n": 7,
+           "median": -18.63212081889651,
+           "sd": 56.76378232249033,
+           "min": -141.77999392866332,
+           "max": 40.20555091135611
+          },
+          "0-5": {
+           "n": 7,
+           "median": 49.788473958935356,
+           "sd": 30.338754731857925,
+           "min": -0.4008124288775434,
+           "max": 86.07823667941557
+          },
+          "0-6": {
+           "n": 7,
+           "median": -22.772525918699102,
+           "sd": 39.57403923803094,
+           "min": -91.11834703028217,
+           "max": 34.79001260058794
+          },
+          "1-2": {
+           "n": 7,
+           "median": -96.95817350959624,
+           "sd": 35.75465842169475,
+           "min": -152.12371078419892,
+           "max": -60.31246072804424
+          },
+          "1-3": {
+           "n": 7,
+           "median": 18.487252575243474,
+           "sd": 41.341891074681755,
+           "min": -30.59439988237864,
+           "max": 82.39281325135744
+          },
+          "1-4": {
+           "n": 7,
+           "median": -20.19900752525791,
+           "sd": 57.29242293664285,
+           "min": -141.1936390900155,
+           "max": 29.906467084849282
+          },
+          "1-5": {
+           "n": 7,
+           "median": 48.221587252573954,
+           "sd": 31.056760164285535,
+           "min": -0.1940858291600307,
+           "max": 81.52299141990807
+          },
+          "1-6": {
+           "n": 7,
+           "median": -24.88475870610273,
+           "sd": 49.18908765527475,
+           "min": -93.6256742837686,
+           "max": 33.22312589422654
+          },
+          "2-3": {
+           "n": 7,
+           "median": 133.50217054976747,
+           "sd": 42.688539837556306,
+           "min": 59.72274088411723,
+           "max": 172.80180391922477
+          },
+          "2-4": {
+           "n": 7,
+           "median": 76.75916598433832,
+           "sd": 73.0653466994668,
+           "min": -80.88117836197125,
+           "max": 148.17268759366561
+          },
+          "2-5": {
+           "n": 7,
+           "median": 148.47812980970775,
+           "sd": 37.474454471319746,
+           "min": 60.49800313781452,
+           "max": 178.34046323404618
+          },
+          "2-6": {
+           "n": 7,
+           "median": 75.77888548320698,
+           "sd": 49.454959116829734,
+           "min": -30.2195314635901,
+           "max": 130.18129940382278
+          },
+          "3-4": {
+           "n": 7,
+           "median": -60.60660939841182,
+           "sd": 61.17473704338777,
+           "min": -140.60391924608848,
+           "max": 60.50086696722792
+          },
+          "3-5": {
+           "n": 7,
+           "median": 0.7752622536972922,
+           "sd": 33.546044454515894,
+           "min": -27.622043157054577,
+           "max": 65.55497998649662
+          },
+          "3-6": {
+           "n": 7,
+           "median": -46.2950342359145,
+           "sd": 38.445221727393644,
+           "min": -112.11292685901208,
+           "max": 5.709641176275909
+          },
+          "4-5": {
+           "n": 7,
+           "median": 65.4864201005621,
+           "sd": 45.12465490808194,
+           "min": 5.054113019268698,
+           "max": 141.37918149978577
+          },
+          "4-6": {
+           "n": 7,
+           "median": 8.63424342665894,
+           "sd": 46.20583172410412,
+           "min": -62.978076830055215,
+           "max": 53.42213341948445
+          },
+          "5-6": {
+           "n": 7,
+           "median": -72.69924432650078,
+           "sd": 28.04190068159346,
+           "min": -93.43158845460857,
+           "max": -14.998461358347413
+          }
+         }
+        },
+        "mserver-rs": {
+         "entries": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 117431.97925178286,
+            "sd": 190.450414837254,
+            "min": 117324.0522334763,
+            "max": 117778.71962680896
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8515.567960035196,
+            "sd": 13.776867439828864,
+            "min": 8490.498140653743,
+            "max": 8523.401476195075
+           },
+           "peak_resident_kib": 7108
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 117401.60612748907,
+            "sd": 379.1816923116986,
+            "min": 116645.00876007516,
+            "max": 117859.51285262668
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8517.771033848356,
+            "sd": 27.59067420090624,
+            "min": 8484.677866015069,
+            "max": 8573.020060008572
+           },
+           "peak_resident_kib": 7368
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 117520.07382548813,
+            "sd": 379.3580278780951,
+            "min": 117185.97977434359,
+            "max": 118156.7903622863
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8509.184579691073,
+            "sd": 27.379957464288875,
+            "min": 8463.330773744372,
+            "max": 8533.444034223432
+           },
+           "peak_resident_kib": 7368
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 117043.50155006141,
+            "sd": 282.4015823604667,
+            "min": 116677.53692864242,
+            "max": 117433.9902103085
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8543.831880937736,
+            "sd": 20.619156054617772,
+            "min": 8515.422138080587,
+            "max": 8570.630014340974
+           },
+           "peak_resident_kib": 7372
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 116583.54277799252,
+            "sd": 177.10836016510663,
+            "min": 116356.91751074251,
+            "max": 116831.4349285116
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8577.539986962636,
+            "sd": 13.022949724077227,
+            "min": 8559.34022047999,
+            "max": 8594.246232998363
+           },
+           "peak_resident_kib": 7068
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 117281.2374435099,
+            "sd": 419.55027220521055,
+            "min": 116941.54811322437,
+            "max": 117962.15980438919
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8526.513036509046,
+            "sd": 30.40961794517517,
+            "min": 8477.2947668833,
+            "max": 8551.280670850932
+           },
+           "peak_resident_kib": 7360
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 116670.20138693905,
+            "sd": 341.1747525209294,
+            "min": 116100.65734065873,
+            "max": 117057.44810407302
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8571.168885562132,
+            "sd": 25.10024127006319,
+            "min": 8542.813944747228,
+            "max": 8613.215660492197
+           },
+           "peak_resident_kib": 7364
+          }
+         ],
+         "medians_ns": {
+          "n": 7,
+          "range": 68.35540727156331,
+          "sd": 27.59676428900536
+         },
+         "within_process_sd_ns": 23.452758720971904,
+         "entry0_rank": 2,
+         "pairs_d_ns": {
+          "0-1": {
+           "n": 7,
+           "median": -10.731733598177016,
+           "sd": 23.93807440747216,
+           "min": -57.947151087957536,
+           "max": 7.776737809572296
+          },
+          "0-2": {
+           "n": 7,
+           "median": 3.255173798164833,
+           "sd": 25.680613121023054,
+           "min": -18.686439037330274,
+           "max": 52.237186290823956
+          },
+          "0-3": {
+           "n": 7,
+           "median": -24.923997426843925,
+           "sd": 21.160754132954814,
+           "min": -72.39487804405508,
+           "max": -15.534079388351529
+          },
+          "0-4": {
+           "n": 7,
+           "median": -62.768830368939234,
+           "sd": 17.303802957046784,
+           "min": -86.81021393948504,
+           "max": -35.93874428491472
+          },
+          "0-5": {
+           "n": 7,
+           "median": -3.111560313971495,
+           "sd": 38.51897843602514,
+           "min": -54.37525357956292,
+           "max": 38.27319315189561
+          },
+          "0-6": {
+           "n": 7,
+           "median": -74.4917721931215,
+           "sd": 28.56302897535587,
+           "min": -93.36155464552576,
+           "max": -27.245984712031714
+          },
+          "1-2": {
+           "n": 7,
+           "median": 18.628127041678454,
+           "sd": 32.03533407710887,
+           "min": -23.83078696625853,
+           "max": 62.96891988900097
+          },
+          "1-3": {
+           "n": 7,
+           "median": -24.919413062902095,
+           "sd": 38.32178775395895,
+           "min": -78.44678505213778,
+           "max": 34.64008232136075
+          },
+          "1-4": {
+           "n": 7,
+           "median": -43.64742035897325,
+           "sd": 27.778892423776163,
+           "min": -92.86212094756775,
+           "max": -4.821679280981698
+          },
+          "1-5": {
+           "n": 7,
+           "median": -8.74200266069056,
+           "sd": 54.584024011075904,
+           "min": -60.42716058764563,
+           "max": 88.19011199026681
+          },
+          "1-6": {
+           "n": 7,
+           "median": -53.72712558575222,
+           "sd": 39.49443224719399,
+           "min": -88.2082675910624,
+           "max": 21.405652455894597
+          },
+          "2-3": {
+           "n": 7,
+           "median": -37.185980117541476,
+           "sd": 33.219433753512185,
+           "min": -97.07491209381624,
+           "max": -6.2375583895136515
+          },
+          "2-4": {
+           "n": 7,
+           "median": -58.37490716215325,
+           "sd": 29.570678207725965,
+           "min": -111.4902479892462,
+           "max": -39.19391808307955
+          },
+          "2-5": {
+           "n": 7,
+           "median": -13.963993138928345,
+           "sd": 34.341163418357986,
+           "min": -79.05528762932408,
+           "max": 34.63688410909526
+          },
+          "2-6": {
+           "n": 7,
+           "median": -61.984305871059405,
+           "sd": 33.823507315686236,
+           "min": -117.71799099947202,
+           "max": -31.137372689596305
+          },
+          "3-4": {
+           "n": 7,
+           "median": -27.288877688764842,
+           "sd": 13.581947189374459,
+           "min": -45.667042254766784,
+           "max": -9.322706255252342
+          },
+          "3-5": {
+           "n": 7,
+           "median": 19.349343490041065,
+           "sd": 31.215111364777492,
+           "min": -17.957713671818055,
+           "max": 74.93114991227048
+          },
+          "3-6": {
+           "n": 7,
+           "median": -13.234429865466154,
+           "sd": 19.379373680013515,
+           "min": -55.74674748154575,
+           "max": -7.451794148770205
+          },
+          "4-5": {
+           "n": 7,
+           "median": 32.827183970943224,
+           "sd": 33.91108500625233,
+           "min": 27.70932858294873,
+           "max": 102.22002760103533
+          },
+          "4-6": {
+           "n": 7,
+           "median": 4.653853356505351,
+           "sd": 16.682926638162115,
+           "min": -18.96942749383379,
+           "max": 26.227331736876295
+          },
+          "5-6": {
+           "n": 7,
+           "median": -40.60108640893486,
+           "sd": 33.63716556301259,
+           "min": -121.18945509486912,
+           "max": -24.770638577459977
+          }
+         }
+        }
+       }
+      },
+      "mixed-disjoint/m100000/t111": {
+       "m": 100000,
+       "rounds": 7,
+       "others_max_pct_of_one_cpu": 2.47,
+       "idle_server_max_pct_of_one_cpu": 0.618,
+       "programs": {
+        "mserver": {
+         "entries": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 125783.50585327718,
+            "sd": 358.2495646199928,
+            "min": 124973.75053258405,
+            "max": 126110.29783321438
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7950.167974857301,
+            "sd": 22.742050678811964,
+            "min": 7929.566555480962,
+            "max": 8001.680318774404
+           },
+           "peak_resident_kib": 44696
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 125855.6295887555,
+            "sd": 421.71370145267105,
+            "min": 125315.85595804424,
+            "max": 126670.30173560779
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7945.611994215827,
+            "sd": 26.556572205237725,
+            "min": 7894.510286138317,
+            "max": 7979.836169612887
+           },
+           "peak_resident_kib": 44608
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 125641.08726596645,
+            "sd": 418.12562300692355,
+            "min": 124921.79838090256,
+            "max": 126008.90142783042
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7959.179769617285,
+            "sd": 26.566809114261005,
+            "min": 7935.947291570778,
+            "max": 8005.008036714873
+           },
+           "peak_resident_kib": 44664
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 125931.20957678769,
+            "sd": 268.05675258504374,
+            "min": 125446.45848395665,
+            "max": 126240.3232757036
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7940.843285478339,
+            "sd": 16.925501392314786,
+            "min": 7921.399233238984,
+            "max": 7971.528348310367
+           },
+           "peak_resident_kib": 44784
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 125943.80473202879,
+            "sd": 270.0869140306938,
+            "min": 125579.1936656611,
+            "max": 126387.14252082245
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7940.049152300144,
+            "sd": 17.017329145827873,
+            "min": 7912.197238221828,
+            "max": 7963.102571452839
+           },
+           "peak_resident_kib": 44668
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 125777.85356747016,
+            "sd": 388.6098034170382,
+            "min": 125065.91908100108,
+            "max": 126141.76000448602
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7950.525244601799,
+            "sd": 24.633933485158305,
+            "min": 7927.588769686079,
+            "max": 7995.783402449815
+           },
+           "peak_resident_kib": 44776
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 126015.011569752,
+            "sd": 422.47096475520084,
+            "min": 125368.38328808759,
+            "max": 126540.24295679983
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 7935.562498016188,
+            "sd": 26.611700205651037,
+            "min": 7902.624308548188,
+            "max": 7976.49274699564
+           },
+           "peak_resident_kib": 44612
+          }
+         ],
+         "medians_ns": {
+          "n": 7,
+          "range": 23.617271601096945,
+          "sd": 7.985945506154448
+         },
+         "within_process_sd_ns": 23.358458542306565,
+         "entry0_rank": 5,
+         "pairs_d_ns": {
+          "0-1": {
+           "n": 7,
+           "median": 4.557011996151232,
+           "sd": 31.44897524295865,
+           "min": -29.668194755586228,
+           "max": 54.54218088763355
+          },
+          "0-2": {
+           "n": 7,
+           "median": -0.80777776634568,
+           "sd": 28.70712184180197,
+           "min": -54.84006185757244,
+           "max": 34.17664445812534
+          },
+          "0-3": {
+           "n": 7,
+           "median": 17.340784863115005,
+           "sd": 35.32495931254956,
+           "min": -23.448155232351382,
+           "max": 77.7512515499102
+          },
+          "0-4": {
+           "n": 7,
+           "median": 7.021364576065025,
+           "sd": 33.80950607463459,
+           "min": -10.482596819181708,
+           "max": 89.48308055257621
+          },
+          "0-5": {
+           "n": 7,
+           "median": 1.9777857948829478,
+           "sd": 31.36942546516347,
+           "min": -37.41141059887559,
+           "max": 51.792429178297425
+          },
+          "0-6": {
+           "n": 7,
+           "median": 36.683522389271275,
+           "sd": 28.460262596113683,
+           "min": -14.854450879625801,
+           "max": 61.211796226988554
+          },
+          "1-2": {
+           "n": 7,
+           "median": -18.16610630336163,
+           "sd": 34.034079060711136,
+           "min": -74.51322158602943,
+           "max": 29.619632461974106
+          },
+          "1-3": {
+           "n": 7,
+           "median": -0.017543673900945578,
+           "sd": 35.59169358449454,
+           "min": -46.33299934002207,
+           "max": 49.35945524182898
+          },
+          "1-4": {
+           "n": 7,
+           "median": 2.4643525799137933,
+           "sd": 22.457798174811142,
+           "min": -33.239956970088315,
+           "max": 36.73868000276798
+          },
+          "1-5": {
+           "n": 7,
+           "median": -0.9519713715108082,
+           "sd": 34.667831327770216,
+           "min": -69.20307961486014,
+           "max": 15.041679430953081
+          },
+          "1-6": {
+           "n": 7,
+           "median": 5.451165297735315,
+           "sd": 33.45890497845489,
+           "min": -17.858658498362274,
+           "max": 75.98068349153073
+          },
+          "2-3": {
+           "n": 7,
+           "median": 18.148562629460685,
+           "sd": 37.29930107732519,
+           "min": -31.6502419518265,
+           "max": 74.53132234381519
+          },
+          "2-4": {
+           "n": 7,
+           "median": 26.22661453933324,
+           "sd": 37.59549536188352,
+           "min": -27.155279882060313,
+           "max": 85.17007194136477
+          },
+          "2-5": {
+           "n": 7,
+           "median": 5.310141971169287,
+           "sd": 28.064044702611653,
+           "min": -36.60363283252991,
+           "max": 47.47942056708598
+          },
+          "2-6": {
+           "n": 7,
+           "median": 37.2537978103519,
+           "sd": 44.13261067684885,
+           "min": -40.54545542486176,
+           "max": 101.15255059351693
+          },
+          "3-4": {
+           "n": 7,
+           "median": 8.078051909872556,
+           "sd": 23.130228633013118,
+           "min": -41.703338213854295,
+           "max": 23.609943766454307
+          },
+          "3-5": {
+           "n": 7,
+           "median": -25.95882237161277,
+           "sd": 34.160648824359946,
+           "min": -54.752195461990596,
+           "max": 36.62640909980382
+          },
+          "3-6": {
+           "n": 7,
+           "median": 5.468708971636261,
+           "sd": 38.964143538487846,
+           "min": -55.09351375665574,
+           "max": 68.9040397621784
+          },
+          "4-5": {
+           "n": 7,
+           "median": -29.48660764997385,
+           "sd": 30.758177840157575,
+           "min": -62.83024737186315,
+           "max": 13.016465333349515
+          },
+          "4-6": {
+           "n": 7,
+           "median": -2.6093429382362956,
+           "sd": 29.369111214566896,
+           "min": -28.271284325587658,
+           "max": 49.17082143636708
+          },
+          "5-6": {
+           "n": 7,
+           "median": 32.27763066237458,
+           "sd": 39.641141455156756,
+           "min": -25.967502393840732,
+           "max": 78.65742908634093
+          }
+         }
+        },
+        "mserver-go": {
+         "entries": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 57731.08528487234,
+            "sd": 84.71612742711754,
+            "min": 57519.11252039892,
+            "max": 57772.46418775695
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17321.69064665127,
+            "sd": 25.503164028628287,
+            "min": 17309.28417299393,
+            "max": 17385.52554414594
+           },
+           "peak_resident_kib": 79980
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 58101.124560982025,
+            "sd": 118.31626507763113,
+            "min": 57972.094559389494,
+            "max": 58280.373916756784
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17211.37082209856,
+            "sd": 35.00923970186176,
+            "min": 17158.434869143483,
+            "max": 17249.678618659367
+           },
+           "peak_resident_kib": 80196
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 57853.7966574389,
+            "sd": 192.77414077962698,
+            "min": 57503.778169019104,
+            "max": 58007.1015681076
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17284.950301898967,
+            "sd": 57.791298197564416,
+            "min": 17239.268520008274,
+            "max": 17390.16168747609
+           },
+           "peak_resident_kib": 80264
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 58095.788409526824,
+            "sd": 173.54823498881808,
+            "min": 57933.778587193854,
+            "max": 58349.12866985567
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17212.951702296123,
+            "sd": 51.326811419190705,
+            "min": 17138.216504621432,
+            "max": 17261.0871306269
+           },
+           "peak_resident_kib": 80180
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 58277.752848701995,
+            "sd": 121.19299775625966,
+            "min": 57997.68330187307,
+            "max": 58345.12672064076
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17159.20657744223,
+            "sd": 35.8122023436938,
+            "min": 17139.392031626696,
+            "max": 17242.06801149425
+           },
+           "peak_resident_kib": 79980
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 57985.63078444033,
+            "sd": 171.802604034222,
+            "min": 57696.40935234717,
+            "max": 58221.729663059035
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17245.651836012046,
+            "sd": 51.14264082818694,
+            "min": 17175.71782540991,
+            "max": 17332.101099967647
+           },
+           "peak_resident_kib": 79964
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 58113.139910980535,
+            "sd": 89.61926179137117,
+            "min": 57912.395574161834,
+            "max": 58146.44485224457
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 17207.812235439873,
+            "sd": 26.607881589352075,
+            "min": 17197.955997844605,
+            "max": 17267.460447555022
+           },
+           "peak_resident_kib": 80272
+          }
+         ],
+         "medians_ns": {
+          "n": 7,
+          "range": 162.48406920904017,
+          "sd": 54.23986678662073
+         },
+         "within_process_sd_ns": 42.18394560570254,
+         "entry0_rank": 7,
+         "pairs_d_ns": {
+          "0-1": {
+           "n": 7,
+           "median": 144.38338229465808,
+           "sd": 38.720540599903494,
+           "min": 67.40134855488213,
+           "max": 172.94802747908398
+          },
+          "0-2": {
+           "n": 7,
+           "median": 24.33387109496107,
+           "sd": 48.12080799034268,
+           "min": -61.082392627253284,
+           "max": 77.81144720597513
+          },
+          "0-3": {
+           "n": 7,
+           "median": 139.07617488118558,
+           "sd": 52.41456840412465,
+           "min": 60.992247649734054,
+           "max": 179.56662984938157
+          },
+          "0-4": {
+           "n": 7,
+           "median": 163.85679892290136,
+           "sd": 45.79885288333408,
+           "min": 79.62263515701852,
+           "max": 226.31896670371134
+          },
+          "0-5": {
+           "n": 7,
+           "median": 90.7976430750823,
+           "sd": 51.749161268971726,
+           "min": -11.806997942385351,
+           "max": 141.36214180434035
+          },
+          "0-6": {
+           "n": 7,
+           "median": 113.79848641237913,
+           "sd": 30.16212117257587,
+           "min": 54.230199096247816,
+           "max": 142.68991951952194
+          },
+          "1-2": {
+           "n": 7,
+           "median": -120.04951119969701,
+           "sd": 72.20601103027167,
+           "min": -178.79086537753028,
+           "max": 10.410098651092994
+          },
+          "1-3": {
+           "n": 7,
+           "median": -0.374185629265412,
+           "sd": 22.861850382229097,
+           "min": -36.01059512287611,
+           "max": 26.684286077837896
+          },
+          "1-4": {
+           "n": 7,
+           "median": 21.49501993501326,
+           "sd": 57.66069497548243,
+           "min": -66.75132230970485,
+           "max": 110.28658703267138
+          },
+          "1-5": {
+           "n": 7,
+           "median": -46.76291571955153,
+           "sd": 79.74706324296187,
+           "min": -173.6662308241648,
+           "max": 73.96079324945822
+          },
+          "1-6": {
+           "n": 7,
+           "median": -30.25810795956204,
+           "sd": 54.303890128617184,
+           "min": -92.14375837047555,
+           "max": 46.397137857497
+          },
+          "2-3": {
+           "n": 7,
+           "median": 142.78027025465417,
+           "sd": 74.89495160922294,
+           "min": -8.541223350050132,
+           "max": 152.4552111812227
+          },
+          "2-4": {
+           "n": 7,
+           "median": 111.60660771020775,
+           "sd": 49.58000593870803,
+           "min": 90.40121260881642,
+           "max": 206.20033603511547
+          },
+          "2-5": {
+           "n": 7,
+           "median": 66.46377198012124,
+           "sd": 62.00582668300249,
+           "min": -57.29907313514923,
+           "max": 141.98285363874675
+          },
+          "2-6": {
+           "n": 7,
+           "median": 65.00877654804572,
+           "sd": 54.35483985275673,
+           "min": 33.947959296925546,
+           "max": 184.91171615042185
+          },
+          "3-4": {
+           "n": 7,
+           "median": 53.745124853892776,
+           "sd": 65.31176570880294,
+           "min": -59.45353972416706,
+           "max": 107.00700031241286
+          },
+          "3-5": {
+           "n": 7,
+           "median": -46.38873009028612,
+           "sd": 91.51714409854648,
+           "min": -191.37362779176692,
+           "max": 70.6812065291997
+          },
+          "3-6": {
+           "n": 7,
+           "median": -29.883922330296627,
+           "sd": 68.23418412679793,
+           "min": -100.12659535969215,
+           "max": 63.131132782295026
+          },
+          "4-5": {
+           "n": 7,
+           "median": -45.14283573008652,
+           "sd": 62.389974806597756,
+           "min": -192.47659128391751,
+           "max": -3.58382451779471
+          },
+          "4-6": {
+           "n": 7,
+           "median": -39.73341849087228,
+           "sd": 31.813332192984277,
+           "min": -101.22955885184274,
+           "max": -15.374169162121689
+          },
+          "5-6": {
+           "n": 7,
+           "median": 10.674294478973025,
+           "sd": 41.13679489097013,
+           "min": -27.56365539196122,
+           "max": 91.24703243207477
+          }
+         }
+        },
+        "mserver-rs": {
+         "entries": [
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 116026.25457495937,
+            "sd": 364.5209400081129,
+            "min": 115590.0434502288,
+            "max": 116703.36391996716
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8618.738954069613,
+            "sd": 27.02003090772785,
+            "min": 8568.733294489952,
+            "max": 8651.264158669374
+           },
+           "peak_resident_kib": 76720
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 116478.90364062789,
+            "sd": 360.8957667217673,
+            "min": 116122.65258403787,
+            "max": 117119.53259254879
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8585.245643153527,
+            "sd": 26.52965551549141,
+            "min": 8538.285441071002,
+            "max": 8611.584197805856
+           },
+           "peak_resident_kib": 76684
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 116174.21610989698,
+            "sd": 238.50583793997484,
+            "min": 115638.69236714633,
+            "max": 116336.23293771443
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8607.761975807376,
+            "sd": 17.729124173045793,
+            "min": 8595.774289299814,
+            "max": 8647.624592857348
+           },
+           "peak_resident_kib": 76476
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 116226.79583922376,
+            "sd": 462.12172909075764,
+            "min": 115270.75032199487,
+            "max": 116758.22417191455
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8603.867918576174,
+            "sd": 34.35720112524803,
+            "min": 8564.707172383867,
+            "max": 8675.22764627298
+           },
+           "peak_resident_kib": 76700
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 117315.530825748,
+            "sd": 274.69996841065415,
+            "min": 117144.27316930951,
+            "max": 117826.82472916068
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8524.020587566769,
+            "sd": 19.90917281749152,
+            "min": 8487.031728968526,
+            "max": 8536.482176595115
+           },
+           "peak_resident_kib": 76472
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 116583.43498129757,
+            "sd": 214.12531243467612,
+            "min": 116472.16113523341,
+            "max": 117031.91852568951
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8577.547918024726,
+            "sd": 15.712473870391756,
+            "min": 8544.677491384467,
+            "max": 8585.742638010475
+           },
+           "peak_resident_kib": 76840
+          },
+          {
+           "arm": "v2",
+           "windows_count": true,
+           "reason_codes": [],
+           "overloaded": false,
+           "rounds": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7
+           ],
+           "req_s": {
+            "n": 7,
+            "median": 116706.204521643,
+            "sd": 349.12278563222014,
+            "min": 116471.49992948107,
+            "max": 117437.6058762468
+           },
+           "ns_per_request": {
+            "n": 7,
+            "median": 8568.524733529068,
+            "sd": 25.5147039017634,
+            "min": 8515.15996548651,
+            "max": 8585.791379053768
+           },
+           "peak_resident_kib": 76684
+          }
+         ],
+         "medians_ns": {
+          "n": 7,
+          "range": 94.71836650284422,
+          "sd": 31.742728161745486
+         },
+         "within_process_sd_ns": 24.561587075665184,
+         "entry0_rank": 7,
+         "pairs_d_ns": {
+          "0-1": {
+           "n": 7,
+           "median": 43.92116403819091,
+           "sd": 29.463658556003764,
+           "min": -5.638292639625433,
+           "max": 84.56282397574432
+          },
+          "0-2": {
+           "n": 7,
+           "median": 4.680038115946445,
+           "sd": 25.761029251087315,
+           "min": -28.885638787734933,
+           "max": 38.76219706490883
+          },
+          "0-3": {
+           "n": 7,
+           "median": 2.077986590056753,
+           "sd": 47.82794174074396,
+           "min": -56.488692203367464,
+           "max": 86.55698628550635
+          },
+          "0-4": {
+           "n": 7,
+           "median": 103.66216657302175,
+           "sd": 38.33046247052418,
+           "min": 33.55502421968049,
+           "max": 151.4923689117768
+          },
+          "0-5": {
+           "n": 7,
+           "median": 42.5012114401361,
+           "sd": 37.249217811193034,
+           "min": -8.814623534774,
+           "max": 97.21535341331946
+          },
+          "0-6": {
+           "n": 7,
+           "median": 51.40069086209951,
+           "sd": 30.6906648397951,
+           "min": 20.154526112462918,
+           "max": 114.15907059984966
+          },
+          "1-2": {
+           "n": 7,
+           "median": -39.241125922244464,
+           "sd": 31.99245855875219,
+           "min": -97.07541766895883,
+           "max": 3.8222219984800176
+          },
+          "1-3": {
+           "n": 7,
+           "median": -42.38876769605304,
+           "sd": 50.1716636439336,
+           "min": -124.67847108459137,
+           "max": 30.631058191424017
+          },
+          "1-4": {
+           "n": 7,
+           "median": 53.95515847175375,
+           "sd": 36.049983836949,
+           "min": 3.1071708007311827,
+           "max": 109.30045921264718
+          },
+          "1-5": {
+           "n": 7,
+           "median": 3.734786658176745,
+           "sd": 33.24900441033337,
+           "min": -39.26247695372331,
+           "max": 48.13950407976154
+          },
+          "1-6": {
+           "n": 7,
+           "median": 21.12345493274188,
+           "sd": 30.01392134087466,
+           "min": -17.975558340678617,
+           "max": 70.23790656165875
+          },
+          "2-3": {
+           "n": 7,
+           "median": 3.411859214782453,
+           "sd": 29.06822715625931,
+           "min": -28.806937836952784,
+           "max": 57.25157023745487
+          },
+          "2-4": {
+           "n": 7,
+           "median": 93.19628439399821,
+           "sd": 34.7744193227081,
+           "min": 60.59601902954273,
+           "max": 160.59286388882174
+          },
+          "2-5": {
+           "n": 7,
+           "median": 44.31728208128152,
+           "sd": 19.088185556182605,
+           "min": 18.22637127508824,
+           "max": 65.2304534778923
+          },
+          "2-6": {
+           "n": 7,
+           "median": 50.641376085886805,
+           "sd": 30.592104891176714,
+           "min": 21.970596753608334,
+           "max": 109.47903248390321
+          },
+          "3-4": {
+           "n": 7,
+           "median": 78.11866435645607,
+           "sd": 43.40069475115603,
+           "min": 63.20792010219702,
+           "max": 188.19591730445427
+          },
+          "3-5": {
+           "n": 7,
+           "median": 40.42322485007935,
+           "sd": 26.728729631194124,
+           "min": 7.978883240437426,
+           "max": 89.48500826250529
+          },
+          "3-6": {
+           "n": 7,
+           "median": 67.37769381886028,
+           "sd": 41.94108360186302,
+           "min": -6.6101941515680664,
+           "max": 106.70291274391275
+          },
+          "4-5": {
+           "n": 7,
+           "median": -50.220371813577,
+           "sd": 23.697156045834806,
+           "min": -98.71090904194898,
+           "max": -20.65690381769855
+          },
+          "4-6": {
+           "n": 7,
+           "median": -49.66666273472765,
+           "sd": 40.720562132045366,
+           "min": -83.50764046055883,
+           "max": 16.282748089905
+          },
+          "5-6": {
+           "n": 7,
+           "median": 17.21790448140746,
+           "sd": 36.08637174530383,
+           "min": -29.009758917029103,
+           "max": 66.503119903482
+          }
+         }
+        }
+       }
+      }
+     }
+    },
+    "floor": {
+     "mixed-disjoint/m1000/t111": {
+      "mserver": {
+       "aa_largest_abs_d_ns": 34.485702807661255,
+       "neighbours": [
+        {
+         "ahead": "v2",
+         "behind": "uwebsockets",
+         "gap_ns": 159.9326859180228,
+         "clears": true
+        },
+        {
+         "ahead": "uwebsockets",
+         "behind": "r3",
+         "gap_ns": 66.63205541997922,
+         "clears": true
+        },
+        {
+         "ahead": "r3",
+         "behind": "glaze",
+         "gap_ns": 427.3964776876692,
+         "clears": true
+        },
+        {
+         "ahead": "glaze",
+         "behind": "boost-url",
+         "gap_ns": 62.876124509883084,
+         "clears": true
+        },
+        {
+         "ahead": "boost-url",
+         "behind": "crow",
+         "gap_ns": 217.369508560123,
+         "clears": true
+        },
+        {
+         "ahead": "crow",
+         "behind": "pistache",
+         "gap_ns": 674.0015723514043,
+         "clears": true
+        },
+        {
+         "ahead": "pistache",
+         "behind": "cpp-httplib",
+         "gap_ns": 7014.891188688551,
+         "clears": true
+        },
+        {
+         "ahead": "cpp-httplib",
+         "behind": "oatpp",
+         "gap_ns": 2121.1522286161708,
+         "clears": true
+        },
+        {
+         "ahead": "oatpp",
+         "behind": "drogon",
+         "gap_ns": 29216.548172127124,
+         "clears": true
+        }
+       ]
+      },
+      "mserver-go": {
+       "aa_largest_abs_d_ns": 124.60536886481714,
+       "neighbours": [
+        {
+         "ahead": "v2",
+         "behind": "httprouter",
+         "gap_ns": 151.59934870389043,
+         "clears": true
+        },
+        {
+         "ahead": "httprouter",
+         "behind": "gin",
+         "gap_ns": 386.72122941183625,
+         "clears": true
+        },
+        {
+         "ahead": "gin",
+         "behind": "nethttp",
+         "gap_ns": 852.8851271537569,
+         "clears": true
+        },
+        {
+         "ahead": "nethttp",
+         "behind": "chi",
+         "gap_ns": 526.78840485205,
+         "clears": true
+        }
+       ]
+      },
+      "mserver-rs": {
+       "aa_largest_abs_d_ns": 61.22006138551296,
+       "neighbours": [
+        {
+         "ahead": "v2",
+         "behind": "matchit",
+         "gap_ns": 39.49124846163613,
+         "clears": false
+        },
+        {
+         "ahead": "matchit",
+         "behind": "path-tree",
+         "gap_ns": 78.10448359666225,
+         "clears": true
+        },
+        {
+         "ahead": "path-tree",
+         "behind": "actix-router",
+         "gap_ns": 56643.59190840488,
+         "clears": true
+        }
+       ]
+      }
+     },
+     "mixed-disjoint/m100000/t111": {
+      "mserver": {
+       "aa_largest_abs_d_ns": 46.90123393873091,
+       "neighbours": [
+        {
+         "ahead": "v2",
+         "behind": "r3",
+         "gap_ns": 652.2264269400148,
+         "clears": true
+        },
+        {
+         "ahead": "r3",
+         "behind": "glaze",
+         "gap_ns": 62.54135705622684,
+         "clears": true
+        },
+        {
+         "ahead": "glaze",
+         "behind": "pistache",
+         "gap_ns": 892.2225453156079,
+         "clears": true
+        },
+        {
+         "ahead": "pistache",
+         "behind": "crow",
+         "gap_ns": 132.50031043268427,
+         "clears": true
+        },
+        {
+         "ahead": "crow",
+         "behind": "uwebsockets",
+         "gap_ns": 2116.0796481504694,
+         "clears": true
+        },
+        {
+         "ahead": "uwebsockets",
+         "behind": "boost-url",
+         "gap_ns": 14627.552834443133,
+         "clears": true
+        },
+        {
+         "ahead": "boost-url",
+         "behind": "cpp-httplib",
+         "gap_ns": 995444.7941756528,
+         "clears": true
+        },
+        {
+         "ahead": "cpp-httplib",
+         "behind": "oatpp",
+         "gap_ns": 2844312.1507205255,
+         "clears": true
+        }
+       ]
+      },
+      "mserver-go": {
+       "aa_largest_abs_d_ns": 150.10697555774823,
+       "neighbours": [
+        {
+         "ahead": "v2",
+         "behind": "nethttp",
+         "gap_ns": 2941.815391464028,
+         "clears": true
+        },
+        {
+         "ahead": "nethttp",
+         "behind": "httprouter",
+         "gap_ns": 276.88325784216795,
+         "clears": true
+        },
+        {
+         "ahead": "httprouter",
+         "behind": "gin",
+         "gap_ns": 299.7043166380281,
+         "clears": true
+        },
+        {
+         "ahead": "gin",
+         "behind": "chi",
+         "gap_ns": 1934.181402332586,
+         "clears": true
+        }
+       ]
+      },
+      "mserver-rs": {
+       "aa_largest_abs_d_ns": 540.2950058343467,
+       "neighbours": [
+        {
+         "ahead": "v2",
+         "behind": "matchit",
+         "gap_ns": 309.1439488004162,
+         "clears": false
+        },
+        {
+         "ahead": "matchit",
+         "behind": "path-tree",
+         "gap_ns": 259.2044179305103,
+         "clears": false
+        }
+       ]
+      }
+     }
+    }
+   }
+  }
+ }
+}

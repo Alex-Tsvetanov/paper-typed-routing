@@ -22,12 +22,9 @@ No timing on the desktop; no laptop access; nothing pushed; drafts only; no em o
 
 ## Documents
 
-- `design/round3/end-to-end.md`: the design draft (contrasts, cells, replicates, request sets,
-  server contract, hosting, Windows, generator and runner spec, risks, hours).
-- `design/round3/decisions-for-alex.md`: the thirteen decisions and Alex's answers.
-- `design/round3/router-survey.md`: the router survey and my re-check of the claims used.
-- `hypotheses-round3.md`: DRAFT, H8 (v2 not slower in the same server), H9 (carry-over), H10
-  (routing cost across servers, as a difference in ns).
+- `design/round3/`: `end-to-end.md` (the design draft), `decisions-for-alex.md` (the thirteen decisions, answers),
+  `router-survey.md` (the survey, my re-check). `hypotheses-round3.md`: DRAFT, H8 (v2 not slower in the same
+  server), H9 (carry-over), H10 (routing cost across servers, as a difference in ns).
 
 ## What exists (code)
 
@@ -126,24 +123,14 @@ The coordinator schedules them, from `t3/jobs/requests-*.json` (the lab queue's 
    m = 100,000; reference 3,197.8 and 3,169.8 MHz; start-up at most 5.0 s (L), 5.75 s (W); spacing 6.05 to 6.81 s.
 6. The campaign, decision 21 (a): round-robin, every contestant, mixed-disjoint, m = 1,000 and 100,000, pair
    (111, 211), R = 7, 1.5 s windows, the A/A run first in the same job (`t3/jobs/rr.py`, `t3/plans/rr-*.json`,
-   `t3/rr_results.py`, `t3/jobs/requests-2026-10-28-rr.json`); output `design/round3/rr-L.*`, `rr-W.*`.
+   `t3/rr_results.py`, `t3/jobs/requests-2026-10-28-rr.json`); output `design/round3/rr-L.*`, `rr-W.*` (A15).
    L DONE 2026-10-28 10:43:31 to 10:56:39 (chain A12, archive cbd18218 checked): A/A 84 of 84; campaign 294 valid,
    14 overloaded (Drogon, actix-router at m = 100,000); no rerun; settles quiet (at most 3.2 s); spacing 1.683 s
    (A/A), 1.761 s; planned windows 9.7 min; peak memory at m = 100,000 4.26 GiB (actix-router 2.13).
-   W DONE 12:10:22 to 12:28:10 (chain A15, archive 589aa1d5 checked; A12 had skipped it): A/A 92 valid, 4 invalid
-   (others); campaign 406 valid, 15 invalid (others), 20 overloaded (Oat++, actix-router at m = 100,000); 2 A/A and
-   7 campaign rounds rerun (147 windows, about 4.3 min); settles quiet (at most 0.86 s); spacing 1.713, 1.743 s;
-   planned windows 9.3 min; peak memory 4.17 GiB. The job began 33 s after W booted (uptime_s); others of 45% or
-   more only until 12:20 (System, svchost, TiWorker, DismHost, lsass, sppsvc, MsMpEng among them), at most 19% after.
-   v2 first by median everywhere. A/A d (ns, entry 0 minus entry 1): L Rust m = 100,000 516 (485 to 540, all 7
-   rounds; the pilot's |d| at most 168), m = 1,000 -28 (all 7); W Rust m = 100,000 45 (6 of 7 positive). Entry 0,
-   v2's campaign slot, is the slower Rust server at m = 100,000 on both; cause not known. W's A/A SDs at m = 1,000:
-   2.7 to 8.8 times the campaign's v2 (its windows ran 1 to 4 min after boot).
-   v2's lead over the runner-up (median ns per request) and, in brackets, the A/A |d| median and maximum: L m = 1,000
-   C++ 160 (15, 35), Go 152 (22, 125), Rust 40 (28, 61); m = 100,000 C++ 652 (28, 47), Go 2,942 (44, 150), Rust 309
-   (516, 540). W m = 1,000 C++ 237 (66, 243), Go 408 (258, 1,091), Rust 29 (124, 153); m = 100,000 C++ 1,865 (59,
-   366), Go 3,587 (106, 235), Rust 645 (45, 121). Rounds v2 ahead: all, but Rust m = 1,000 L 6 of 7, W 4 of 7.
-   W's campaign ran 4.8 to 18 min after boot: its m = 1,000 cell wholly inside the new 15 min rule (row 9).
+   W A15 (12:10:22 to 12:28:10, archive 589aa1d5; `rr-W.*`): begun 33 s after boot, its m = 1,000 cell 4.8 to 11.3
+   min after it, in post-boot load; replaced by p2r3-rr-w2 (row 9). L A/A d (ns, entry 0 minus entry 1): Rust
+   m = 100,000 516 (485 to 540, all 7 rounds; the pilot's |d| at most 168), m = 1,000 -28 (all 7); cause not known.
+   L: v2 first in every program at both sizes, ahead in every round but Rust m = 1,000 (6 of 7, against matchit).
 7. A/A pilot (p2r3-pilot-l, -w at dec7e54; `t3/jobs/pilot.py`, `t3/plans/pilot-*.json`, `t3/pilot_analysis.py`,
    hypotheses 3a): v2 against v2 in all three programs, a fresh server per window, 1,920 windows per system. W DONE
    2026-10-27 (archive 6c1e18ba checked): 1,919 valid, 8 windows above 10% others in 5 bursts; 474 of 480
@@ -153,10 +140,23 @@ The coordinator schedules them, from `t3/jobs/requests-*.json` (the lab queue's 
 8. p2gen against t1gen on L (p2r3-gencheck-l at 606c59b; `gencheck.py`, `plans/gencheck-L.json`,
    `gencheck_analysis.py`; hypotheses 3b; decision 17): DONE 2026-10-26 (archive 9761e71f checked), 64 of 64 valid,
    t1gen's self-tests passed, drift at most 0.83%. Median q = X_p2gen / X_t1gen 0.99805, [0.99439, 1.00309], 16 pairs.
-9. A/A runs (Alex, 2026-10-28, 29; `aa.py`, `plans/rr-aak-*.json`, `jobs/requests-2026-10-28-aa.json`): W, at least
-   15 min after boot: p2r3-rr-w2 (p2r3-rr-w unchanged, ed3b7e0), then p2r3-aa-w at d063274, rr-aak-W.json (v2 seven
-   times per program, 21 servers per cell, 294 windows); L p2r3-aa-l. Count checks: W 84/84, 294/294; L 294/294 valid.
-   RUNNING: chain A17 (gap38-*, tools c713039, specs from 848ef65); rr-w2 began 2026-10-29 17:44:58, W up about 17 h.
+9. A/A runs and the floor (Alex, 2026-10-28, 29; `aa.py`, `plans/rr-aak-*.json`, `jobs/requests-2026-10-28-aa.json`;
+   output `design/round3/floor-L.*`, `floor-W.*`): p2r3-rr-w2 (p2r3-rr-w unchanged, ed3b7e0), then p2r3-aa-w and
+   p2r3-aa-l at d063274 (v2 seven times per program, 21 servers per cell, 294 windows). DONE 2026-10-29, chain A17,
+   every job exit 0, archives' sha256 checked. rr-w2 (0093a593) 17:45:11 to 18:00:18, begun 62,328 s after boot:
+   A/A 94 valid, 2 invalid (others); campaign 338 valid, 3 invalid (others), 16 overloaded (Oat++, actix-router at
+   m = 100,000); 2 A/A and 3 campaign rounds rerun. aa-w (767f796b) 313 valid, 2 invalid, 1 round rerun. aa-l
+   (0861f826, begun 29 s after boot) 294 of 294. W: v2 first in every program at both sizes, ahead in every round.
+   v2's lead against the floor (ns per request): W m = 1,000 C++ 314.4 > 200.3, Go 433.9 < 756.4, Rust 200.1 <
+   276.0; m = 100,000 C++ 1,820.1 > 167.8, Go 3,487.8 > 210.6, Rust 566.3 > 107.2. L m = 1,000 C++ 159.9 > 34.5,
+   Go 151.6 > 124.6, Rust 39.5 < 61.2; m = 100,000 C++ 652.2 > 46.9, Go 2,941.8 > 150.1, Rust 309.1 < 540.3.
+   Other neighbours not clearing: W glaze/pistache, matchit/path-tree (both sizes), httprouter/gin, nethttp/chi
+   (m = 1,000), gin/nethttp (m = 100,000); L matchit/path-tree (m = 100,000). k-server spans of the 7 medians (ns):
+   W m = 1,000 C++ 98.9, Go 176.1, Rust 96.3; m = 100,000 238.7, 169.0, 93.0; L 65.2, 146.5, 68.4; 23.6, 162.5, 94.7.
+   Found (diagnostic, not a result): rr-w2's first 30 s (A/A rounds 1 to 3 at m = 1,000) ran 2.9 to 9.8% above the
+   campaign's v2 median in all three programs, clock and others flat; A15 the same; not at aa-w's start. W's Go and
+   Rust m = 1,000 floors come from round 4, where it ends. L's Rust m = 100,000 floor is A12's entry 1 (8,031.9),
+   below all 7 k-server entries (8,524.0 to 8,618.7) and the campaign's v2 (8,583.8).
 
 ## Lab requests
 
@@ -195,5 +195,5 @@ to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); 3caa3
 Coordinator (2026-10-28): run as is, no cut (W's planned windows 9.3 min; its overrun is reruns); settle rule
 disclosed; no sign tests; a 6 GiB free-memory gate; no freeze step; W timed jobs start at least 15 min after boot.
 Alex (2026-10-28): the floor's statistic is the largest |d|, W's A/A run again; more A/A servers. (2026-10-29)
-"17.8min is still fine": p2r3-rr-w again, since W's m = 1,000 cell, where the floor bites (C++ 237 against 243,
-Go 408 against 1,091), ran inside the 15 min after boot; "Keep every neighbour". Requested: row 9, then analyse.
+"17.8min is still fine" (p2r3-rr-w again); "Keep every neighbour". Row 9 done; the result and the two findings went
+to the coordinator with a question for Alex (keep the result, or a new A/A run after an untimed start-up load).
