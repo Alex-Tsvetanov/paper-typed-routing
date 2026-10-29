@@ -101,10 +101,10 @@ Round-robin count checks (2026-10-28, ed3b7e0, 500 requests a window): W A/A 84 
 - Round-robin: one warm-up per server per size; before each window the size's servers settle (together at most
   10% of one CPU, up to 30 s, else the window is invalid); idle servers' CPU recorded; reruns within the size.
 - Boost off; each system's clock reference (Arch's idle CPUs read 3,201 MHz, busy ones about 3,168: 1% bias).
-- Each contestant is one server process, so its SD is within that process. The floor (Alex, 2026-10-28, "Largest,
-  A/A redone"; in `t3/rr_results.py` before the runs): no rank claim between ranking neighbours whose gap in median
-  ns per request is at most the A/A run's largest |d| over the rounds (same program and size); W's from row 9's
-  A/A run again. Row 9's k-server A/A run (Alex: "More A/A servers") is descriptive, outside the floor.
+- Each contestant is one server process, so its SD is within that process. The floor (Alex, "Largest, A/A redone",
+  "Keep every neighbour"; in `t3/rr_results.py` before the runs): no rank claim between ranking neighbours whose gap
+  in median ns per request is at most the A/A run's largest |d| over the rounds (same program and size); W's from
+  row 9's p2r3-rr-w2. The k-server A/A run ("More A/A servers") is descriptive, outside the floor.
 
 ## Laptop requests
 
@@ -152,9 +152,9 @@ The coordinator schedules them, from `t3/jobs/requests-*.json` (the lab queue's 
 8. p2gen against t1gen on L (p2r3-gencheck-l at 606c59b; `gencheck.py`, `plans/gencheck-L.json`,
    `gencheck_analysis.py`; hypotheses 3b; decision 17): DONE 2026-10-26 (archive 9761e71f checked), 64 of 64 valid,
    t1gen's self-tests passed, drift at most 0.83%. Median q = X_p2gen / X_t1gen 0.99805, [0.99439, 1.00309], 16 pairs.
-9. A/A runs (Alex, 2026-10-28; `aa.py`, `plans/rr-aak-*.json`, `jobs/requests-2026-10-28-aa.json` at d063274):
-   p2r3-aa-w, rr-aa-W.json again (at least 15 min after boot, the coordinator's rule) then rr-aak-W.json (v2 seven
-   times per program, 21 servers per cell, 294 windows), about 13 min; p2r3-aa-l, rr-aak-L.json, about 10 min.
+9. A/A runs (Alex, 2026-10-28, 29; `aa.py`, `plans/rr-aak-*.json`, `jobs/requests-2026-10-28-aa.json`): W, at least
+   15 min after boot: p2r3-rr-w2 (p2r3-rr-w unchanged, ed3b7e0; A15 took 17.8 min), then p2r3-aa-w at d063274,
+   rr-aak-W.json (v2 seven times per program, 21 servers per cell, 294 windows), about 11 min; L p2r3-aa-l, 10 min.
    Desktop count checks, 500 requests a window: W 84 of 84 and 294 of 294 valid; L (container, p2run) 294 of 294.
 
 ## Lab requests
@@ -194,6 +194,6 @@ to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); 3caa3
 
 Coordinator (2026-10-28): run as is, no cut (W's planned windows 9.3 min; its overrun is reruns); settle rule
 disclosed; no sign tests; a 6 GiB free-memory gate; no freeze step; W timed jobs start at least 15 min after boot.
-Alex (2026-10-28): the floor's statistic is the largest |d|, W's A/A run again; more A/A servers. Requested: row 9.
-Put to the coordinator: (a) row 9 as asked, or (b) p2r3-rr-w again (A/A and campaign), since W's m = 1,000 cell,
-where the floor bites (C++ 237 against 243, Go 408 against 1,091), ran inside the 15 min after boot.
+Alex (2026-10-28): the floor's statistic is the largest |d|, W's A/A run again; more A/A servers. (2026-10-29)
+"17.8min is still fine": p2r3-rr-w again, since W's m = 1,000 cell, where the floor bites (C++ 237 against 243,
+Go 408 against 1,091), ran inside the 15 min after boot; "Keep every neighbour". Requested: row 9, then analyse.
