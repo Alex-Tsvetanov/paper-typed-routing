@@ -153,10 +153,10 @@ The coordinator schedules them, from `t3/jobs/requests-*.json` (the lab queue's 
    Other neighbours not clearing: W glaze/pistache, matchit/path-tree (both sizes), httprouter/gin, nethttp/chi
    (m = 1,000), gin/nethttp (m = 100,000); L matchit/path-tree (m = 100,000). k-server spans of the 7 medians (ns):
    W m = 1,000 C++ 98.9, Go 176.1, Rust 96.3; m = 100,000 238.7, 169.0, 93.0; L 65.2, 146.5, 68.4; 23.6, 162.5, 94.7.
-   Found (diagnostic, not a result): rr-w2's first 30 s (A/A rounds 1 to 3 at m = 1,000) ran 2.9 to 9.8% above the
-   campaign's v2 median in all three programs, clock and others flat; A15 the same; not at aa-w's start. W's Go and
-   Rust m = 1,000 floors come from round 4, where it ends. L's Rust m = 100,000 floor is A12's entry 1 (8,031.9),
-   below all 7 k-server entries (8,524.0 to 8,618.7) and the campaign's v2 (8,583.8).
+   Found after the floor table (diagnostic, not a result): rr-w2's first 30 s (A/A rounds 1 to 3, m = 1,000) ran 2.9
+   to 9.8% above the campaign's v2 median in all three programs, clock and others flat; A15 the same; not at aa-w's
+   start, not on Arch. W's Go and Rust m = 1,000 floors come from round 4, where it ends. L's Rust floors: m = 1,000
+   A12's round 3, mid-run; m = 100,000 A12's entry 1 (8,031.9), below all 7 k-server entries (8,524.0 to 8,618.7).
 
 ## Lab requests
 
@@ -195,5 +195,5 @@ to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); 3caa3
 Coordinator (2026-10-28): run as is, no cut (W's planned windows 9.3 min; its overrun is reruns); settle rule
 disclosed; no sign tests; a 6 GiB free-memory gate; no freeze step; W timed jobs start at least 15 min after boot.
 Alex (2026-10-28): the floor's statistic is the largest |d|, W's A/A run again; more A/A servers. (2026-10-29)
-"17.8min is still fine" (p2r3-rr-w again); "Keep every neighbour". Row 9 done; the result and the two findings went
-to the coordinator with a question for Alex (keep the result, or a new A/A run after an untimed start-up load).
+"17.8min is still fine" (p2r3-rr-w again); "Keep every neighbour". Row 9 done; result, findings and a question for
+Alex sent to the coordinator 2026-10-29: (a) keep, disclosed; (b) W again with an untimed start-up load; (c) both.
