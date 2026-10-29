@@ -154,9 +154,8 @@ The coordinator schedules them, from `t3/jobs/requests-*.json` (the lab queue's 
    `gencheck_analysis.py`; hypotheses 3b; decision 17): DONE 2026-10-26 (archive 9761e71f checked), 64 of 64 valid,
    t1gen's self-tests passed, drift at most 0.83%. Median q = X_p2gen / X_t1gen 0.99805, [0.99439, 1.00309], 16 pairs.
 9. A/A runs (Alex, 2026-10-28, 29; `aa.py`, `plans/rr-aak-*.json`, `jobs/requests-2026-10-28-aa.json`): W, at least
-   15 min after boot: p2r3-rr-w2 (p2r3-rr-w unchanged, ed3b7e0; A15 took 17.8 min), then p2r3-aa-w at d063274,
-   rr-aak-W.json (v2 seven times per program, 21 servers per cell, 294 windows), about 11 min; L p2r3-aa-l, 10 min.
-   Desktop count checks, 500 requests a window: W 84 of 84 and 294 of 294 valid; L (container, p2run) 294 of 294.
+   15 min after boot: p2r3-rr-w2 (p2r3-rr-w unchanged, ed3b7e0), then p2r3-aa-w at d063274, rr-aak-W.json (v2 seven
+   times per program, 21 servers per cell, 294 windows); L p2r3-aa-l. Count checks: W 84/84, 294/294; L 294/294 valid.
    RUNNING: chain A17 (gap38-*, tools c713039, specs from 848ef65); rr-w2 began 2026-10-29 17:44:58, W up about 17 h.
 
 ## Lab requests
