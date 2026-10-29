@@ -1,11 +1,12 @@
-# P2 round 3, state digest (under 200 lines; read this first; updated 2026-10-28)
+# P2 round 3, state digest (under 200 lines; read this first; updated 2026-10-29)
+
+Reporting (Alex, 2026-10-29): to the coordinator, as Papers' root `CLAUDE.md` section "Coordinator" says (3ed3cd1).
 
 ## What round 3 is
 
-The end-to-end block of P2 (brief `p2-typed-routing/AGENTS.md` in the Papers repository; plan v2
-section 2.2 and the P2 row of section 3.2): v2 and each external router hosted in an HTTP server,
-round 2's table sizes, both systems of the laptop. Plus the H7 MSVC compile costs on the laptop's
-Windows. Round 2 is the prior study; its frozen files are never edited.
+The end-to-end block of P2 (brief `p2-typed-routing/AGENTS.md` in Papers; plan v2 section 2.2 and the P2 row of
+section 3.2): v2 and each external router hosted in an HTTP server, round 2's table sizes, both systems of the laptop.
+Plus the H7 MSVC compile costs on the laptop's Windows. Round 2 is the prior study; its frozen files are never edited.
 
 ## Worktree and base
 
@@ -159,8 +160,7 @@ The coordinator schedules them, from `t3/jobs/requests-*.json` (the lab queue's 
 
 ## Lab requests
 
-1 to 3 done (2026-10-23 to 25): image 7f39a629ada0; the lab's archives unpacked into `p2r3-build\tools\`
-(`UNPACKED.txt`); records filed (7fd305b, 7e0e6a0), test_report_pattern.sh lists `t3/record.py`.
+1 to 3 done (2026-10-23 to 25): image 7f39a629ada0; archives unpacked in `p2r3-build\tools\`; records filed.
 
 ## Alex decides
 
