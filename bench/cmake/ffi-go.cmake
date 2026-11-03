@@ -9,7 +9,7 @@ find_program(RB_GO go REQUIRED)
 set(RB_GO_MODULE "${CMAKE_CURRENT_SOURCE_DIR}/arms/go")
 # Every source of the module. Each Go arm's digest header covers all of them, as all of them
 # are compiled into the archive the arm links.
-set(RB_GO_FILES go.mod go.sum main.go httprouter.go nethttp.go gin.go chi.go
+set(RB_GO_FILES go.mod go.sum main.go httprouter.go nethttp.go gin.go chi.go v2loop.go
     gin/go.mod gin/rbshim.go gin/tree.go gin/internal/bytesconv/bytesconv.go
     chi/go.mod chi/rbshim.go chi/chain.go chi/chi.go chi/context.go chi/mux.go chi/tree.go)
 list(TRANSFORM RB_GO_FILES PREPEND "${RB_GO_MODULE}/" OUTPUT_VARIABLE _go_deps)

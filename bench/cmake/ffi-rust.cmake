@@ -10,7 +10,7 @@ find_program(RB_RUSTC rustc REQUIRED)
 set(RB_RUST_CRATE "${CMAKE_CURRENT_SOURCE_DIR}/arms/rust")
 # Every source of the crate. Each Rust arm's digest header covers all of them, as all of them
 # are compiled into the library the arm links.
-set(RB_RUST_FILES Cargo.toml Cargo.lock lib.rs matchit_arm.rs actix_router_arm.rs path_tree_arm.rs)
+set(RB_RUST_FILES Cargo.toml Cargo.lock lib.rs matchit_arm.rs actix_router_arm.rs path_tree_arm.rs rust_null_arm.rs)
 list(TRANSFORM RB_RUST_FILES PREPEND "${RB_RUST_CRATE}/" OUTPUT_VARIABLE _rust_deps)
 set(_cargo_dir "${CMAKE_CURRENT_BINARY_DIR}/cargo")
 set(_rust_lib "${_cargo_dir}/release/librb_rust_arms.a")
