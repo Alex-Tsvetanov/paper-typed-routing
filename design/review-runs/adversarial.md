@@ -39,10 +39,12 @@ query.
 - Every table is registered under GET and under PUT.
 - **Queries, one per cell:**
   - *miss*: k segments of `a` (or `1`) and then a last segment no route has, under GET. The walk enters every node of
-    GET's trie and finds nothing; the lookup then walks PUT's trie for the allowed methods, as for a 405. With the
-    catch-all, GET's walk ends in the catch-all and no other trie is walked.
+    GET's trie above the last segment and finds nothing (no edge matches the last segment, so the last segments' nodes
+    are never entered); the lookup then walks PUT's trie for the allowed methods, as for a 405. With the catch-all,
+    GET's walk ends in the catch-all and no other trie is walked.
   - *last hit*: the same path ending in the last segment that only the all-parameter route has (in this table family
-    every other route ends in another literal), under GET. The walk enters every node before the last branch matches.
+    every other route ends in another literal), under GET. The walk enters the same nodes as *miss* in GET's trie, and
+    the all-parameter route's last node.
   - *other method*: the miss path under DELETE, which has no routes. The lookup finds nothing under DELETE and walks
     GET's and PUT's tries for the allowed methods. It walks the same tries as *miss*, so the two queries' counts are
     equal by design; the times are reported for both.
@@ -53,15 +55,21 @@ query.
 As rbench times a cell (`bench/core/runner.hpp`, with rbench's default options): one process per cell and replicate
 on CPU 2, a ring of 4,096 copies of the cell's query (rbench's ring size), 21 epochs after one warm-up, at least 5 ms
 per epoch, the median ns per lookup over epochs; a pass over a slow cell's ring is cut to a prefix, as rbench cuts a
-slow arm's. 10 processes per cell, in an order shuffled with the seed 20261103. The ring repeats one query, so the branch predictor sees the same walk
-every time: the times are those of a learned walk, not of a cold one. The counts are exact and do not depend on it.
+slow arm's. 10 processes per cell, in an order shuffled with the seed 20261103. The ring repeats one query, so the
+branch predictor sees the same walk every time: the times are those of a learned walk, not of a cold one. The counts
+are exact and do not depend on it.
 
 ## What is decided, and what is reported
 
-- **Decided, deterministically: the written bound holds.** For every query, the node entries are at most the number
-  of nodes of the tries the lookup walks, and the resumptions at each node are at most four. The counting copy's
-  answers equal the pinned code's on every query. If either fails, the paper's code-read bound is wrong, and the
-  paper says so.
+- **Decided, deterministically: the written bound holds.** For every walk of every query, no node is entered twice,
+  the node entries are at most the number of nodes of the trie walked, and the resumptions at each node are at most
+  four. The counting copy's answers equal the pinned code's on every query. If any fails, the paper's code-read bound
+  is wrong, and the paper says so. So that a broken count cannot pass, each process also checks that it counted at
+  least one entry, that every pop is a resumption, and that the walks are as many as expected (one when the query's
+  own method finds a route, else one per method with routes).
+- **The entries bound has slack by construction:** no edge matches the last segment, so no walk enters the last
+  segments' nodes. The report gives each count beside its bound, per cell, and the paper does not say the entries
+  bound is reached unless a count reaches it.
 - **Reported, descriptive:** per cell, the node entries, the choice points pushed and popped (the backtracks), the
   deepest choice stack, and the median over processes of the median ns per lookup with its range; the largest number
   of backtracks per query over all cells; the time per node entered.
