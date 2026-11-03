@@ -1,7 +1,7 @@
 # P2 round 3, state digest (under 200 lines; read this first; updated 2026-10-29)
 
 Reporting (Alex, 2026-10-29): to the coordinator, as Papers' root `CLAUDE.md` section "Coordinator" says (3ed3cd1).
-
+Pipeline: D:\Dev\GitHub\Papers\lab\pipeline\README.md and state/p2.json; re-read both after any compaction.
 ## What round 3 is
 
 The end-to-end block of P2 (brief `p2-typed-routing/AGENTS.md` in Papers; plan v2 section 2.2 and the P2 row of
