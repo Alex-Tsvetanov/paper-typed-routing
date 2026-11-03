@@ -18,7 +18,9 @@
 # bench/jobs/review-grid.sh and bench/sanitize_rbench.sh, which put it first on PATH and pass -DRB_GO).
 # It is idempotent: an install that already reports the pinned version, with the stamp of this archive,
 # is left as it is. It never touches the system's Go (/usr/bin/go, /usr/lib/go), PATH or any profile, and
-# needs no root. Downloads: the one archive above. Tools: curl, sha256sum, tar with zstd (Arch's base).
+# needs no root. Downloads: the one archive above and its signature (.sig), which pacman-key --verify checks
+# against the system's keyring when it can: a BAD signature refuses, one it cannot check is logged and the
+# sha256 decides. Tools: curl, sha256sum, tar with zstd, pacman-key (Arch's base).
 set -euo pipefail
 
 URL="https://archive.archlinux.org/packages/g/go/go-2:1.27.1-1-x86_64.pkg.tar.zst"
@@ -57,6 +59,25 @@ if [ "$got" != "$SHA256" ]; then
     echo "install-go: sha256 of $pkg is $got, not $SHA256; refusing (the file is left for inspection)" >&2
     exit 1
 fi
+# The archive's PGP signature, against the system's pacman keyring, as further evidence beside the sha256:
+# a BAD signature refuses; a signature that cannot be fetched or checked is logged, and the sha256 decides.
+sig="not checked (no pacman-key)"
+if command -v pacman-key >/dev/null 2>&1; then
+    if curl -fsSL --retry 3 -o "$pkg.sig" "$URL.sig"; then
+        if verify=$(pacman-key --verify "$pkg.sig" "$pkg" 2>&1); then
+            sig="good (pacman-key --verify)"
+        elif grep -q "BAD signature" <<<"$verify"; then
+            echo "install-go: BAD signature on $pkg; refusing (the file is left for inspection):" >&2
+            echo "$verify" >&2
+            exit 1
+        else
+            sig="could not be checked: $(tr '\n' ' ' <<<"$verify")"
+        fi
+    else
+        sig="could not be checked: $URL.sig was not fetched"
+    fi
+fi
+echo "install-go: sha256 $got matches; signature $sig"
 
 tmp=$(mktemp -d "$parent/.install-go.XXXXXX")
 trap 'rm -rf "$tmp"' EXIT
