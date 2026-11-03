@@ -46,11 +46,11 @@ Upper estimates; each comes from a named record of an earlier job.
 | Windows: start at least 15 min after boot | Windows | 900 s | `lab/laptop/README.md` |
 | Pinned Go install (user-space, sha256) | Linux | minutes | the laptop's install policy |
 | Record set: every rbench arm, the new arms and the tool | Linux | about 6,700 s, plus the new arms | the 25-arm set of f626955eb: 1,581 + 2,258 + 2,822 s |
-| Adversarial tool, timed | Linux | at most 2,000 s | 440 processes at round 2's 4.565 s per process |
+| Adversarial tool, timed | Linux | about 5,400 s | 440 processes; one process per cell took 542 s on the desktop (planning run, `adversarial.md`) |
 | Ablation and boundary grid | Linux | about 21,000 s, at most 32,200 s | 3,920 ablation processes at 4.565 s; 3,136 small-table processes at 0.995 s to 4.565 s |
 
-In all: about 2 h for the floor rerun over both systems, and about 8.5 h (at most 11.5 h) on Linux for the lookup
-harness.
+In all: about 2 h for the floor rerun over both systems, and about 9.2 h (at most 12.3 h) on Linux for the lookup
+harness, the new arms' share of the record set on top.
 
 ## Toolchain trap (blocks the rbench build)
 
