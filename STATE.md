@@ -195,5 +195,5 @@ std dev per contestant, one fixed A/A run per OS, replacing D9's Holm test. (202
 
 Coordinator (2026-10-28): run as is, no cut; settle rule disclosed; no sign tests; 6 GiB free-memory gate; no freeze;
 W jobs at least 15 min after boot. Alex (2026-10-29): row 9 kept as the rule gives it, disclosed. 2026-11-03: macros in
-`results/round3/`; writing pack filled (Papers 1463855; \missing: H5(c), the laptop's MSVC costs); H7's MSVC job
-`t3/jobs/ctmsvc.py` queued (chain A61); Alex: "No record needed (Recommended)", gap in `t3/coverage.json`.
+`results/round3/`; H7's MSVC costs ran (chain A61, `ct-msvc.json`, `\RThreeMsvc*`); Alex: "No record needed
+(Recommended)"; writing pack filled, reviewed, no \missing (Papers 4049e27). Next: P2's writer (coordinator).
