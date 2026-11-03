@@ -148,6 +148,38 @@ class FieldTests(Synthetic):
         self.assertFalse(out.exists())
 
 
+class MsvcTests(unittest.TestCase):
+    """add_msvc on made-up rows (no result)."""
+
+    @staticmethod
+    def rows(crash: int = 1 << 20) -> dict:
+        out = []
+        for shape, m in (("static", 10), ("wild", 10), ("static", 100), ("static", 1000), ("wild", 1000), ("github", 203)):
+            fails = [{"steps": crash, "kind": "crash"}, {"steps": 1 << 22, "kind": "budget"}] if m == 1000 else []
+            out.append({"table": f"{shape}_{m}", "shape": shape, "m": m, "compiler": "MSVC 19.0.12345.0",
+                        "steps_min_passed": (1 << 23) if m == 1000 else 1 << 20, "failures": fails,
+                        "peak_memory_bytes": (6 << 30) + m if m == 1000 else 100 << 20, "object_bytes": 1000 + m})
+        return {"tables": out, "inputs": {"archive": "a.tar.gz", "archive_sha256": "ab"}}
+
+    def test_rows_failures_and_peaks(self) -> None:
+        from macros_util import Macros
+        mc = Macros()
+        M.add_msvc(mc, self.rows())
+        got = macros_of(mc.text())
+        self.assertEqual(got["RThreeMsvcVersion"], "19.0.12345")
+        self.assertEqual(got["RThreeMsvcRowTen"], "10 & 2 & 1{,}048{,}576 & 100 & 1{,}010")
+        self.assertEqual(got["RThreeMsvcRowThousand"], "1{,}000 & 2 & 8{,}388{,}608 & 6{,}144 & 2{,}000")
+        self.assertEqual(got["RThreeMsvcRowGithub"], "GitHub, 203 & 1 & 1{,}048{,}576 & 100 & 1{,}203")
+        self.assertEqual((got["RThreeMsvcCrashSteps"], got["RThreeMsvcBudgetFailSteps"]), ("1{,}048{,}576", "4{,}194{,}304"))
+
+    def test_m_1000_tables_that_crash_at_different_budgets_are_refused(self) -> None:
+        from macros_util import Macros
+        ct = self.rows()
+        ct["tables"][3]["failures"][0]["steps"] = 1 << 21
+        with self.assertRaisesRegex(ValueError, "one crash"):
+            M.add_msvc(Macros(), ct)
+
+
 class FormatTests(unittest.TestCase):
     def test_a_negative_number_gets_a_math_minus_and_no_negative_zero(self) -> None:
         self.assertEqual(M.num(-14.84), "\\ensuremath{-}14.8")
@@ -206,7 +238,8 @@ class RoundTwoTests(unittest.TestCase):
 class CommittedTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.macros, cls.tables = M.generate(ROOT / "design" / "round3", OUT / "records.json", HERE / "plans" / "rr-W.json")
+        cls.macros, cls.tables = M.generate(ROOT / "design" / "round3", OUT / "records.json", HERE / "plans" / "rr-W.json",
+                                            OUT / "ct-msvc.json")
 
     def test_the_committed_outputs_are_what_the_committed_inputs_give(self) -> None:
         self.assertEqual((OUT / "macros.tex").read_text(encoding="utf-8"), self.macros)

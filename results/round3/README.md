@@ -8,6 +8,8 @@ the table bodies in `tables/` only.
 | `records.json` | `t3/rr_records.py` | the round-robin records named, with their sha256, in `design/round3/floor-L.json`, `floor-W.json` and `rr-W.json` |
 | `macros.tex` | `t3/rr_macros.py` | `design/round3/floor-L.json`, `floor-W.json` (written by `t3/rr_results.py`), `records.json`, `t3/plans/rr-W.json` |
 | `tables/*.tex` | `t3/rr_macros.py` | the same; each file's first lines name its columns |
+| `ct-msvc.json` | `t3/ct_msvc_results.py` | H7's MSVC costs on the laptop's Windows: the job's `tables.jsonl`, with the archive's and the file's sha256 |
+| `round2-paper-macros.tex` | `t3/round2_macros.py` | round 2's `macros-paper.tex` without the desktop's numbers, plus H5(c)'s evidence from the minimal server's records |
 
 To regenerate, unpack each job's archive into a folder named by the job (the archives and their sha256 are listed in
 the `inputs` of the three analysis files), then:

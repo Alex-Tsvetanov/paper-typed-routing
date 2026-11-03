@@ -182,3 +182,6 @@ Alex answered the design questions on 2026-10-23 (`design/round3/decisions-for-a
 - 2026-11-03: Alex's answer (via the coordinator), "No record needed (Recommended)": H7's MSVC costs on the laptop
   need no D5 record, as round 2's frozen text says; the gap is declared compile-only, nothing executed, in
   `t3/coverage.json` (round 2's `bench/coverage.json` stays as it is).
+- 2026-11-03: H7's MSVC costs ran on the laptop's Windows (job exit 0, all 22 tables; archive sha256 85581da9...);
+  `results/round3/ct-msvc.json` (`t3/ct_msvc_results.py`) and the macros `\RThreeMsvc*` (`t3/rr_macros.py`), in
+  round 2's form. They replace round 2's desktop costs in the paper.
