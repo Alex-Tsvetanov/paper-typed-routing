@@ -40,6 +40,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import labsteps as L  # noqa: E402
 
 COMPILED = ("CMakeLists.txt", "server", "bench", "t1/h6_targets.cpp", "t3/gen", "t3/e2e_requests.cpp")
+# Files under COMPILED that no build reads, left out of the comparison. bench/ct_msvc.py is H7's MSVC cost
+# script, run by t3/jobs/ctmsvc.py and named by no CMake file (test_probe.py checks both); 0d6b22f changed it
+# after round 3's bring-up at 3ff814e50. The binaries' sha256s are checked as before.
+NOT_COMPILED = ("bench/ct_msvc.py",)
 CAMPAIGN = {"sizes": (10, 100, 1000, 10000, 100000), "shapes": 2, "pairs": 16, "windows_per_arm": 2}
 
 
@@ -70,7 +74,8 @@ def refusals(plan: dict) -> list:
     if not commit or not want:
         return ["the plan names no _build_commit or _expect_sha256"]
     out = ["the paper clone has local changes"] if L.git("status", "--porcelain") else []
-    p = subprocess.run(["git", "-C", str(L.ROOT), "diff", "--quiet", commit, "HEAD", "--", *COMPILED])
+    p = subprocess.run(["git", "-C", str(L.ROOT), "diff", "--quiet", commit, "HEAD", "--", *COMPILED,
+                        *(f":(exclude){f}" for f in NOT_COMPILED)])
     if p.returncode == 1:
         out.append(f"compiled sources differ between {commit[:9]} and this checkout")
     elif p.returncode != 0:

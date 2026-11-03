@@ -94,6 +94,34 @@ class RefusalTests(unittest.TestCase):
         self.assertEqual(len(r), 1)
         self.assertIn("git could not compare", r[0])
 
+    def test_a_file_no_build_reads_is_left_out_and_any_other_change_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp, self.clean():
+            f = Path(tmp) / "mserver"
+            f.write_bytes(b"binary")
+            want = {str(f): hashlib.sha256(b"binary").hexdigest()}
+            try:  # round 3's bring-up, whose bench/ct_msvc.py 0d6b22f changed
+                labsteps.git("cat-file", "-e", "3ff814e50^{commit}")
+            except labsteps.StepError:
+                self.skipTest("round 3's build commit is not in this clone")
+            self.assertEqual(probe.refusals({"_build_commit": "3ff814e50", "_expect_sha256": want}), [])
+            last = labsteps.git("rev-list", "-1", "HEAD", "--", "server")  # the parent differs in server/
+            r = probe.refusals({"_build_commit": last + "^", "_expect_sha256": want})
+        self.assertEqual(len(r), 1)
+        self.assertIn("compiled sources differ", r[0])
+
+    def test_no_cmake_file_names_a_left_out_file(self) -> None:
+        root = HERE.parent
+        skip = {".git", "_deps"}
+        cmake = [p for p in root.rglob("*") if p.is_file() and (p.name == "CMakeLists.txt" or p.suffix == ".cmake")
+                 and not skip.intersection(p.relative_to(root).parts)
+                 and not p.relative_to(root).parts[0].startswith(("build", "out"))]
+        self.assertTrue(cmake)
+        for left_out in probe.NOT_COMPILED:
+            self.assertTrue((root / left_out).is_file(), left_out)
+            self.assertTrue(any(left_out == c or left_out.startswith(c + "/") for c in probe.COMPILED), left_out)
+            for p in cmake:
+                self.assertNotIn(Path(left_out).name, p.read_text(encoding="utf-8", errors="replace"), str(p))
+
     def test_the_session_must_name_the_same_binaries(self) -> None:
         session = {"p2gen": {"argv": ["/b/p2gen"], "sha256": "a"},
                    "programs": [{"argv": ["/b/mserver"], "sha256": "b"}]}

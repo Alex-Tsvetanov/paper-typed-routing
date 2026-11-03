@@ -47,6 +47,11 @@ coordinator's note of 2026-10-28 in `STATE.md`) and is not part of what Alex app
 - **The analysis:** `t3/rr_results.py` and `t3/rr_macros.py` take the plan set and the pair as parameters (today six
   fixed plan names and `t111`); round 3's outputs stay byte for byte the same (tests), and this run's go to
   `results/rerun/` with macros under their own prefix.
+- **The probe's source check leaves out one file that no build reads.** `t3/jobs/probe.py` refuses when a compiled
+  source changed since the plan's build commit. 0d6b22f changed `bench/ct_msvc.py` (H7's MSVC cost script, a
+  `--msvc-version` argument) after round 3's bring-up, so the check would refuse round 3's own binaries. It now
+  leaves out that one file (`NOT_COMPILED`; a test finds no CMake file that names it). Every other compiled path is
+  compared as before, and every binary's sha256 is checked as before.
 
 ## What the paper reports
 
