@@ -6,16 +6,17 @@
 
 Records are matched by what they compiled, not by commit (the Papers repo's rule D5; the rules are
 bench/gate_lib.py's):
-1. For every target of the build (rbench and each arm_*; build.sh's inputs.json) and every
-   sanitizer (ASan+UBSan, TSan, MSan), a green rbench record made on L (rbench-*-L-<san>[-TAG].json,
-   bench/sanitize_rbench.sh) compiled the same first-party inputs for that target, with the same
-   compiler, the same configuration and the same pins (the sha256 of the pins.cmake the build used,
-   --pins, and every archive both fetched with the same URL and hash; bench/gate_lib.py). A gap
-   is allowed only where coverage.json declares it.
-2. RegexMatcher v2 (design/round2/regexmatcher-v2.md, section 8.4): when the build has v2's arms,
-   the hash of their inputs under regexmatcher/include/ (build.sh's BUILD.v2-include.json, the
-   default next to --inputs) equals that of the test targets of a green RegexMatcher record on L
-   for each sanitizer, with the same compiler (bench/sanitize_regexmatcher.sh).
+1. For every target of the build (rbench, each arm_* and the adversarial tool; build.sh's
+   inputs.json) and every sanitizer (ASan+UBSan, TSan, MSan), a green rbench record made on L
+   (rbench-*-L-<san>[-TAG].json, bench/sanitize_rbench.sh) compiled the same first-party inputs for
+   that target, with the same compiler, the same configuration and the same pins (the sha256 of the
+   pins.cmake the build used, --pins, and every archive both fetched with the same URL and hash;
+   bench/gate_lib.py). A gap is allowed only where coverage.json declares it.
+2. RegexMatcher v2 (design/round2/regexmatcher-v2.md, section 8.4): when the build has v2's arms
+   or the adversarial tool, which compiles v2 too, the hash of their inputs under
+   regexmatcher/include/ (build.sh's BUILD.v2-include.json, the default next to --inputs) equals
+   that of the test targets of a green RegexMatcher record on L for each sanitizer, with the same
+   compiler (bench/sanitize_regexmatcher.sh).
 
 Prints one "covered" line per target on stderr and the gate as JSON on stdout or to --out; exits 1
 with the reason if the records do not cover the build.
@@ -53,7 +54,8 @@ def main() -> int:
                                                   pins=pins, fetched=fetched_of(info))
         v2 = {}
         include = args.v2_include or Path(str(args.inputs).removesuffix(".inputs.json") + ".v2-include.json")
-        if any(t.startswith("arm_regexmatcher_v2") and t != "arm_regexmatcher_v2_r1" for t in hashes):
+        if any((t.startswith("arm_regexmatcher_v2") and t != "arm_regexmatcher_v2_r1") or t == "adversarial"
+               for t in hashes):
             if not include.exists():
                 raise GateError(f"the build has v2's arms and no {include.name}")
             targets = load(include)["builds"]["rbench"]["targets"]

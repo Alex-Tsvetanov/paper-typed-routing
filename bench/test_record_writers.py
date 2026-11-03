@@ -12,6 +12,9 @@ the first L record of RegexMatcher went red on it, lab journal). For each writer
    a red one from a summary with a failed test (even with CTest's exit code 0), and from a log
    without a summary;
 3. the server's record carries the sha256 of the pins.cmake it was given (the gate's pin rule).
+4. bench/sanitizer_record.py's presets of the adversarial tool: none without the tool; three green
+   ones from passing outputs; red ones when its outputs are missing, a cell crashed or failed a
+   check, a cell is missing, or the self-test reports a failure.
 """
 
 from __future__ import annotations
@@ -113,10 +116,42 @@ def end_to_end(tmp: Path) -> None:
            rec.get("pins_sha256") == file_sha256(HERE / "cmake" / "pins.cmake"))
 
 
+def adversarial_presets(tmp: Path) -> None:
+    m = module(HERE / "sanitizer_record.py")
+    good = {"cell": "two-k1-miss", "status": "ok", "checks_ok": True, "agrees": True}
+
+    def out(cells: list[dict], planned: int = 1, selftest: str = "self-test: 66 queries on 22 tables, 0 failing",
+            exits: str = "test_exit=0 selftest_exit=0") -> Path:
+        d = tmp / f"adv-{next(runs)}"
+        d.mkdir()
+        (d / "adversarial-exit.txt").write_text(f"{exits} cells={planned} failed_cells=0\n", encoding="utf-8")
+        (d / "adversarial-test.txt").write_text("test_adversarial: ok (0 failing)\n", encoding="utf-8")
+        (d / "adversarial-selftest.txt").write_text(selftest + "\n", encoding="utf-8")
+        (d / "adversarial.jsonl").write_text("".join(json.dumps(c) + "\n" for c in cells), encoding="utf-8")
+        return d
+
+    def green(d: Path) -> list[bool]:
+        return [p["status"] == "green" for p in m.tool_presets(d, True, "Clang 22.1.8")]
+
+    expect("sanitizer_record.py: no tool, no preset", m.tool_presets(out([good]), False, "c") == [])
+    expect("sanitizer_record.py: the tool's passing outputs make three green presets", green(out([good])) == [True] * 3)
+    expect("sanitizer_record.py: missing outputs are red", green(tmp / "nowhere") == [False] * 3)
+    crashed = {"cell": "x", "status": "crash", "exit": 139}
+    expect("sanitizer_record.py: a crashed cell is red", green(out([crashed]))[2] is False)
+    expect("sanitizer_record.py: a cell that fails a check is red",
+           green(out([{**good, "checks_ok": False}]))[2] is False)
+    expect("sanitizer_record.py: a missing cell is red", green(out([good], planned=2))[2] is False)
+    expect("sanitizer_record.py: a self-test with a failure is red",
+           green(out([good], selftest="self-test: 66 queries on 22 tables, 1 failing"))[1] is False)
+    expect("sanitizer_record.py: a unit test that exited 1 is red",
+           green(out([good], exits="test_exit=1 selftest_exit=0"))[0] is False)
+
+
 def main() -> int:
     parsers()
     with tempfile.TemporaryDirectory() as t:
         end_to_end(Path(t))
+        adversarial_presets(Path(t))
     print(f"{failures} failed" if failures else "all checks passed")
     return 1 if failures else 0
 

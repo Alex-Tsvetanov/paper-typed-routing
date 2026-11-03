@@ -5,7 +5,9 @@
 #
 # Builds rbench (every arm, RegexMatcher v2 from REGEXMATCHER_DIR) under the sanitizer, runs the
 # agreement test, the probes and a quick cell of every arm on every shape at 10 and 1000
-# routes (run_grid.sh with QUICK=1), and writes RECORDS_DIR/rbench-<code commit>-L-<san>.json
+# routes (run_grid.sh with QUICK=1); with the regexmatcher-v2 arm the build has the adversarial tool
+# (cmake/tool-adversarial.cmake), whose unit test, self-test and a quick process of each of its 44
+# cells run too (out/adversarial*); and writes RECORDS_DIR/rbench-<code commit>-L-<san>.json
 # (sanitizer_record.py). <code commit> is the last commit that changed rbench's sources; they
 # must have no local changes. Runtime options are those of round 1's records. The record names
 # what every target compiled, and the gate (check_records.py) matches records to a measured
@@ -30,7 +32,7 @@ records=${2:-$repo/../../lab/sanitizer-records}
 rm_dir=$(cd "${REGEXMATCHER_DIR:?REGEXMATCHER_DIR is required}" && pwd)
 rm_commit=${REGEXMATCHER_COMMIT:?REGEXMATCHER_COMMIT is required (the commit of REGEXMATCHER_DIR)}
 work=${WORK:-$HOME/lab/p2/rbench-san}/$san${TAG:+-$TAG}
-sources=(main.cpp core arms cmake gen CMakeLists.txt coverage.json semantics.json)
+sources=(main.cpp core arms cmake gen tools CMakeLists.txt coverage.json semantics.json)
 
 case "$san" in
     asan) cmake_args=(-DRB_SANITIZER=address+undefined)
@@ -83,6 +85,33 @@ if [ "$build_rc" -eq 0 ]; then
     PIN=none ALLOW_UNPINNED=1 QUICK=1 SIZES="10 1000" CELL_TIMEOUT=1800 PAIRS="1:2" SEED=none \
         bash "$here/run_grid.sh" "$work/build/rbench" "$work/out"
     grid_rc=$?
+fi
+# The adversarial tool: its unit test and self-test (every query of every table through the pinned
+# code and the counting copy), then one quick process per cell on a ring of 64. Standard error goes
+# to the grid's stderr.log, where the record looks for sanitizer reports.
+if [ "$build_rc" -eq 0 ] && [ -x "$work/build/adversarial" ]; then
+    o=$work/out
+    mkdir -p "$o"
+    "$work/build/test_adversarial" >"$o/adversarial-test.txt" 2>>"$o/stderr.log"
+    test_rc=$?
+    "$work/build/adversarial" self-test >"$o/adversarial-selftest.txt" 2>>"$o/stderr.log"
+    self_rc=$?
+    "$work/build/adversarial" list >"$o/adversarial-cells.txt" 2>>"$o/stderr.log"
+    : >"$o/adversarial.jsonl"
+    failed=0
+    while read -r c _; do
+        echo "## cell adversarial $c" >>"$o/stderr.log"
+        line=$("$work/build/adversarial" cell --cell "$c" --quick --ring 64 2>>"$o/stderr.log")
+        rc=$?
+        if [ "$rc" -eq 0 ] && [ -n "$line" ]; then
+            printf '%s\n' "$line" >>"$o/adversarial.jsonl"
+        else
+            printf '{"cell":"%s","status":"crash","exit":%s}\n' "$c" "$rc" >>"$o/adversarial.jsonl"
+            failed=$((failed + 1))
+        fi
+    done <"$o/adversarial-cells.txt"
+    echo "test_exit=$test_rc selftest_exit=$self_rc cells=$(wc -l <"$o/adversarial-cells.txt") failed_cells=$failed" \
+        >"$o/adversarial-exit.txt"
 fi
 set -e
 seconds=$(( $(date +%s) - start ))

@@ -5,7 +5,9 @@ passes; a missing sanitizer, a red record with the same inputs, another compiler
 made on L, RegexMatcher headers without green records, and a red RegexMatcher record each stop
 the gate; a gap coverage.json declares is allowed. The pin rule: a build whose bench/cmake/pins.cmake
 has one pin changed is refused by records made with the file as it is; so is a build whose records
-fetched an archive with another hash, or do not record their pins.
+fetched an archive with another hash, or do not record their pins. The adversarial tool, a target of
+rbench's build: covered with the arms it passes; its inputs left uncovered stop the gate; it alone
+(without v2's arms) still needs green RegexMatcher records for the v2 headers it compiles.
 
     python3 bench/test_gates.py      (exit 0 when every check passes)
 """
@@ -48,7 +50,7 @@ def rbench_inputs(d: Path, targets: dict) -> Path:
                                                       "build_config": {}, "third_party": {"fetched": FETCHED}}}})
     write(d / "b.v2-include.json", {"builds": {"rbench": {"targets": {
         t: {"prefix_hashes": {"regexmatcher/include/": {"hash": PREFIX_HASH, "files": 10}}}
-        for t in targets if t in ("arm_regexmatcher_v2", "arm_regexmatcher_v2_ct")}}}})
+        for t in targets if t in ("arm_regexmatcher_v2", "arm_regexmatcher_v2_ct", "adversarial")}}}})
     return d / "b.inputs.json"
 
 
@@ -163,6 +165,30 @@ def rbench_cases(tmp: Path) -> None:
     expect("rbench: a record without its pins does not count", not run(CHECK, inputs, recs, cov))
 
 
+def tool_cases(tmp: Path) -> None:
+    def case(name: str, targets: dict, recorded: dict, rm: bool = True) -> tuple[Path, Path]:
+        d = tmp / ("tool-" + name)
+        d.mkdir()
+        recs = d / "records"
+        recs.mkdir()
+        for s in ("asan", "tsan", "msan"):
+            record(recs, f"rbench-x-L-{s}.json", s, recorded)
+            if rm:
+                rm_record(recs, f"regexmatcher-y-L-{s}.json", s)
+        return rbench_inputs(d, targets), recs
+
+    targets = {"rbench": "r1", "arm_regexmatcher_v2": "v2", "adversarial": "a1"}
+    inputs, recs = case("pass", targets, targets)
+    expect("tool: the adversarial target covered with the arms passes", run(CHECK, inputs, recs))
+    inputs, recs = case("uncovered", targets, {**targets, "adversarial": "a0"})
+    expect("tool: the adversarial target's inputs without records stop the gate", not run(CHECK, inputs, recs))
+    alone = {"rbench": "r1", "adversarial": "a1"}
+    inputs, recs = case("alone-rm", alone, alone, rm=False)
+    expect("tool: without v2's arms, its v2 headers still need RegexMatcher records", not run(CHECK, inputs, recs))
+    inputs, recs = case("alone", alone, alone)
+    expect("tool: without v2's arms, covered with RegexMatcher records it passes", run(CHECK, inputs, recs))
+
+
 def h6_cases(tmp: Path) -> None:
     targets = {"mserver": "m1", "h6_targets": "t1"}
 
@@ -208,6 +234,7 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as t:
         tmp = Path(t)
         rbench_cases(tmp)
+        tool_cases(tmp)
         h6_cases(tmp)
     print(f"{failures} failed" if failures else "all checks passed")
     return 1 if failures else 0

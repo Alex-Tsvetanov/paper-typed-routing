@@ -2,12 +2,14 @@
 # build.sh BUILD_DIR [CMAKE_ARGS...]: configure and build rbench from a fresh directory with
 # clang, Release, against REGEXMATCHER_DIR (RegexMatcher v2). Writes BUILD_DIR.log (configure and
 # build output) and BUILD_DIR.inputs.json: what the build compiled (lab/bin/inputs_hash.py over
-# rbench and every arm_* target, RegexMatcher v2's files included under the label regexmatcher/).
+# rbench, every arm_* target and, with the regexmatcher-v2 arm, the adversarial tool; RegexMatcher
+# v2's files included under the label regexmatcher/).
 # When the build has v2's arms, BUILD_DIR.v2-include.json holds, for each target that compiles
-# v2 (arm_regexmatcher_v2, arm_regexmatcher_v2_ct, arm_regexmatcher_v2_ct_heap), the hash of its inputs under
+# v2 (arm_regexmatcher_v2, arm_regexmatcher_v2_ct, arm_regexmatcher_v2_ct_heap, adversarial), the hash of its inputs under
 # regexmatcher/include/ (--label-hash), which the records gate matches with RegexMatcher's own
 # sanitizer records (design/round2/regexmatcher-v2.md). BUILD_DIR.symbols.tsv holds the address
-# modulo 64 of each timed function (symbols.py). BUILD_DIR/rb-isa/rb_isa.h holds the instruction
+# modulo 64 of each timed function (symbols.py), and BUILD_DIR.adversarial-symbols.tsv the same for
+# the adversarial tool when the build has it. BUILD_DIR/rb-isa/rb_isa.h holds the instruction
 # set every arm was compiled for (cmake/isa.cmake).
 #
 # Environment: REGEXMATCHER_DIR (required while v2 is not public), INPUTS_HASH_PY (default: the
@@ -43,6 +45,12 @@ for a in $arms; do
         regexmatcher-v2 | regexmatcher-v2-ct | regexmatcher-v2-ct-heap) v2_targets+=(--target "arm_${a//-/_}") ;;
     esac
 done
+# The adversarial tool (cmake/tool-adversarial.cmake), built with the regexmatcher-v2 arm: a target
+# of its own, and one that compiles v2.
+if [ -x "$build/adversarial" ]; then
+    targets+=(--target adversarial)
+    v2_targets+=(--target adversarial)
+fi
 [ ${#v2_targets[@]} -eq 0 ] || v2=(--dep-root regexmatcher=RegexMatcher_SOURCE_DIR)
 python3 "$inputs_py" --build "rbench=$build" "${targets[@]}" "${v2[@]}" --out "$build.inputs.json" >/dev/null
 if [ ${#v2_targets[@]} -gt 0 ]; then
@@ -51,4 +59,5 @@ if [ ${#v2_targets[@]} -gt 0 ]; then
 fi
 # Where each timed function landed (address modulo 64; symbols.py, audit m29).
 python3 "$here/symbols.py" "$build/rbench" "$build.symbols.tsv"
+[ ! -x "$build/adversarial" ] || python3 "$here/symbols.py" "$build/adversarial" "$build.adversarial-symbols.tsv"
 echo "built $build ($(sed -n 's/^-- The CXX compiler identification is //p' "$build.log" | head -1); $(sed -n 's/^-- isa: //p' "$build.log" | head -1))"

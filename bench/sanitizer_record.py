@@ -7,14 +7,16 @@ inputs.json: inputs_hash per target (rbench and each arm_*; first-party files on
 v2's included), the configuration, the dependency roots and third_party (each fetched archive's URL
 and hash as used), and the sha256 of the pins.cmake the build used (pins_sha256), which the gate
 matches with a measured build's (bench/gate_lib.py). One preset per step: build, agree, probes, and the
-quick cells of each arm.
+quick cells of each arm; and, when the build has the adversarial tool (a target "adversarial" in
+inputs.json), its unit test, its self-test and its quick cells (sanitize_rbench.sh's out/adversarial*).
 
 Green means: the build succeeded; every agreement row agrees, is refused by design, or
 disagrees where semantics.json declares the arm's semantics, in the declared kind
 (check_agree.py); every probe ran; every cell ended with status ok or refused, or disagrees as
 declared; the grid script
-exited 0; and the standard error of all runs holds no sanitizer report. Reports are copied
-into the record.
+exited 0; the adversarial tool, if the build has it, passed its unit test and self-test and every
+one of its cells ended with status ok and its checks passed; and the standard error of all runs holds
+no sanitizer report. Reports are copied into the record.
 """
 
 from __future__ import annotations
@@ -41,6 +43,34 @@ def jsonl(path: Path) -> list[dict]:
     if not path.exists():
         return []
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def tool_presets(out: Path, has_tool: bool, compiler: str) -> list[dict]:
+    """The adversarial tool's presets (sanitize_rbench.sh): none for a build without it; red ones
+    for a build with it whose outputs are missing."""
+    if not has_tool:
+        return []
+
+    def text(name: str) -> str:
+        return (out / name).read_text(encoding="utf-8", errors="replace") if (out / name).exists() else ""
+
+    exits = dict(kv.split("=", 1) for kv in text("adversarial-exit.txt").split() if "=" in kv)
+    self_text = text("adversarial-selftest.txt")
+    unit_ok = exits.get("test_exit") == "0" and "test_adversarial: ok" in text("adversarial-test.txt")
+    self_ok = exits.get("selftest_exit") == "0" and re.search(r"^self-test: \d+ queries on \d+ tables, 0 failing$",
+                                                               self_text, re.MULTILINE) is not None
+    rows = jsonl(out / "adversarial.jsonl")
+    bad = [r for r in rows if r.get("status") != "ok" or r.get("checks_ok") is not True or r.get("agrees") is not True]
+    planned = int(exits.get("cells", "0") or 0)
+    cells_ok = bool(rows) and len(rows) == planned and not bad
+    return [{"preset": "adversarial/unit-test", "status": "green" if unit_ok else "red",
+             "detail": f"exit {exits.get('test_exit', 'none')}", "compiler": compiler},
+            {"preset": "adversarial/self-test", "status": "green" if self_ok else "red",
+             "detail": (self_text.strip().splitlines() or ["no output"])[-1], "compiler": compiler},
+            {"preset": "adversarial/cells", "status": "green" if cells_ok else "red",
+             "detail": f"{len(rows)} of {planned} cells",
+             "failures": [f"{r.get('cell')}: {r.get('status')} {r.get('exit', '')}".strip() for r in bad][:20],
+             "compiler": compiler}]
 
 
 def report_blocks(text: str) -> tuple[int, list[str]]:
@@ -124,6 +154,8 @@ def main() -> int:
                         "failures": [f"{r['shape']} {r['m']}: {r.get('status')} {r.get('reason', r.get('exit', ''))}"
                                      for r in bad][:20],
                         "compiler": compiler})
+    has_tool = "adversarial" in (inputs.get("inputs_hash") or {})
+    presets += tool_presets(out, has_tool, compiler)
     stderr = (out / "stderr.log").read_text(encoding="utf-8", errors="replace") if (out / "stderr.log").exists() else ""
     reports, blocks = report_blocks(stderr)
     green = (args.build_exit == 0 and args.grid_exit == 0 and reports == 0
@@ -132,7 +164,8 @@ def main() -> int:
               "date": datetime.now().astimezone().isoformat(timespec="seconds"), "host": args.host,
               "green": green, "compiler": compiler, **inputs, "pins_sha256": file_sha256(args.pins),
               "pins_file": "bench/cmake/pins.cmake", "presets": presets,
-              "artifact": "rbench", "arms": sorted(planned), "sanitizer": args.sanitizer,
+              "artifact": "rbench", "arms": sorted(planned), "tools": ["adversarial"] if has_tool else [],
+              "sanitizer": args.sanitizer,
               "repo_head": args.repo_head, "regexmatcher_commit": args.regexmatcher_commit,
               "sanitizer_options": args.options,
               "build_exit": args.build_exit, "grid_exit": args.grid_exit, "grid_summary": exit_txt.strip(),
