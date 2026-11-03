@@ -24,36 +24,44 @@ namespace under `bench/arms/ablation/`, as `route_r1.hpp` was, with one change:
 | `regexmatcher-v2-ab-linear` | `kLinearEdges` above any node's edge count: every node searches its edges linearly |
 | `regexmatcher-v2-ab-hashed` | `kLinearEdges` = 0: every node with edges is hashed |
 | `regexmatcher-v2-ab-noexact` | the routes of an all-literal method stay in the trie instead of the exact-match table (the split in `table.hpp`) |
-| `regexmatcher-v2-ab-bytes` | literal segments compared a byte at a time instead of in 8-byte words, in the walk and the edge search; storage, hashing and layout unchanged |
+| `regexmatcher-v2-ab-bytes` | edge labels compared a byte at a time instead of in 8-byte words, in the edge search (the walk calls it and compares no label itself; the exact-match table's whole-path compare is unchanged); storage, hashing and layout unchanged |
 | `null` | the harness's null arm, for net instructions |
 
 - **The 8-byte keys are ablated in their comparison only.** The word is stored in each edge and feeds the edge hash
   (five places in the table, the walk and the hash). Changing the storage would change the node layout and the hash
-  together, so its effect could not be told apart from theirs. The byte arm removes the word comparison that every
-  literal segment goes through.
+  together, so its effect could not be told apart from theirs. The byte arm removes the word comparison that the edge
+  search makes for every literal segment of the trie.
 - **Flat arrays are not ablated.** No switch exists, and the arrays are the table itself: another layout would rewrite
   the table and the lookup, which is another matcher, not one choice removed.
 - **The copy control.** A copied header compiles to its own lookup function in its own translation unit. The control
   separates that from each change: every variant is compared with the copy first. `bench/objdump_check.sh` must find
   the copy's normalized lookup code equal to the pinned arm's.
 - **Correctness.** Every variant must pass the behavioural probes and agree with the semantics file on every query of
-  every process, as the earlier campaign's arms did; a variant that fails is reported and not timed.
+  every process, as the earlier campaign's arms did. The build's tests (every variant's answers against the pinned code
+  on rbench's tables under every method, and the probes) run before the grid, and a failure stops the job before any
+  timing. A process that disagrees during the grid is kept and reported, and its arm takes no part in that cell's
+  statistic (below).
 
 ## Cells and replicates
 
 The earlier campaign's grid: the seven shapes at m = 10, 100, 1,000, 10,000 and 100,000 (35 cells), on its sixteen
 seed pairs (table seeds 111 to 126, ring seeds 211 to 226), one process per arm, cell and pair, in a shuffled order
-with a fixed seed. These are the cells that decide the lookup-time claim, on the same tables.
+with the seed 20261104, shared with `boundary-arms.md`. These are the cells that decide the lookup-time claim, on the
+same tables.
 
 ## Statistic (fixed now)
 
 - Per cell and variant, the ratio of the variant's lookup time to the copy's, and to the pinned arm's: the median over
   the pairs of the per-pair ratio, with the 95% BCa interval over pairs, as the earlier campaign's lookup-time analysis
-  computes it (`analysis/h1_stats.py`).
+  computes it (`analysis/h1_stats.py`: clustered by table seed, 10,000 resamples, its resampling seed 20261010).
+- An arm takes part in a cell only if every one of its processes there is usable (`analysis/cells.py`); otherwise it
+  is listed for that cell as absent or failing, with the reason, and every process that is not usable is listed.
 - Beside it, net instructions per lookup (net of `null`) and branch misses per lookup, as its work-per-lookup analysis
-  computes them, and each arm's normalized lookup code size. Editing the walk recompiles the whole lookup function
-  (round 2's engineering builds: 1,039 lines became 1,154 and 1,293), so a time difference can come from code layout as
-  well as from the change; the instruction counts and code sizes are reported so that a reader can see it.
+  computes them, and each arm's normalized lookup code size. Only `ab-bytes` changes the lookup code: the other three
+  change only the table, and the build's objdump check finds their normalized lookup code equal to the copy's. Editing
+  the lookup code recompiles the whole lookup function (round 2's engineering builds: 1,039 lines became 1,154 and
+  1,293), so `ab-bytes`' time difference can come from code layout as well as from the change; the instruction counts
+  and code sizes are reported so that a reader can see it.
 - Exploratory: no hypothesis, no multiplicity adjustment, nothing decided. Nothing is dropped.
 
 ## Sanitizer records

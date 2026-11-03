@@ -10,7 +10,7 @@ language-boundary arms (M5). All four are planned here, one file each. None is d
 | `floor-rerun.md` | M1a | the floor rule of round 3, frozen before a fresh run on a new seed pair | Linux, Windows | analysis only (`t3/`) and the new pair's request sets | none: the measured binaries are round 3's |
 | `adversarial.md` | M3 | a deterministic check of the written bound; timing descriptive | Linux | one tool target in `bench/tools/` | the tool's |
 | `ablations.md` | M5 | exploratory, pre-specified statistic and cells | Linux | renamed forks of v2's route headers as rbench arms | the new arms' |
-| `boundary-arms.md` | M5 | exploratory, pre-specified statistic and cells | Linux | three rbench arms (C call, Rust null, Go loop) | every Go and Rust arm's, and the new arms' |
+| `boundary-arms.md` | M5 | exploratory, pre-specified statistic and cells | Linux | four rbench arms (C call, C null, Rust null, Go loop) | every Go and Rust arm's, and the new arms' |
 
 The ablations and the boundary arms are built in one rbench build, gated by one record set and timed in one grid,
 so every comparison is within one set of binaries (round 1's lesson: with a different arm set even the null arm moved
