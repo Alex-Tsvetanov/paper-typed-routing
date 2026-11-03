@@ -27,5 +27,13 @@
  "arm_path_tree": {
   "not_covered_by": ["msan"],
   "reason": "MemorySanitizer needs every library in the process instrumented; path-tree, its dependency smallvec and the Rust standard library are compiled by stable rustc, which has no MemorySanitizer"
+ },
+ "arm_rust_null": {
+  "not_covered_by": ["msan"],
+  "reason": "MemorySanitizer needs every library in the process instrumented; the Rust arms' crate, of which rust-null's empty function is a part, and the Rust standard library are compiled by stable rustc, which has no MemorySanitizer"
+ },
+ "arm_regexmatcher_v2_goloop": {
+  "not_covered_by": ["msan"],
+  "reason": "MemorySanitizer needs every library in the process instrumented; the Go runtime and the Go loop that calls RegexMatcher v2 are compiled by the Go toolchain, which has no MemorySanitizer (v2's C++ code is covered under MSan through the regexmatcher-v2 and regexmatcher-v2-capi arms)"
  }
 }

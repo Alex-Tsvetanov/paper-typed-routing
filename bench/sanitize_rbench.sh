@@ -7,7 +7,10 @@
 # agreement test, the probes and a quick cell of every arm on every shape at 10 and 1000
 # routes (run_grid.sh with QUICK=1); with the regexmatcher-v2 arm the build has the adversarial tool
 # (cmake/tool-adversarial.cmake), whose unit test, self-test and a quick process of each of its 44
-# cells run too (out/adversarial*); and writes RECORDS_DIR/rbench-<code commit>-L-<san>.json
+# cells run too (out/adversarial*), each process with a time limit (ADV_CELL_TIMEOUT); with REVIEW=1 the
+# build also has the review arms (design/review-runs/ablations.md and boundary-arms.md; arms_for.py
+# --review), and their answers test (test_ablation: every ablation copy against the pinned code) runs
+# under the sanitizer too (out/ablation-test.txt); and writes RECORDS_DIR/rbench-<code commit>-L-<san>.json
 # (sanitizer_record.py). <code commit> is the last commit that changed rbench's sources; they
 # must have no local changes. Runtime options are those of round 1's records. The record names
 # what every target compiled, and the gate (check_records.py) matches records to a measured
@@ -18,7 +21,10 @@
 # ~/lab/p2/rbench-san), MSAN_LIBCXX (default $HOME/opt/libcxx-msan-gcc), RB_ARMS (a CMake list;
 # default every arm, less those coverage.json exempts from the sanitizer), TAG (appended to the
 # record's name), HOST_TAG (the record name's host, default L), EXTRA_CMAKE (more CMake arguments;
-# recorded), RECORDS_LOGS (default ~/lab/records-logs). The logs (the build log, what the build
+# recorded), RECORDS_LOGS (default ~/lab/records-logs), REVIEW=1 (the review arms too), GO (the go binary
+# of the Go arms, put first on PATH and given as -DRB_GO, recorded; for the review build the pinned Go of
+# bench/jobs/install-go.sh), ADV_CELL_TIMEOUT (seconds per quick adversarial process and for test_ablation,
+# default 600). The logs (the build log, what the build
 # compiled, and run_grid.sh's whole output directory; not the build tree) are copied to
 # ~/lab/records-logs/<record name>/ and packed into <record name>.tar.gz beside it, whose sha256
 # the record carries (bench/keep_record_logs.sh); the script refuses to start if that directory
@@ -50,9 +56,15 @@ case "$san" in
 esac
 # Every arm, less those coverage.json exempts from this sanitizer.
 if [ -z "${RB_ARMS:-}" ]; then
-    RB_ARMS=$(python3 "$here/arms_for.py" "$san")
+    RB_ARMS=$(python3 "$here/arms_for.py" "$san" ${REVIEW:+--review})
 fi
 cmake_args+=("-DRB_ARMS=$RB_ARMS" "-DREGEXMATCHER_COMMIT=$rm_commit")
+# The Go toolchain: GO, first on PATH (run_grid.sh records `go version` from PATH) and given to CMake.
+if [ -n "${GO:-}" ]; then
+    [ -x "$GO" ] || { echo "GO=$GO is not an executable" >&2; exit 2; }
+    export PATH="$(dirname "$GO"):$PATH"
+    cmake_args+=("-DRB_GO=$GO")
+fi
 read -r -a extra <<< "${EXTRA_CMAKE:-}"
 cmake_args+=("${extra[@]}")
 echo "sanitize_rbench: $san over arms [$RB_ARMS]"
@@ -87,8 +99,10 @@ if [ "$build_rc" -eq 0 ]; then
     grid_rc=$?
 fi
 # The adversarial tool: its unit test and self-test (every query of every table through the pinned
-# code and the counting copy), then one quick process per cell on a ring of 64. Standard error goes
-# to the grid's stderr.log, where the record looks for sanitizer reports.
+# code and the counting copy), then one quick process per cell on a ring of 64, each under a time limit
+# (ADV_CELL_TIMEOUT, default 600 s: a hang under a sanitizer ends as status "timeout", exit 124, and the
+# record is red, instead of blocking it). Standard error goes to the grid's stderr.log, where the record
+# looks for sanitizer reports.
 if [ "$build_rc" -eq 0 ] && [ -x "$work/build/adversarial" ]; then
     o=$work/out
     mkdir -p "$o"
@@ -101,17 +115,29 @@ if [ "$build_rc" -eq 0 ] && [ -x "$work/build/adversarial" ]; then
     failed=0
     while read -r c _; do
         echo "## cell adversarial $c" >>"$o/stderr.log"
-        line=$("$work/build/adversarial" cell --cell "$c" --quick --ring 64 2>>"$o/stderr.log")
+        line=$(timeout "${ADV_CELL_TIMEOUT:-600}" "$work/build/adversarial" cell --cell "$c" --quick --ring 64 \
+            2>>"$o/stderr.log")
         rc=$?
         if [ "$rc" -eq 0 ] && [ -n "$line" ]; then
             printf '%s\n' "$line" >>"$o/adversarial.jsonl"
         else
-            printf '{"cell":"%s","status":"crash","exit":%s}\n' "$c" "$rc" >>"$o/adversarial.jsonl"
+            kind=crash
+            [ "$rc" -eq 124 ] && kind=timeout
+            printf '{"cell":"%s","status":"%s","exit":%s}\n' "$c" "$kind" "$rc" >>"$o/adversarial.jsonl"
             failed=$((failed + 1))
         fi
     done <"$o/adversarial-cells.txt"
     echo "test_exit=$test_rc selftest_exit=$self_rc cells=$(wc -l <"$o/adversarial-cells.txt") failed_cells=$failed" \
         >"$o/adversarial-exit.txt"
+fi
+# The review arms' answers test (cmake/tests-review.cmake): every ablation copy against the pinned code on
+# rbench's tables, under the sanitizer and a time limit. Standard error goes to stderr.log, as above.
+if [ "$build_rc" -eq 0 ] && [ -x "$work/build/test_ablation" ]; then
+    o=$work/out
+    mkdir -p "$o"
+    echo "## test_ablation" >>"$o/stderr.log"
+    timeout "${ADV_CELL_TIMEOUT:-600}" "$work/build/test_ablation" >"$o/ablation-test.txt" 2>>"$o/stderr.log"
+    echo "test_exit=$?" >"$o/ablation-exit.txt"
 fi
 set -e
 seconds=$(( $(date +%s) - start ))

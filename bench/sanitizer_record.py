@@ -8,14 +8,17 @@ v2's included), the configuration, the dependency roots and third_party (each fe
 and hash as used), and the sha256 of the pins.cmake the build used (pins_sha256), which the gate
 matches with a measured build's (bench/gate_lib.py). One preset per step: build, agree, probes, and the
 quick cells of each arm; and, when the build has the adversarial tool (a target "adversarial" in
-inputs.json), its unit test, its self-test and its quick cells (sanitize_rbench.sh's out/adversarial*).
+inputs.json), its unit test, its self-test and its quick cells (sanitize_rbench.sh's out/adversarial*); and,
+when the build has the ablation arms of design/review-runs/ablations.md, their answers test (test_ablation,
+out/ablation-test.txt).
 
 Green means: the build succeeded; every agreement row agrees, is refused by design, or
 disagrees where semantics.json declares the arm's semantics, in the declared kind
 (check_agree.py); every probe ran; every cell ended with status ok or refused, or disagrees as
 declared; the grid script
-exited 0; the adversarial tool, if the build has it, passed its unit test and self-test and every
-one of its cells ended with status ok and its checks passed; and the standard error of all runs holds
+exited 0; the adversarial tool, if the build has it, passed its unit test and its self-test over all 66
+queries of its 22 tables, and each of its 44 cells ended with status ok and its checks passed; the
+ablation copies' answers test, if the build has those arms, passed; and the standard error of all runs holds
 no sanitizer report. Reports are copied into the record.
 """
 
@@ -45,6 +48,14 @@ def jsonl(path: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
+# The adversarial tool's plan (design/review-runs/adversarial.md): 22 tables (11 and the same with a
+# catch-all) with three queries each in the self-test, and 44 cells. A record whose self-test or quick cells
+# cover fewer is red.
+ADV_TABLES = 22
+ADV_QUERIES = 66
+ADV_CELLS = 44
+
+
 def tool_presets(out: Path, has_tool: bool, compiler: str) -> list[dict]:
     """The adversarial tool's presets (sanitize_rbench.sh): none for a build without it; red ones
     for a build with it whose outputs are missing."""
@@ -57,12 +68,12 @@ def tool_presets(out: Path, has_tool: bool, compiler: str) -> list[dict]:
     exits = dict(kv.split("=", 1) for kv in text("adversarial-exit.txt").split() if "=" in kv)
     self_text = text("adversarial-selftest.txt")
     unit_ok = exits.get("test_exit") == "0" and "test_adversarial: ok" in text("adversarial-test.txt")
-    self_ok = exits.get("selftest_exit") == "0" and re.search(r"^self-test: \d+ queries on \d+ tables, 0 failing$",
-                                                               self_text, re.MULTILINE) is not None
+    self_ok = exits.get("selftest_exit") == "0" and re.search(
+        rf"^self-test: {ADV_QUERIES} queries on {ADV_TABLES} tables, 0 failing$", self_text, re.MULTILINE) is not None
     rows = jsonl(out / "adversarial.jsonl")
     bad = [r for r in rows if r.get("status") != "ok" or r.get("checks_ok") is not True or r.get("agrees") is not True]
     planned = int(exits.get("cells", "0") or 0)
-    cells_ok = bool(rows) and len(rows) == planned and not bad
+    cells_ok = planned == ADV_CELLS and len(rows) == ADV_CELLS and not bad
     return [{"preset": "adversarial/unit-test", "status": "green" if unit_ok else "red",
              "detail": f"exit {exits.get('test_exit', 'none')}", "compiler": compiler},
             {"preset": "adversarial/self-test", "status": "green" if self_ok else "red",
@@ -71,6 +82,22 @@ def tool_presets(out: Path, has_tool: bool, compiler: str) -> list[dict]:
              "detail": f"{len(rows)} of {planned} cells",
              "failures": [f"{r.get('cell')}: {r.get('status')} {r.get('exit', '')}".strip() for r in bad][:20],
              "compiler": compiler}]
+
+
+def review_presets(out: Path, has_review: bool, compiler: str) -> list[dict]:
+    """The review arms' answers test (sanitize_rbench.sh's out/ablation-test.txt and ablation-exit.txt): none
+    for a build without the ablation arms; red when its output is missing or reports a failure."""
+    if not has_review:
+        return []
+    def text_of(name: str) -> str:
+        return (out / name).read_text(encoding="utf-8", errors="replace") if (out / name).exists() else ""
+
+    text = text_of("ablation-test.txt")
+    exit_text = text_of("ablation-exit.txt")
+    ok = "test_exit=0" in exit_text.split() and re.search(
+        r"^test_ablation: ok \(\d+ tables, \d+ lookups compared, 0 failing\)$", text, re.MULTILINE) is not None
+    return [{"preset": "review/ablation-answers", "status": "green" if ok else "red",
+             "detail": (text.strip().splitlines() or ["no output"])[-1], "compiler": compiler}]
 
 
 def report_blocks(text: str) -> tuple[int, list[str]]:
@@ -156,6 +183,9 @@ def main() -> int:
                         "compiler": compiler})
     has_tool = "adversarial" in (inputs.get("inputs_hash") or {})
     presets += tool_presets(out, has_tool, compiler)
+    has_review = any(t.startswith("arm_regexmatcher_v2_ab_") or t == "arm_regexmatcher_v2_copy"
+                     for t in (inputs.get("inputs_hash") or {}))
+    presets += review_presets(out, has_review, compiler)
     stderr = (out / "stderr.log").read_text(encoding="utf-8", errors="replace") if (out / "stderr.log").exists() else ""
     reports, blocks = report_blocks(stderr)
     green = (args.build_exit == 0 and args.grid_exit == 0 and reports == 0

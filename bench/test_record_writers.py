@@ -13,8 +13,12 @@ the first L record of RegexMatcher went red on it, lab journal). For each writer
    without a summary;
 3. the server's record carries the sha256 of the pins.cmake it was given (the gate's pin rule).
 4. bench/sanitizer_record.py's presets of the adversarial tool: none without the tool; three green
-   ones from passing outputs; red ones when its outputs are missing, a cell crashed or failed a
-   check, a cell is missing, or the self-test reports a failure.
+   ones from passing outputs; red ones when its outputs are missing, a cell crashed, ran out of time or
+   failed a check, a cell is missing, fewer than the plan's 44 cells ran, or the self-test reports a
+   failure or covers fewer than its 66 queries on 22 tables.
+5. Its preset of the ablation copies' answers test (test_ablation): none without the ablation arms;
+   green from a passing output; red when the output is missing, reports a failure or the test exited
+   other than 0.
 """
 
 from __future__ import annotations
@@ -119,8 +123,9 @@ def end_to_end(tmp: Path) -> None:
 def adversarial_presets(tmp: Path) -> None:
     m = module(HERE / "sanitizer_record.py")
     good = {"cell": "two-k1-miss", "status": "ok", "checks_ok": True, "agrees": True}
+    all44 = [{**good, "cell": f"c{i}"} for i in range(44)]
 
-    def out(cells: list[dict], planned: int = 1, selftest: str = "self-test: 66 queries on 22 tables, 0 failing",
+    def out(cells: list[dict], planned: int = 44, selftest: str = "self-test: 66 queries on 22 tables, 0 failing",
             exits: str = "test_exit=0 selftest_exit=0") -> Path:
         d = tmp / f"adv-{next(runs)}"
         d.mkdir()
@@ -133,18 +138,47 @@ def adversarial_presets(tmp: Path) -> None:
     def green(d: Path) -> list[bool]:
         return [p["status"] == "green" for p in m.tool_presets(d, True, "Clang 22.1.8")]
 
-    expect("sanitizer_record.py: no tool, no preset", m.tool_presets(out([good]), False, "c") == [])
-    expect("sanitizer_record.py: the tool's passing outputs make three green presets", green(out([good])) == [True] * 3)
+    expect("sanitizer_record.py: no tool, no preset", m.tool_presets(out(all44), False, "c") == [])
+    expect("sanitizer_record.py: the tool's passing outputs make three green presets", green(out(all44)) == [True] * 3)
     expect("sanitizer_record.py: missing outputs are red", green(tmp / "nowhere") == [False] * 3)
     crashed = {"cell": "x", "status": "crash", "exit": 139}
-    expect("sanitizer_record.py: a crashed cell is red", green(out([crashed]))[2] is False)
+    expect("sanitizer_record.py: a crashed cell is red", green(out(all44[:43] + [crashed]))[2] is False)
+    timed_out = {"cell": "x", "status": "timeout", "exit": 124}
+    expect("sanitizer_record.py: a cell that ran out of time is red", green(out(all44[:43] + [timed_out]))[2] is False)
     expect("sanitizer_record.py: a cell that fails a check is red",
-           green(out([{**good, "checks_ok": False}]))[2] is False)
-    expect("sanitizer_record.py: a missing cell is red", green(out([good], planned=2))[2] is False)
+           green(out(all44[:43] + [{**good, "checks_ok": False}]))[2] is False)
+    expect("sanitizer_record.py: a missing cell is red", green(out(all44[:43]))[2] is False)
+    expect("sanitizer_record.py: fewer cells than the plan's 44 are red, even all run",
+           green(out(all44[:43], planned=43))[2] is False)
     expect("sanitizer_record.py: a self-test with a failure is red",
-           green(out([good], selftest="self-test: 66 queries on 22 tables, 1 failing"))[1] is False)
+           green(out(all44, selftest="self-test: 66 queries on 22 tables, 1 failing"))[1] is False)
+    expect("sanitizer_record.py: a self-test over fewer than 66 queries is red",
+           green(out(all44, selftest="self-test: 63 queries on 21 tables, 0 failing"))[1] is False)
     expect("sanitizer_record.py: a unit test that exited 1 is red",
-           green(out([good], exits="test_exit=1 selftest_exit=0"))[0] is False)
+           green(out(all44, exits="test_exit=1 selftest_exit=0"))[0] is False)
+
+
+def review_presets(tmp: Path) -> None:
+    m = module(HERE / "sanitizer_record.py")
+
+    def out(text: str | None, rc: int = 0) -> Path:
+        d = tmp / f"review-{next(runs)}"
+        d.mkdir()
+        if text is not None:
+            (d / "ablation-test.txt").write_text(text + "\n", encoding="utf-8")
+            (d / "ablation-exit.txt").write_text(f"test_exit={rc}\n", encoding="utf-8")
+        return d
+
+    def green(d: Path, has: bool = True) -> list[bool]:
+        return [p["status"] == "green" for p in m.review_presets(d, has, "Clang 22.1.8")]
+
+    passing = "test_ablation: ok (112 tables, 2293760 lookups compared, 0 failing)"
+    expect("sanitizer_record.py: no ablation arms, no review preset", green(out(passing), has=False) == [])
+    expect("sanitizer_record.py: a passing answers test is green", green(out(passing)) == [True])
+    expect("sanitizer_record.py: a missing answers test is red", green(out(None)) == [False])
+    expect("sanitizer_record.py: an answers test with a failure is red",
+           green(out("test_ablation: FAILED (112 tables, 2293760 lookups compared, 3 failing)", rc=1)) == [False])
+    expect("sanitizer_record.py: an answers test that exited 124 is red", green(out(passing, rc=124)) == [False])
 
 
 def main() -> int:
@@ -152,6 +186,7 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as t:
         end_to_end(Path(t))
         adversarial_presets(Path(t))
+        review_presets(Path(t))
     print(f"{failures} failed" if failures else "all checks passed")
     return 1 if failures else 0
 
