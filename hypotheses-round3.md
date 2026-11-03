@@ -179,3 +179,6 @@ Alex answered the design questions on 2026-10-23 (`design/round3/decisions-for-a
   Windows (section 4) run round 2's procedure, `bench/ct_msvc.py`, through `t3/jobs/ctmsvc.py` with the laptop's MSVC,
   `cl` 19.51.36248 (round 2 names 19.51.36246, the desktop's); `ct_msvc.py` takes the version as `--msvc-version`,
   its default unchanged. Whether these costs need a D5 record (round 2 says they do not) goes to Alex.
+- 2026-11-03: Alex's answer (via the coordinator), "No record needed (Recommended)": H7's MSVC costs on the laptop
+  need no D5 record, as round 2's frozen text says; the gap is declared compile-only, nothing executed, in
+  `t3/coverage.json` (round 2's `bench/coverage.json` stays as it is).

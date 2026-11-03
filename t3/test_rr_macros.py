@@ -152,6 +152,27 @@ class FormatTests(unittest.TestCase):
             self.assertEqual(w[key], l[key], key)
 
 
+class RoundTwoTests(unittest.TestCase):
+    """t3/round2_macros.py: round 2's paper macros without the desktop's numbers."""
+
+    def test_the_committed_copy_is_current_and_holds_no_desktop_number(self) -> None:
+        import round2_macros as R2
+        src = (ROOT / "results" / "round2" / "macros-paper.tex").read_text(encoding="utf-8")
+        text = R2.convert(src)
+        self.assertEqual((OUT / "round2-paper-macros.tex").read_text(encoding="utf-8"), text)
+        got, orig = macros_of(text), macros_of(src)
+        self.assertEqual(set(got) & (R2.DESKTOP | set(R2.COST_ROWS)), set())
+        for old, new in R2.COST_ROWS.items():
+            self.assertEqual(got[new].split(" & "), orig[old].split(" & ")[:R2.CLANG_COLUMNS])
+        self.assertEqual(len(got), len(orig) - len(R2.DESKTOP))
+        self.assertTrue(all(got[k] == v for k, v in orig.items() if k in got))
+
+    def test_a_missing_desktop_macro_is_refused(self) -> None:
+        import round2_macros as R2
+        with self.assertRaisesRegex(ValueError, "not in the source"):
+            R2.convert("\\newcommand{\\Foo}{1}\n")
+
+
 class CommittedTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:

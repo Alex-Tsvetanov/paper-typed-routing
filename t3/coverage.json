@@ -14,6 +14,10 @@
   "mserver-go": {
    "not_covered_by": ["asan"],
    "reason": "Go has no AddressSanitizer on windows/amd64 (go build -asan is for Linux). Its sources are the Linux program's but for v2_windows.go, and the DLL it calls is covered by test_p2v2_dll under clang-cl's AddressSanitizer."
+  },
+  "ct-msvc-tables": {
+   "not_covered_by": ["asan"],
+   "reason": "H7's MSVC costs (t3/jobs/ctmsvc.py, bench/ct_msvc.py): the 22 compile-time tables are compiled one at a time and never executed; what is measured is the compiler's need (constant-evaluation budget, peak committed memory, object size), so the measurement is compile-only and no sanitizer record applies. Alex, 2026-11-03: \"No record needed (Recommended)\", as round 2's frozen text says."
   }
  }
 }
