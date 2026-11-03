@@ -29,7 +29,8 @@ from test_rr_results import plan_dict, record  # noqa: E402
 
 OUT = ROOT / "results" / "round3"
 NAME = re.compile(r"\\newcommand\*?\{\\([A-Za-z]+)\}\{(.*)\}")
-SETTINGS = {"window_s": 1.5, "warmup_s": 0.1, "server_warmup_s": 1.0, "connections": 64, "error_share_max": 0.001}
+SETTINGS = {"window_s": 1.5, "warmup_s": 0.1, "server_warmup_s": 1.0, "connections": 64, "error_share_max": 0.001,
+            "generator_busy_max_pct": 90, "clock_drift_max": 0.02}
 
 
 def macros_of(text: str) -> dict[str, str]:
@@ -158,7 +159,8 @@ class FormatTests(unittest.TestCase):
     def test_the_settings_read_from_rr_w_are_rr_ls_too(self) -> None:
         w, l = (json.loads((HERE / "plans" / f"rr-{s}.json").read_text(encoding="utf-8")) for s in "WL")
         for key in ("rounds", "window_s", "warmup_s", "server_warmup_s", "connections", "others_max_pct",
-                    "error_share_max", "sizes", "pairs"):
+                    "error_share_max", "generator_busy_max_pct", "clock_drift_max", "sizes", "pairs", "cpus",
+                    "housekeeping_cpus"):
             self.assertEqual(w[key], l[key], key)
 
 

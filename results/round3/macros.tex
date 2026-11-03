@@ -6,6 +6,9 @@
 \newcommand{\RThreeConnections}{64}
 \newcommand{\RThreeOthersMaxPercent}{10}
 \newcommand{\RThreeErrorShareMaxPercent}{0.1}
+\newcommand{\RThreeGenBusyMaxPercent}{90}  % the generator's CPUs, over a window
+\newcommand{\RThreeClockDriftMaxPercent}{2}  % from the session's clock reading
+\newcommand{\RThreeSampleSpanMs}{50}  % the samples' span against the window
 \newcommand{\RThreeSettleSharePercent}{10}  % the runner's constant, the same in both runs
 \newcommand{\RThreeSettleLimitSeconds}{30}
 \newcommand{\RThreeSizeSmall}{1{,}000}
@@ -335,6 +338,8 @@
 \newcommand{\RThreeWindowsKOverloaded}{0}
 \newcommand{\RThreeWindowsKRerunRounds}{1}
 \newcommand{\RThreeWindowsUptimeSeconds}{62{,}328}  % the system's uptime at the campaign job's start
+\newcommand{\RThreeKSpanOverFloor}{5}  % cells where the k processes' span exceeds the floor
+\newcommand{\RThreeKSpanOverFloorList}{C++ at $m=1{,}000$ on Linux, Go at $m=1{,}000$ on Linux, Go at $m=100{,}000$ on Linux, Rust at $m=1{,}000$ on Linux and C++ at $m=100{,}000$ on Windows}
 \newcommand{\RThreeCells}{12}  % system, program and size
 \newcommand{\RThreeCellsClear}{8}
 \newcommand{\RThreeNotClearList}{Rust at $m=1{,}000$ on Linux, Rust at $m=100{,}000$ on Linux, Go at $m=1{,}000$ on Windows and Rust at $m=1{,}000$ on Windows}
@@ -346,6 +351,8 @@
 \newcommand{\RThreeStartLaterHigh}{3.9}
 \newcommand{\RThreeStartEarlierLow}{1.8}  % the Windows A/A run of the earlier job
 \newcommand{\RThreeStartEarlierHigh}{8.9}
+\newcommand{\RThreeStartEarlierLaterLow}{\ensuremath{-}1.9}  % the earlier job's later windows
+\newcommand{\RThreeStartEarlierLaterHigh}{6.8}
 \newcommand{\RThreeStartEarlierUptimeSeconds}{33}  % the earlier Windows job's start
 \newcommand{\RThreeStartClockLow}{3{,}173.7}  % MHz, each window's reading
 \newcommand{\RThreeStartClockHigh}{3{,}175.7}

@@ -97,6 +97,9 @@ def add_settings(mc: Macros, plan: dict) -> None:
     mc.add("RThreeConnections", count(plan["connections"]))
     mc.add("RThreeOthersMaxPercent", count(plan["others_max_pct"]))
     mc.add("RThreeErrorShareMaxPercent", fixed(100 * plan["error_share_max"], 1))
+    mc.add("RThreeGenBusyMaxPercent", whole(plan["generator_busy_max_pct"]), "the generator's CPUs, over a window")
+    mc.add("RThreeClockDriftMaxPercent", whole(100 * plan["clock_drift_max"]), "from the session's clock reading")
+    mc.add("RThreeSampleSpanMs", whole(1000 * p2run.SPAN_TOLERANCE_S), "the samples' span against the window")
     mc.add("RThreeSettleSharePercent", whole(100 * p2run.SETTLE_SHARE), "the runner's constant, the same in both runs")
     mc.add("RThreeSettleLimitSeconds", whole(p2run.SETTLE_LIMIT_S))
     small, large = plan["sizes"]
@@ -224,6 +227,8 @@ def add_start(mc: Macros, records: list[dict], start_s: int) -> None:
     mc.add("RThreeStartLaterHigh", mnum(w["later_pct"][1], pct))
     mc.add("RThreeStartEarlierLow", mnum(earlier["first_pct"][0], pct), "the Windows A/A run of the earlier job")
     mc.add("RThreeStartEarlierHigh", mnum(earlier["first_pct"][1], pct))
+    mc.add("RThreeStartEarlierLaterLow", mnum(earlier["later_pct"][0], pct), "the earlier job's later windows")
+    mc.add("RThreeStartEarlierLaterHigh", mnum(earlier["later_pct"][1], pct))
     mc.add("RThreeStartEarlierUptimeSeconds", whole(by[("rr-W.json", "aa")]["job_record"]["uptime_s"]),
            "the earlier Windows job's start")
     mc.add("RThreeStartClockLow", mnum(w["first_clock_mhz"][0], lambda x: fixed(x, 1)), "MHz, each window's reading")
@@ -327,6 +332,12 @@ def generate(design: Path, records_path: Path, plan_path: Path) -> tuple[str, di
     for system, word, _ in SYSTEMS:
         not_clear += add_system(mc, word, systems[system], recs[system], sizes)
     cells = len(SYSTEMS) * len(PROGRAMS) * len(sizes)
+    over = [f"{ptext} at $m={count(m)}$ on {word}" for system, word, _ in SYSTEMS for program, _, ptext in PROGRAMS
+            for m in sizes
+            if (systems[system]["aak"]["cells"][cell_of(m)]["programs"][program]["medians_ns"].get("range") or 0)
+            > (systems[system]["floor"][cell_of(m)][program]["aa_largest_abs_d_ns"] or float("inf"))]
+    mc.add("RThreeKSpanOverFloor", count(len(over)), "cells where the k processes' span exceeds the floor")
+    mc.add("RThreeKSpanOverFloorList", listing(over) or "none")
     mc.add("RThreeCells", count(cells), "system, program and size")
     mc.add("RThreeCellsClear", count(cells - len(not_clear)))
     mc.add("RThreeNotClearList", listing(not_clear) or "none")
