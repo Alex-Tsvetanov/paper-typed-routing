@@ -168,14 +168,32 @@ class RoundTwoTests(unittest.TestCase):
     def test_the_committed_copy_is_current_and_holds_no_desktop_number(self) -> None:
         import round2_macros as R2
         src = (ROOT / "results" / "round2" / "macros-paper.tex").read_text(encoding="utf-8")
-        text = R2.convert(src)
+        text = R2.convert(src, ROOT / "lab" / "sanitizer-records")
         self.assertEqual((OUT / "round2-paper-macros.tex").read_text(encoding="utf-8"), text)
         got, orig = macros_of(text), macros_of(src)
         self.assertEqual(set(got) & (R2.DESKTOP | set(R2.COST_ROWS)), set())
         for old, new in R2.COST_ROWS.items():
             self.assertEqual(got[new].split(" & "), orig[old].split(" & ")[:R2.CLANG_COLUMNS])
-        self.assertEqual(len(got), len(orig) - len(R2.DESKTOP))
+        added = {"HFiveCRecords", "HFiveCTests", "HFiveCFailed", "HFiveCVerdict"}
+        self.assertEqual(set(got) - set(orig) - set(R2.COST_ROWS.values()), added)
+        self.assertEqual(len(got), len(orig) - len(R2.DESKTOP) + len(added))
         self.assertTrue(all(got[k] == v for k, v in orig.items() if k in got))
+
+    def test_h5c_comes_from_the_server_records_and_a_failure_is_shown(self) -> None:
+        import round2_macros as R2
+        with tempfile.TemporaryDirectory() as tmp:
+            for san, detail in (("asan", "exit 0, 4 tests, 0 failed"), ("tsan", "exit 0, 4 tests, 0 failed"),
+                                ("msan", "exit 8, 4 tests, 1 failed")):
+                (Path(tmp) / R2.SERVER_RECORD.format(san=san)).write_text(json.dumps({
+                    "green": san != "msan", "ctest_exit": 0 if san != "msan" else 8, "sanitizer_reports": 0,
+                    "presets": [{"preset": "ctest", "detail": detail}]}))
+            with self.assertRaisesRegex(ValueError, "disagree"):
+                R2.server_evidence(Path(tmp))
+            (Path(tmp) / R2.SERVER_RECORD.format(san="msan")).write_text(json.dumps({
+                "green": False, "ctest_exit": 0, "sanitizer_reports": 2,
+                "presets": [{"preset": "ctest", "detail": "exit 0, 4 tests, 0 failed"}]}))
+            got = macros_of("\n".join(R2.server_evidence(Path(tmp))))
+        self.assertEqual((got["HFiveCTests"], got["HFiveCFailed"], got["HFiveCVerdict"]), ("4", "0", "does not hold"))
 
     def test_a_missing_desktop_macro_is_refused(self) -> None:
         import round2_macros as R2
