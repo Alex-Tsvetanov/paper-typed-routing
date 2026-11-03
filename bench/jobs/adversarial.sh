@@ -2,8 +2,8 @@
 # adversarial.sh OUT_DIR: the timed job of design/review-runs/adversarial.md on L, after the tool's
 # sanitizer records (bench/sanitize_rbench.sh, whose build with the regexmatcher-v2 arm has the tool)
 # and the plan's freeze. Run from a Papers clone with this repository as its submodule at the frozen
-# commit (the scripts find lab/bin and lab/sanitizer-records at ../../..), under the lab's lablock,
-# with a pid file and a done file:
+# commit (the scripts find lab/bin and lab/sanitizer-records at ../../.., or in the clone PAPERS names),
+# under the lab's lablock, with a pid file and a done file:
 #     RM_COMMIT=<full sha> REGEXMATCHER_DIR=<git archive of it> nohup ~/lab/Papers/lab/bin/lablock \
 #         bash <clone>/papers/typed-routing/bench/jobs/adversarial.sh <OUT_DIR> > <OUT_DIR>.log 2>&1 &
 #     echo $! > <OUT_DIR>.pid
@@ -38,9 +38,12 @@
 # OUT_DIR.done holds the time and how the job ended ("done: <decision> (...)", or "STOPPED:" and the
 # reason, or "incomplete" if it was killed or failed elsewhere).
 #
-# Environment: RM_COMMIT and REGEXMATCHER_DIR (required), RECORDS (default the Papers repo's
-# lab/sanitizer-records), INPUTS_HASH_PY, REPS, SEED, CPU, RING, CELL_TIMEOUT, PIN (pin.sh; default the
-# Papers repo's lab/bin/pin.sh), ALLOW_UNPINNED=1, CHECK_ONLY=1 (build, gate and tests; time
+# Environment: RM_COMMIT and REGEXMATCHER_DIR (required), PAPERS (the Papers clone whose lab/bin and
+# lab/sanitizer-records are used; default the clone two levels above this repository, which is right only
+# when this repository is its submodule: a job that clones this repository alone, as labrun does at
+# $LAB_SRC, names the clone; the job stops if it is not a git repository), RECORDS (default
+# PAPERS/lab/sanitizer-records), INPUTS_HASH_PY, REPS, SEED, CPU, RING, CELL_TIMEOUT, PIN (pin.sh; default
+# PAPERS/lab/bin/pin.sh), ALLOW_UNPINNED=1, CHECK_ONLY=1 (build, gate and tests; time
 # nothing), CELLS (cell ids to run instead of all 44, for development; never in the frozen run; it and
 # ALLOW_UNPINNED are recorded in provenance.txt, and a CELLS run is never "bound holds").
 #
@@ -93,7 +96,9 @@ main() {
     local here paper papers bench
     here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
     paper=$(cd "$here/../.." && pwd)
-    papers=$(cd "$paper/../.." && pwd)
+    papers=${PAPERS:-$(cd "$paper/../.." && pwd)}
+    papers=$(cd "$papers" 2>/dev/null && pwd) ||
+        stop 2 "PAPERS is not a directory (the Papers clone with lab/bin and lab/sanitizer-records)"
     bench=$paper/bench
     local rm_commit=${RM_COMMIT:-} rm_dir=${REGEXMATCHER_DIR:-}
     [ -n "$rm_commit" ] && [ -d "$rm_dir" ] || {
