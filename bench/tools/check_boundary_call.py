@@ -27,7 +27,10 @@ from pathlib import Path
 
 ARMS = (("regexmatcher-v2-capi", "V2CapiArm", "rb_v2capi_at"), ("capi-null", "CapiNullArm", "rb_capi_null_at"))
 FUNC = re.compile(r"^[0-9a-f]+ <(.+)>:$")
-CALL = re.compile(r"\bcall\s+[0-9a-f]+ <([^>+]+)(\+0x[0-9a-f]+)?>")
+# A direct call, or a tail call (a jmp to the start of a function, with no offset); a demangled name may
+# hold '<' and '>' itself, so the target is everything between the first '<' and the line's last '>'.
+CALL = re.compile(r"\b(call|jmp)\s+[0-9a-f]+ <(.+)>\s*$")
+OFFSET = re.compile(r"\+0x[0-9a-f]+$")
 
 
 def call_graph(binary: Path) -> dict[str, set[str]]:
@@ -43,7 +46,12 @@ def call_graph(binary: Path) -> dict[str, set[str]]:
             continue
         c = CALL.search(line)
         if c and current:
-            graph[current].add(c.group(1))
+            target = c.group(2)
+            if OFFSET.search(target):
+                if c.group(1) == "jmp":
+                    continue  # a jump inside a function, not a call
+                target = OFFSET.sub("", target)
+            graph[current].add(target)
     return graph
 
 

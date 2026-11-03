@@ -92,9 +92,10 @@ main() {
     REGEXMATCHER_DIR="$rm_dir" INPUTS_HASH_PY="$inputs_py" bash "$bench/build.sh" "$build" \
         "-DRB_ARMS=$arms" "-DREGEXMATCHER_COMMIT=$rm_commit" "-DRB_GO=$go" || {
         status="STOPPED: the build failed ($build.log)"; echo "$status"; tail -40 "$build.log"; exit 1; }
-    local a missing=""
+    local a missing="" listed
+    listed=$("$build/rbench" list | cut -f1)
     for a in $ABLATION_ARMS $BOUNDARY_ARMS; do
-        "$build/rbench" list | cut -f1 | grep -qx "$a" || missing="$missing $a"
+        grep -qx -- "$a" <<<"$listed" || missing="$missing $a"
     done
     [ -z "$missing" ] && [ -x "$build/adversarial" ] && [ -x "$build/test_ablation" ] || {
         status="STOPPED: the build lacks arms or tools:${missing:- adversarial or test_ablation}"; echo "$status"; exit 1; }
