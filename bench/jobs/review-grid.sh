@@ -210,6 +210,10 @@ main() {
         --shapes "$(echo $g_shapes | tr ' ' ',')" --sizes 10,100,1000 >"$out/pre-agree.jsonl" 2>"$out/pre-stderr.log"
     rc=$?
     [ "$rc" -le 1 ] || stop 1 "rbench agree failed (exit $rc, $out/pre-stderr.log); nothing timed"
+    # rbench reports an exception (a table or a ring that could not be made) as "rbench: ..." and exit 1, as it
+    # does a declared disagreement, with the rows so far: nothing else of agree writes to standard error.
+    ! grep -q '^rbench: ' "$out/pre-stderr.log" ||
+        stop 1 "rbench agree stopped on an error ($(grep -m1 '^rbench: ' "$out/pre-stderr.log")); nothing timed"
     python3 "$bench/check_agree.py" "$out/pre-agree.jsonl" 2>>"$out/pre-stderr.log" ||
         stop 1 "the agreement test failed (check_agree.py, $out/pre-stderr.log); nothing timed"
     python3 - "$out/pre-agree.jsonl" "$NULL_ARMS" $g_arms <<'EOF' ||
