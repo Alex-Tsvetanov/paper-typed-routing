@@ -10,6 +10,7 @@ the table bodies in `tables/` only.
 | `tables/*.tex` | `t3/rr_macros.py` | the same; each file's first lines name its columns |
 | `ct-msvc.json` | `t3/ct_msvc_results.py` | H7's MSVC costs on the laptop's Windows: the job's `tables.jsonl`, with the archive's and the file's sha256 |
 | `round2-paper-macros.tex` | `t3/round2_macros.py` | round 2's `macros-paper.tex` without the desktop's numbers, plus H5(c)'s evidence from the minimal server's records |
+| `figures/*.tex` | `t3/paper_figures.py` | `results/round2/summary.json` (H1's lookup grid) and `design/round3/floor-L.json`, `floor-W.json` (lead, floor, k-span); pgfplots pictures, described in `figures/README.md` |
 
 To regenerate, unpack each job's archive into a folder named by the job (the archives and their sha256 are listed in
 the `inputs` of the three analysis files), then:
@@ -19,4 +20,6 @@ the `inputs` of the three analysis files), then:
     python t3/rr_macros.py
 
 `t3/test_rr_macros.py` checks that the committed `macros.tex` and `tables/` are what the committed inputs give.
+`t3/test_paper_figures.py` checks the same of `figures/`, and that every plotted value equals its macro
+(`python t3/paper_figures.py` regenerates them).
 `t3/rr_records.py` refuses a record whose sha256 differs from the one listed.
