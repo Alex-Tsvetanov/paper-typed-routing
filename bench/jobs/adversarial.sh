@@ -15,7 +15,8 @@
 #    stops the job before any timing.
 # 3. the cells: the tool's 44 cells, REPS processes each (default 10), in an order shuffled with SEED
 #    (default 20261103), one process per cell and replicate on CPU (default 2, as run_grid.sh) under
-#    taskset, each `adversarial cell --cell ID --rep K` with the ring and epochs of rbench's defaults.
+#    taskset, each `adversarial cell --cell ID --rep K` with rbench's 21 epochs and a ring of RING copies
+#    of the cell's query (default rbench's 4096; the frozen plan names it).
 #    A process that crashes or runs past CELL_TIMEOUT (default 900 s) gets a line with its status and
 #    exit code; every process is kept.
 # 4. the analysis (analysis/adversarial.py): summary.json and adversarial.tex.
@@ -27,7 +28,7 @@
 # "incomplete" if it was killed or failed elsewhere).
 #
 # Environment: RM_COMMIT and REGEXMATCHER_DIR (required), RECORDS (default the Papers repo's
-# lab/sanitizer-records), INPUTS_HASH_PY, REPS, SEED, CPU, CELL_TIMEOUT, PIN (pin.sh; default the
+# lab/sanitizer-records), INPUTS_HASH_PY, REPS, SEED, CPU, RING, CELL_TIMEOUT, PIN (pin.sh; default the
 # Papers repo's lab/bin/pin.sh), ALLOW_UNPINNED=1, CHECK_ONLY=1 (build, gate and tests; time
 # nothing), CELLS (cell ids to run instead of all 44, for development; never in the frozen run).
 #
@@ -91,6 +92,7 @@ main() {
         echo "reps: $reps"
         echo "cpu: $cpu"
         echo "cell_timeout_s: $timeout_s"
+        echo "ring: ${RING:-4096 (default)}"
         echo "date: $(date -Is)"
     } >"$out/provenance.txt"
 
@@ -147,7 +149,8 @@ EOF
     local c k line failed=0 timed_out=0 kind
     while read -r c k; do
         echo "## cell $c rep $k" >>"$out/stderr.log"
-        line=$(timeout "$timeout_s" taskset -c "$cpu" "$build/adversarial" cell --cell "$c" --rep "$k" 2>>"$out/stderr.log")
+        line=$(timeout "$timeout_s" taskset -c "$cpu" "$build/adversarial" cell --cell "$c" --rep "$k" \
+            ${RING:+--ring "$RING"} 2>>"$out/stderr.log")
         rc=$?
         if [ "$rc" -eq 0 ] && [ -n "$line" ]; then
             printf '%s\n' "$line" >>"$out/cells.jsonl"
