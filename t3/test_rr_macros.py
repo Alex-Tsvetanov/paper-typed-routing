@@ -39,7 +39,15 @@ def macros_of(text: str) -> dict[str, str]:
 def three(arms: tuple, k: int = 1) -> dict:
     plan = plan_dict(arms * k if k > 1 else arms, arms * k if k > 1 else arms)
     plan["programs"].append({"name": "mserver-rs", "path": "mserver-rs", "arms": list(arms * k if k > 1 else arms)})
-    return {**plan, **SETTINGS}
+    return {**plan, **SETTINGS, "housekeeping_cpus": "0-1"}
+
+
+OS = {"linux": "Linux-7.0.1-test-x86_64", "windows": "Windows-11-10.0.12345-SP0"}
+
+
+def sessioned(rows: list[dict], system: str) -> list[dict]:
+    rows[0] = {**rows[0], "os": OS[system], "cpu_model": "Test CPU with Radeon Graphics"}
+    return rows
 
 
 class Synthetic(unittest.TestCase):
@@ -58,13 +66,12 @@ class Synthetic(unittest.TestCase):
         self.plan = self.plans / "rr-W.json"
         jobs = []
         for system, letter in (("linux", "L"), ("windows", "W")):
-            rows = {"aa": timed(record(aa, system=system)), "rr": timed(record(rr, system=system)),
-                    "aak": timed(record(aak, system=system))}
+            rows = {k: sessioned(timed(record(p, system=system)), system) for k, p in (("aa", aa), ("rr", rr), ("aak", aak))}
             jobs.append(self.job(f"job-{letter}", rows))
             an = {k: R.analyse(v, k) for k, v in rows.items()}
             an["floor"] = R.floor(an["aa"], an["rr"])
             self.wrap(f"floor-{letter}.json", f"job-{letter}", rows, {system: an})
-        earlier = {"aa": timed(record(aa, system="windows")), "rr": timed(record(rr, system="windows"))}
+        earlier = {k: sessioned(timed(record(p, system="windows")), "windows") for k, p in (("aa", aa), ("rr", rr))}
         jobs.append(self.job("job-early", earlier))
         self.wrap("rr-W.json", "job-early", earlier, {"windows": {k: R.analyse(v, k) for k, v in earlier.items()}})
         self.records = self.dir / "records.json"
@@ -114,6 +121,9 @@ class FieldTests(Synthetic):
         self.assertEqual(got["RThreeLinuxAaValid"], str(len([r for r in record(three(("v2", "v2")))
                                                              if r.get("type") == "window"])))
         self.assertEqual(got["RThreeRounds"], "3")
+        self.assertEqual((got["RThreeCpu"], got["RThreeLinuxKernel"], got["RThreeWindowsBuild"]),
+                         ("Test CPU", "7.0.1", "12345"))
+        self.assertEqual((got["RThreeServerCpu"], got["RThreeGenCpuFirst"], got["RThreeRunnerCpuLast"]), ("14", "2", "1"))
 
     def test_v2_that_is_not_first_raises(self) -> None:
         path = self.design / "floor-W.json"

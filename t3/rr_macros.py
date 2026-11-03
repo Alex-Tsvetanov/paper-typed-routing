@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -104,6 +105,39 @@ def add_settings(mc: Macros, plan: dict) -> None:
     (table, ring), = plan["pairs"]
     mc.add("RThreeTableSeed", count(table))
     mc.add("RThreeRingSeed", count(ring))
+
+
+def add_setup(mc: Macros, plan: dict, systems: dict) -> None:
+    """The measured systems and pins: the OS from the campaign records' session lines, the toolchains the bring-up
+    refuses to differ from (t3/labsteps.py EXPECT), the routers round 3 changed against round 2 (the server's version
+    labels in server/cmake/pins-round3.cmake, server/go/go.mod, server/rust/Cargo.lock), and the CPU placement."""
+    import labsteps
+    sessions = {s: systems[s]["rr"]["session"] for s in ("linux", "windows")}
+    mc.add("RThreeCpu", sessions["linux"]["cpu_model"].removesuffix(" with Radeon Graphics"))
+    mc.add("RThreeLinuxKernel", re.search(r"^Linux-(\d+\.\d+\.\d+)", sessions["linux"]["os"]).group(1))
+    mc.add("RThreeWindowsBuild", re.search(r"^Windows-\d+-10\.0\.(\d+)", sessions["windows"]["os"]).group(1))
+    mc.add("RThreeClangVersion", labsteps.EXPECT["EXPECT_CLANG"], "clang on Linux, clang-cl on Windows")
+    mc.add("RThreeGoVersion", labsteps.EXPECT["EXPECT_GO"].removeprefix("go"), "also net/http's")
+    mc.add("RThreeRustcVersion", labsteps.EXPECT["EXPECT_RUST"])
+    pins = (ROOT / "server" / "cmake" / "pins-round3.cmake").read_text(encoding="utf-8")
+    labels = re.search(r'set\(MSERVER_ROUND3_VERSIONS "([^"]+)"\)', pins).group(1)
+    for arm, word in (("crow", "Crow"), ("cpp-httplib", "CppHttplib"), ("drogon", "Drogon")):
+        mc.add(f"RThreeVer{word}", re.search(rf"(?:^|\|){re.escape(arm)}=\S+ (v[\d.]+)", labels).group(1))
+    gomod = (ROOT / "server" / "go" / "go.mod").read_text(encoding="utf-8")
+    for module, word in (("github.com/julienschmidt/httprouter", "Httprouter"), ("github.com/gin-gonic/gin", "Gin"),
+                         ("github.com/go-chi/chi/v5", "Chi")):
+        mc.add(f"RThreeVer{word}", re.search(rf"^\s*{re.escape(module)} (v\S+)$", gomod, re.M).group(1))
+    lock = (ROOT / "server" / "rust" / "Cargo.lock").read_text(encoding="utf-8")
+    for crate, word in (("matchit", "Matchit"), ("path-tree", "PathTree"), ("actix-router", "ActixRouter"),
+                        ("hyper", "Hyper"), ("tokio", "Tokio")):
+        mc.add(f"RThreeVer{word}", re.search(rf'^name = "{re.escape(crate)}"\nversion = "([^"]+)"', lock, re.M).group(1))
+    gen_first, gen_last = plan["cpus"]["generator"].split("-")
+    run_first, run_last = plan["housekeeping_cpus"].split("-")
+    mc.add("RThreeServerCpu", count(plan["cpus"]["server"]))
+    mc.add("RThreeGenCpuFirst", count(int(gen_first)))
+    mc.add("RThreeGenCpuLast", count(int(gen_last)))
+    mc.add("RThreeRunnerCpuFirst", count(int(run_first)))
+    mc.add("RThreeRunnerCpuLast", count(int(run_last)))
 
 
 def add_cell(mc: Macros, name: str, an: dict, rec: dict, program: str, m: int) -> bool:
@@ -287,6 +321,7 @@ def generate(design: Path, records_path: Path, plan_path: Path) -> tuple[str, di
         recs[system] = {r["kind"]: r for r in records["records"] if r["analysis"] == f"floor-{letter}.json"}
     mc = Macros()
     add_settings(mc, plan)
+    add_setup(mc, plan, systems)
     mc.add("RThreeKCopies", count(len(systems["linux"]["aak"]["cells"][cell_of(sizes[0])]["programs"]["mserver"]["entries"])))
     not_clear = []
     for system, word, _ in SYSTEMS:
