@@ -88,7 +88,7 @@ Round-robin count checks (2026-10-28, ed3b7e0, 500 requests a window): W A/A 84 
    3 MEDIUM; fixed. 3. The runner: own task. 4. D5 tooling, laptop jobs (Opus): 2 HIGH, 3 MEDIUM, 4 LOW; fixed. 5. Timed
    path, probe (Sonnet): 1 HIGH, 1 MEDIUM, 5 LOW; all but 1 LOW fixed. 6. Windows clock: 5 LOW, 4 fixed. 7. A/A pilot:
    2 HIGH, 3 MEDIUM, 6 LOW; fixed. 9. Rerun: 3 MEDIUM, 4 LOW; fixed. 10. Round-robin (Opus): 1 MEDIUM, 3 LOW; 3 fixed.
-11. A/A runs (Sonnet, 2026-10-28): 1 MEDIUM (the floor raised on a contestant without windows), 4 LOW; 3 fixed.
+11. A/A runs (Sonnet): 1 MEDIUM, 4 LOW; 3 fixed. 12. Macros (Sonnet, 2026-11-03): 6 MEDIUM, 13 LOW; MEDIUMs, 8 LOWs fixed.
 
 ## Method the paper must state (the new loop has no frozen text)
 
@@ -185,15 +185,15 @@ The new loop (Alex, 2026-10-27, via the coordinator; covers round 3): campaigns 
 std dev per contestant, one fixed A/A run per OS, replacing D9's Holm test. (2026-10-28) 21. Round 3 in it: (a),
 1.5 s windows, m = 1,000 and 100,000, R = 7, the A/A run per OS (row 6); 20 moot. No frozen file precedes it.
 
-## Commits on `round3` (local, not pushed)
+## Commits on `round3` (pushed to origin 2026-11-03, Alex's standing yes of 2026-10-27)
 
 1862c01 to 06adfe5 (servers, reviews 1 to 3, generator, runner); a27b47e to 083b47c (request 1); 40e08db to
-3ff814e (D5, laptop jobs, review 4); c7153b3 to 39bf126 (probe, `others`, Windows clock, reviews 5, 6); 76baac8
-to dec7e54 (A/A pilot, review 7); 14325c0 606c59b (t1gen check, review 8); 3caa3c6 668f289 (rerun); 89230bf ed3b7e0
-(round-robin, review 10, settle); 32ddf39 d063274 (A/A runs, floor, review 11); docs. `bench/` is round 2's but `isa.cmake`.
+3ff814e (D5, laptop jobs, review 4); c7153b3 to 39bf126 (probe, `others`, clock, reviews 5, 6); 76baac8 to dec7e54
+(pilot, review 7); 14325c0 606c59b (t1gen, review 8); 3caa3c6 668f289 (rerun); 89230bf ed3b7e0 (round-robin, review
+10); 32ddf39 d063274 (A/A runs, floor, review 11); macros, H7 job (review 12); docs. `bench/` is round 2's but two files.
 
 ## Next engineering
 
-Coordinator (2026-10-28): run as is, no cut; settle rule disclosed; no sign tests; a 6 GiB free-memory gate; no
-freeze step; W timed jobs start at least 15 min after boot. Alex (2026-10-29), row 9's floor result: "Keep, disclose
-(Recommended)": it stands as the rule gives it (v2 clears in 8 of 12 cells); no rerun, no rr.py change. None queued.
+Coordinator (2026-10-28): run as is, no cut; settle rule disclosed; no sign tests; 6 GiB free-memory gate; no freeze;
+W jobs at least 15 min after boot. Alex (2026-10-29): row 9 kept as the rule gives it, disclosed. 2026-11-03: macros in
+`results/round3/`; H7's MSVC job `t3/jobs/ctmsvc.py` with the coordinator; whether it needs a D5 record goes to Alex.

@@ -1,0 +1,410 @@
+{
+ "rule": "t3/rr_records.py's docstring",
+ "start_s": 30,
+ "records": [
+  {
+   "analysis": "floor-W.json",
+   "job": "p2r3-rr-w2",
+   "file": "out/rr/aa.jsonl",
+   "sha256": "41fbdc4db2813ba7b525222783db605ea1de997e71fae10733db581aecb05959",
+   "system": "windows",
+   "kind": "aa",
+   "windows": {
+    "planned": 84,
+    "by_status": {
+     "invalid": 2,
+     "valid": 94
+    },
+    "rerun_rounds": 2
+   },
+   "job_record": {
+    "uptime_s": 62328.2,
+    "duration_s": 907.175
+   },
+   "start": {
+    "first_windows": 18,
+    "first_pct": [
+     2.8973215284144427,
+     9.825701199178184
+    ],
+    "later_windows": 29,
+    "later_pct": [
+     -1.7840378567483994,
+     3.9493841279328867
+    ],
+    "first_clock_mhz": [
+     3173.7,
+     3175.7
+    ],
+    "first_others_max_pct": 0.96
+   },
+   "floor_rounds": {
+    "mixed-disjoint/m1000/t111": {
+     "mserver": {
+      "round": 7,
+      "d_ns": -200.27951653808304,
+      "offset_s": 79.0
+     },
+     "mserver-go": {
+      "round": 4,
+      "d_ns": 756.4349865688273,
+      "offset_s": 40.0
+     },
+     "mserver-rs": {
+      "round": 4,
+      "d_ns": 275.97272597237134,
+      "offset_s": 38.0
+     }
+    },
+    "mixed-disjoint/m100000/t111": {
+     "mserver": {
+      "round": 7,
+      "d_ns": -167.75823290289736,
+      "offset_s": 156.0
+     },
+     "mserver-go": {
+      "round": 7,
+      "d_ns": -210.60946133677135,
+      "offset_s": 159.0
+     },
+     "mserver-rs": {
+      "round": 6,
+      "d_ns": 107.23051450260755,
+      "offset_s": 151.0
+     }
+    }
+   }
+  },
+  {
+   "analysis": "floor-W.json",
+   "job": "p2r3-rr-w2",
+   "file": "out/rr/rr.jsonl",
+   "sha256": "e0b35ed86b23255c9b4101c5fbb20a24fc72fe969c6c87f38c8feba9d854ce55",
+   "system": "windows",
+   "kind": "rr",
+   "windows": {
+    "planned": 294,
+    "by_status": {
+     "invalid": 3,
+     "overloaded": 16,
+     "valid": 338
+    },
+    "rerun_rounds": 3
+   },
+   "job_record": {
+    "uptime_s": 62328.2,
+    "duration_s": 907.175
+   },
+   "start": {
+    "first_windows": 17,
+    "first_pct": [
+     -1.1113229939926361,
+     0.9440392684467946
+    ],
+    "later_windows": 170,
+    "later_pct": [
+     -1.67877926036889,
+     1.262495778183248
+    ],
+    "first_clock_mhz": [
+     3173.1,
+     3175.6
+    ],
+    "first_others_max_pct": 2.9
+   }
+  },
+  {
+   "analysis": "floor-W.json",
+   "job": "p2r3-aa-w",
+   "file": "out/aa/rr-aak-W.jsonl",
+   "sha256": "73460c0d4abc1af735db23f750cf3ff9b6fba26920422faf502bcff0f92fe6c4",
+   "system": "windows",
+   "kind": "aak",
+   "windows": {
+    "planned": 294,
+    "by_status": {
+     "invalid": 2,
+     "valid": 313
+    },
+    "rerun_rounds": 1
+   },
+   "job_record": {
+    "uptime_s": 63352.1,
+    "duration_s": 610.059
+   },
+   "start": {
+    "first_windows": 17,
+    "first_pct": [
+     -1.1762363299233636,
+     1.0274061874040008
+    ],
+    "later_windows": 149,
+    "later_pct": [
+     -2.8358158680039325,
+     1.642973743714471
+    ],
+    "first_clock_mhz": [
+     3173.5,
+     3175.4
+    ],
+    "first_others_max_pct": 3.81
+   }
+  },
+  {
+   "analysis": "floor-L.json",
+   "job": "p2r3-rr-l",
+   "file": "out/rr/aa.jsonl",
+   "sha256": "91de3d75789c9ccb51428896576717d527ab30e5579a1ce9642acd17fca1c699",
+   "system": "linux",
+   "kind": "aa",
+   "windows": {
+    "planned": 84,
+    "by_status": {
+     "valid": 84
+    },
+    "rerun_rounds": 0
+   },
+   "job_record": {
+    "uptime_s": 23.75,
+    "duration_s": 776.029
+   },
+   "start": {
+    "first_windows": 19,
+    "first_pct": [
+     -1.146914456666892,
+     1.280402777599443
+    ],
+    "later_windows": 23,
+    "later_pct": [
+     -0.2145837032091813,
+     1.1263470053516356
+    ],
+    "first_clock_mhz": [
+     3167.0,
+     3168.3
+    ],
+    "first_others_max_pct": 1.85
+   },
+   "floor_rounds": {
+    "mixed-disjoint/m1000/t111": {
+     "mserver": {
+      "round": 3,
+      "d_ns": -34.485702807661255,
+      "offset_s": 28.0
+     },
+     "mserver-go": {
+      "round": 3,
+      "d_ns": -124.60536886481714,
+      "offset_s": 27.0
+     },
+     "mserver-rs": {
+      "round": 3,
+      "d_ns": -61.22006138551296,
+      "offset_s": 25.0
+     }
+    },
+    "mixed-disjoint/m100000/t111": {
+     "mserver": {
+      "round": 1,
+      "d_ns": 46.90123393873091,
+      "offset_s": 84.0
+     },
+     "mserver-go": {
+      "round": 1,
+      "d_ns": 150.10697555774823,
+      "offset_s": 85.0
+     },
+     "mserver-rs": {
+      "round": 3,
+      "d_ns": 540.2950058343467,
+      "offset_s": 106.0
+     }
+    }
+   }
+  },
+  {
+   "analysis": "floor-L.json",
+   "job": "p2r3-rr-l",
+   "file": "out/rr/rr.jsonl",
+   "sha256": "f4ad1378a384d4ee48a4e3029e2b509cf0d00be6f3d862929ac19aade74e475d",
+   "system": "linux",
+   "kind": "rr",
+   "windows": {
+    "planned": 308,
+    "by_status": {
+     "overloaded": 14,
+     "valid": 294
+    },
+    "rerun_rounds": 0
+   },
+   "job_record": {
+    "uptime_s": 23.75,
+    "duration_s": 776.029
+   },
+   "start": {
+    "first_windows": 19,
+    "first_pct": [
+     -0.5304137124522601,
+     0.734988741267073
+    ],
+    "later_windows": 135,
+    "later_pct": [
+     -0.5457132657231467,
+     0.6857430138815346
+    ],
+    "first_clock_mhz": [
+     3167.5,
+     3168.3
+    ],
+    "first_others_max_pct": 2.47
+   }
+  },
+  {
+   "analysis": "floor-L.json",
+   "job": "p2r3-aa-l",
+   "file": "out/aa/rr-aak-L.jsonl",
+   "sha256": "193d08603ead5064b3e4dbb7eb68434c7b1b6efb851d2fad13d1a2ed7f62224a",
+   "system": "linux",
+   "kind": "aak",
+   "windows": {
+    "planned": 294,
+    "by_status": {
+     "valid": 294
+    },
+    "rerun_rounds": 0
+   },
+   "job_record": {
+    "uptime_s": 28.84,
+    "duration_s": 551.369
+   },
+   "start": {
+    "first_windows": 19,
+    "first_pct": [
+     -0.17268006029937943,
+     1.6710269881864859
+    ],
+    "later_windows": 128,
+    "later_pct": [
+     -0.8107137948767162,
+     1.8242992605344455
+    ],
+    "first_clock_mhz": [
+     3167.6,
+     3168.1
+    ],
+    "first_others_max_pct": 1.85
+   }
+  },
+  {
+   "analysis": "rr-W.json",
+   "job": "p2r3-rr-w",
+   "file": "out/rr/aa.jsonl",
+   "sha256": "cf437b7a79623ea1ece6eb000af480b2ce70c67670a29795bd1f62357be80b11",
+   "system": "windows",
+   "kind": "aa",
+   "windows": {
+    "planned": 84,
+    "by_status": {
+     "invalid": 4,
+     "valid": 92
+    },
+    "rerun_rounds": 2
+   },
+   "job_record": {
+    "uptime_s": 33.1,
+    "duration_s": 1053.716
+   },
+   "start": {
+    "first_windows": 16,
+    "first_pct": [
+     1.8481632227427935,
+     8.88830788952788
+    ],
+    "later_windows": 34,
+    "later_pct": [
+     -1.8724510098029779,
+     6.787851552140589
+    ],
+    "first_clock_mhz": [
+     3174.1,
+     3175.5
+    ],
+    "first_others_max_pct": 4.77
+   },
+   "floor_rounds": {
+    "mixed-disjoint/m1000/t111": {
+     "mserver": {
+      "round": 4,
+      "d_ns": -243.20135744341314,
+      "offset_s": 36.0
+     },
+     "mserver-go": {
+      "round": 4,
+      "d_ns": 1090.5190410720388,
+      "offset_s": 40.0
+     },
+     "mserver-rs": {
+      "round": 5,
+      "d_ns": -152.56294363983397,
+      "offset_s": 48.0
+     }
+    },
+    "mixed-disjoint/m100000/t111": {
+     "mserver": {
+      "round": 3,
+      "d_ns": 365.90306646726276,
+      "offset_s": 127.0
+     },
+     "mserver-go": {
+      "round": 2,
+      "d_ns": 235.32417184167207,
+      "offset_s": 118.0
+     },
+     "mserver-rs": {
+      "round": 7,
+      "d_ns": 120.65534707607367,
+      "offset_s": 171.0
+     }
+    }
+   }
+  },
+  {
+   "analysis": "rr-W.json",
+   "job": "p2r3-rr-w",
+   "file": "out/rr/rr.jsonl",
+   "sha256": "9288dccd41bcbae9b9842863f5b5fb39832e1f9ecd0de9a6e1170c6739021843",
+   "system": "windows",
+   "kind": "rr",
+   "windows": {
+    "planned": 294,
+    "by_status": {
+     "invalid": 15,
+     "overloaded": 20,
+     "valid": 406
+    },
+    "rerun_rounds": 7
+   },
+   "job_record": {
+    "uptime_s": 33.1,
+    "duration_s": 1053.716
+   },
+   "start": {
+    "first_windows": 15,
+    "first_pct": [
+     -0.5236537039059463,
+     0.7224245200448731
+    ],
+    "later_windows": 206,
+    "later_pct": [
+     -1.4801793449827794,
+     8.23445635341371
+    ],
+    "first_clock_mhz": [
+     3173.7,
+     3175.8
+    ],
+    "first_others_max_pct": 5.74
+   }
+  }
+ ]
+}

@@ -6,7 +6,8 @@ costs on W; hypotheses-round2.md, H7). Windows only.
 
 The compiler is the MSVC of RegexMatcher's W record (regexmatcher-d1d73e99b-W-asan: MSVC
 19.51.36246.0), from vcvarsall.bat x64 of the Visual Studio instance vswhere reports; the script
-refuses another version. Its flags are those of route_ct_table_tests, the RegexMatcher target
+refuses another version than --msvc-version, whose default is that one (round 3's laptop job,
+t3/jobs/ctmsvc.py, passes the laptop's). Its flags are those of route_ct_table_tests, the RegexMatcher target
 that compiles compile-time tables, in a Release configure of RegexMatcher with the W record's
 options and no sanitizer (OUT/rm-release, written here), with the bench directory in place of
 tests/route/ct_tables on the include path and GoogleTest's include directories left out.
@@ -303,6 +304,7 @@ def main() -> int:
     ap.add_argument("--googletest", required=True,
                     help="FETCHCONTENT_SOURCE_DIR_GOOGLETEST, the W record's local copy (no download)")
     ap.add_argument("--toolset", default="14.51.36231", help="vcvarsall -vcvars_ver (the W record's toolset)")
+    ap.add_argument("--msvc-version", default=MSVC_VERSION, help="the cl version required (default: the W record's)")
     ap.add_argument("--tables", default=",".join(TABLES))
     ap.add_argument("--smoke", action="store_true")
     a = ap.parse_args()
@@ -313,8 +315,8 @@ def main() -> int:
     commands = configure(a.rm_dir, a.out / "rm-release", env, a.googletest)
     cl, flags, flags_file = flags_of(commands, a.rm_dir)
     version = cl_version(cl, env)
-    if version != MSVC_VERSION:
-        sys.exit(f"ct_msvc: cl is {version}, not {MSVC_VERSION} (the W record's)")
+    if version != a.msvc_version:
+        sys.exit(f"ct_msvc: cl is {version}, not {a.msvc_version}")
     d = Driver(a, env, cl, flags)
     common = {"compiler": f"MSVC {version}.0", "compiler_path": cl, "toolset": a.toolset, "flags": flags,
               "flags_source": f"route_ct_table_tests' command for {Path(flags_file).name} in a Release configure of "

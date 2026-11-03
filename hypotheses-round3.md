@@ -174,3 +174,8 @@ Alex answered the design questions on 2026-10-23 (`design/round3/decisions-for-a
   it ends); Arch's Rust m = 100,000 floor is one A/A process faster than all seven of the k-server run. Alex's
   answer (via the coordinator), "Keep, disclose (Recommended)": the result stands as the rule gives it, the paper
   discloses both diagnostics, nothing runs again.
+- 2026-11-03: the paper's round 3 numbers come from `results/round3/macros.tex` and `tables/`, written by
+  `t3/rr_macros.py` from the analysis files and `t3/rr_records.py`'s record facts. H7's MSVC costs on the laptop's
+  Windows (section 4) run round 2's procedure, `bench/ct_msvc.py`, through `t3/jobs/ctmsvc.py` with the laptop's MSVC,
+  `cl` 19.51.36248 (round 2 names 19.51.36246, the desktop's); `ct_msvc.py` takes the version as `--msvc-version`,
+  its default unchanged. Whether these costs need a D5 record (round 2 says they do not) goes to Alex.
