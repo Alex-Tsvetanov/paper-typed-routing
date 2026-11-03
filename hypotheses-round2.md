@@ -821,3 +821,15 @@ H7's MSVC costs on W use the flags of RegexMatcher's own compile-time-table test
   fresh build (paper 35554b3) that adds one opt-in arm, `regexmatcher-v2-ct-heap`, and changes no
   file the measured arms compile. The new arm was gated by its own records before the run; the
   other arms by the existing records, matched by inputs hash.
+- 2026-11-03, how the paper describes round 1 (no decision of the analysis changes). Alex lifted
+  the decision of section 1 that round 1 is called a development round and that its H6 run is not
+  mentioned (Q20261103-p2-1, his answer verbatim: "P2-1: I am ok with the paper saying it."). The
+  paper now says that round 1 was a confirmatory round run under hypotheses frozen before it; that
+  its H6 failed in both parts (at m = 10 no interval lay inside its band, and at m = 10,000
+  param-last stayed below its bound); that H6 above turned round 1's part (a) around and replaced
+  its part (b), both after that run; that the bound 0.5 was chosen below round 1's measured range;
+  and, in a supplement, round 1's outcome for each hypothesis and what round 2 changed in answer.
+  Its numbers come from `t3/round1_macros.py` (`results/round3/round1-macros.tex`), read from
+  round 1's tables in `results/`; they are not results and enter no analysis. For the paper's
+  text this supersedes the bullet "Round 1 is development data" of section 1, where it says how
+  the paper names round 1, and the entry of 2026-10-02 on how the paper mentions round 1.
