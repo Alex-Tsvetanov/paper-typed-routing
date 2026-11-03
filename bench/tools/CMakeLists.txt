@@ -5,6 +5,9 @@
 #   backtrack_check  rbench's model of v2's backtracking against a counting build of v2
 #                    (backtrack_check.cpp; needs REGEXMATCHER_DIR with the backtracking hook and
 #                    chain nodes, B1')
+# The adversarial tool (adversarial.cpp, design/review-runs/adversarial.md) is not built here: it
+# times through core/runner.hpp, which needs the fetched nanobench, and its sanitizer records are
+# rbench's, so it is a target of rbench's own build (../cmake/tool-adversarial.cmake).
 cmake_minimum_required(VERSION 3.25)
 project(rbench_tools LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)

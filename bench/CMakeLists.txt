@@ -145,3 +145,8 @@ foreach(_arm IN LISTS RB_ARMS)
     endif()
     include(cmake/arm-${_arm}.cmake)
 endforeach()
+
+# The adversarial tool (cmake/tool-adversarial.cmake), with the arm whose code it times.
+if("regexmatcher-v2" IN_LIST RB_ARMS)
+    include(cmake/tool-adversarial.cmake)
+endif()
