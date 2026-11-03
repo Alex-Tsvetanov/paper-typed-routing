@@ -7,10 +7,11 @@ optimisation that could have inlined it.
 
 For each arm (regexmatcher-v2-capi and its C function rb_v2capi_at; capi-null and rb_capi_null_at):
 1. the C function is defined in RBENCH (nm: a text symbol with a size);
-2. the timed loop's function, ArmRunner<the arm's adapter class>::harness_pass (or, if the compiler inlined
-   it, one_pass or measure), reaches a `call` to the C function by direct calls (objdump -d): in the loop
+2. the timed epochs, nanobench's Bench::run over ArmRunner<the arm's adapter>::measure's first lambda
+   without parameters (core/runner.hpp: one_pass, whose loop is harness_pass), or harness_pass itself if the
+   compiler kept it out of line, reach a `call` to the C function by direct calls (objdump -d): in the loop
    itself, or in a function it calls (the adapter's lookup, or the harness's full(), if the compiler kept
-   them out of line);
+   them out of line), at most four calls deep;
 3. no compile command of BUILD_DIR/compile_commands.json has -flto, and BUILD_DIR/CMakeCache.txt does not
    turn on CMAKE_INTERPROCEDURAL_OPTIMIZATION.
 Prints one line per check and exits 1 if any fails. An arm the binary does not have is skipped (and named).
@@ -26,6 +27,7 @@ from collections import defaultdict
 from pathlib import Path
 
 ARMS = (("regexmatcher-v2-capi", "V2CapiArm", "rb_v2capi_at"), ("capi-null", "CapiNullArm", "rb_capi_null_at"))
+TIMED_RUN = "ankerl::nanobench::Bench& ankerl::nanobench::Bench::run<"
 FUNC = re.compile(r"^[0-9a-f]+ <(.+)>:$")
 # A direct call, or a tail call (a jmp to the start of a function, with no offset); a demangled name may
 # hold '<' and '>' itself, so the target is everything between the first '<' and the line's last '>'.
@@ -66,7 +68,7 @@ def defined(binary: Path) -> dict[str, int]:
     return sizes
 
 
-def reaches(graph: dict[str, set[str]], start: str, target: str, depth: int = 3) -> list[str] | None:
+def reaches(graph: dict[str, set[str]], start: str, target: str, depth: int = 4) -> list[str] | None:
     """A chain of direct calls from start to target, at most `depth` calls long."""
     frontier = [[start]]
     for _ in range(depth):
@@ -83,7 +85,9 @@ def reaches(graph: dict[str, set[str]], start: str, target: str, depth: int = 3)
 
 def short(name: str) -> str:
     """A function's own name, without its class, template arguments and parameters."""
-    m = re.search(r"(\w+)\(", name)
+    if name.startswith(TIMED_RUN):
+        return "nanobench Bench::run (the timed epochs)"
+    m = re.search(r"(\w+)(\[abi:\w+\])?\(", name)
     return m.group(1) if m else name
 
 
@@ -113,13 +117,11 @@ def main(argv: list[str]) -> int:
             print(f"skip: {arm} is not in {binary.name} (no {fn})")
             continue
         check(sizes[fn] > 0, f"{arm}: {fn} is a function of {sizes[fn]} bytes")
-        # The timed loop is harness_pass; if the compiler inlined it, the function it was inlined into.
-        runner = f"ArmRunner<(anonymous namespace)::{cls}>::"
-        loops = []
-        for name in ("harness_pass", "one_pass", "measure"):
-            loops = [f for f in graph if runner + name in f]
-            if loops:
-                break
+        # The timed epochs: nanobench's Bench::run over measure's first lambda without parameters, whose
+        # body is one_pass (core/runner.hpp); harness_pass, if the compiler kept it out of line, is the loop.
+        runner = f"rb::ArmRunner<(anonymous namespace)::{cls}>::"
+        loops = [f for f in graph if f.startswith(TIMED_RUN + runner + "measure") and "::{lambda()#1}>" in f]
+        loops += [f for f in graph if runner + "harness_pass" in f]
         chain = next((c for f in loops if (c := reaches(graph, f, fn))), None)
         check(chain is not None, f"{arm}: the timed loop calls {fn}"
               + (f" ({' -> '.join(short(n) for n in chain)})" if chain else
