@@ -10,7 +10,8 @@ mapped to NS) and reports, for each, its functions, its lines and the sha256 of 
 for the renamed copy against the pinned headers (DIR/include, matcher/route.hpp), and for each variant
 against the copy, and writes per arm: lines and functions of its normalized lookup code, the first 16
 hex digits of its sha256, and whether it is the copy's code (IDENTICAL). The pinned arm's row comes from
-the first comparison. Exits 1 if objdump_check.sh fails or the copy's code is not the pinned code.
+the first comparison. Exits 1 if a header is missing, objdump_check.sh fails, a lookup has no function or
+no line, or the copy's code is not the pinned code.
 """
 
 from __future__ import annotations
@@ -31,6 +32,9 @@ SUMMARY = re.compile(r"functions (\d+) and (\d+), lines (\d+) and (\d+), sha256 
 def compare(cxx: str, label: str, old: Path, old_ns: str, inc: Path, header: str, ns: str,
             flags: list[str]) -> tuple[dict, dict, bool]:
     """objdump_check.sh on two headers: each one's functions, lines and sha256, and whether they are equal."""
+    for header_file in (old, inc / header):
+        if not header_file.is_file():
+            raise SystemExit(f"code_size: {label}: the header {header_file} does not exist")
     p = subprocess.run(["bash", str(BENCH / "objdump_check.sh"), cxx, label, str(old), old_ns, str(inc), header, ns]
                        + flags, capture_output=True, text=True)
     m = SUMMARY.search(p.stdout)
@@ -38,6 +42,10 @@ def compare(cxx: str, label: str, old: Path, old_ns: str, inc: Path, header: str
         raise SystemExit(f"code_size: objdump_check.sh {label} failed (exit {p.returncode}): {p.stdout}{p.stderr}")
     a = {"functions": int(m.group(1)), "lines": int(m.group(3)), "sha256": m.group(5)}
     b = {"functions": int(m.group(2)), "lines": int(m.group(4)), "sha256": m.group(6)}
+    for side in (a, b):
+        if side["functions"] < 1 or side["lines"] < 1:
+            raise SystemExit(f"code_size: objdump_check.sh {label} found {side['functions']} functions "
+                             f"and {side['lines']} lines of lookup code: {p.stdout}")
     return a, b, "\nIDENTICAL" in p.stdout
 
 
@@ -49,6 +57,7 @@ def main() -> int:
     ap.add_argument("--label", default="code-size", help="objdump_check.sh's work directory under ~/od")
     ap.add_argument("flags", nargs="*")
     a = ap.parse_args()
+    a.out.unlink(missing_ok=True)  # a failed run leaves no table that an earlier one wrote
     copy_h = ABLATION / "route_copy.hpp"
     rows = []
     copy, pinned, same = compare(a.cxx, f"{a.label}-copy", copy_h, "matcher::route_copy", a.regexmatcher / "include",
