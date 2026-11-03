@@ -30,7 +30,13 @@ set(RB_ALL_ARMS null null-no405 radix hash std-regex regexmatcher-v1 regexmatche
     uwebsockets glaze cpp-httplib chi path-tree)
 set(RB_ARMS "${RB_ALL_ARMS}" CACHE STRING "Arms to build")
 # Exploratory arms that no default build has: each is built only when RB_ARMS names it.
-set(RB_OPT_IN_ARMS regexmatcher-v2-ct-heap)
+# RB_REVIEW_ARMS are the arms of the runs after the review (design/review-runs/): the ablation copies
+# of ablations.md and the boundary arms of boundary-arms.md (bench/arms_for.py --review lists them with
+# the default arms, for the review build and its sanitizer records).
+set(RB_REVIEW_ARMS regexmatcher-v2-copy regexmatcher-v2-ab-linear regexmatcher-v2-ab-hashed
+    regexmatcher-v2-ab-noexact regexmatcher-v2-ab-bytes regexmatcher-v2-capi capi-null rust-null
+    regexmatcher-v2-goloop)
+set(RB_OPT_IN_ARMS regexmatcher-v2-ct-heap ${RB_REVIEW_ARMS})
 
 # Sanitizers, applied here to every target, so the fetched arms are instrumented too
 # (MemorySanitizer needs that).
@@ -95,7 +101,7 @@ target_compile_options(rbench PRIVATE -Wall -Wextra)
 # RegexMatcher v2, for the regexmatcher-v2* arms (cmake/regexmatcher-v2.cmake sets
 # RB_REGEXMATCHER_COMMIT); "none" in a build without them.
 set(RB_REGEXMATCHER_COMMIT "none")
-foreach(_a regexmatcher-v2 regexmatcher-v2-ct)
+foreach(_a regexmatcher-v2 regexmatcher-v2-ct regexmatcher-v2-capi regexmatcher-v2-goloop)
     if(_a IN_LIST RB_ARMS)
         include(cmake/regexmatcher-v2.cmake)
     endif()
@@ -150,3 +156,10 @@ endforeach()
 if("regexmatcher-v2" IN_LIST RB_ARMS)
     include(cmake/tool-adversarial.cmake)
 endif()
+
+# The untimed tests of the review arms (cmake/tests-review.cmake), with the arms they check.
+foreach(_a IN LISTS RB_REVIEW_ARMS)
+    if(_a IN_LIST RB_ARMS)
+        include(cmake/tests-review.cmake)
+    endif()
+endforeach()

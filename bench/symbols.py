@@ -5,7 +5,9 @@ Code alignment moves timings: the same loop runs at a different speed when it st
 offset in a 64-byte line. So every build keeps, for each out-of-line function that a timed pass
 calls or is, its address, the address modulo 64, and its size, from the binary's symbol table
 (nm). The functions are those whose names contain harness_pass, one_pass, _pass (the arms' own
-passes, the Go arms' rb_*_pass included), lookup, find_v2 or find_r1. A function the compiler
+passes, the Go arms' rb_*_pass included), lookup, find_v2 or find_r1, the ablation arms' find_copy and
+find_ab_* (design/review-runs/ablations.md), or the C functions the boundary arms call per lookup
+(rb_v2capi_at, rb_capi_null_at, rb_rust_null_at, rb_v2goloop_at; boundary-arms.md). A function the compiler
 inlined has no symbol and is not listed. OUT is a tab-separated file, one function a line,
 sorted by name, with a header.
 """
@@ -16,7 +18,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-TIMED = re.compile(r"harness_pass|one_pass|_pass\b|::pass\(|lookup|find_v2|find_r1")
+TIMED = re.compile(r"harness_pass|one_pass|_pass\b|::pass\(|lookup|find_v2|find_r1|find_copy|find_ab_|"
+                   r"rb_v2capi_at|rb_capi_null_at|rb_rust_null_at|rb_v2goloop_at")
 CODE = {"t", "T", "w", "W"}
 
 

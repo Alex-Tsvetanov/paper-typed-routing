@@ -7,7 +7,10 @@ the gate; a gap coverage.json declares is allowed. The pin rule: a build whose b
 has one pin changed is refused by records made with the file as it is; so is a build whose records
 fetched an archive with another hash, or do not record their pins. The adversarial tool, a target of
 rbench's build: covered with the arms it passes; its inputs left uncovered stop the gate; it alone
-(without v2's arms) still needs green RegexMatcher records for the v2 headers it compiles.
+(without v2's arms) still needs green RegexMatcher records for the v2 headers it compiles. The review
+arms (design/review-runs/): the boundary arms regexmatcher-v2-capi and regexmatcher-v2-goloop compile v2's
+headers and need RegexMatcher records as v2's arms do; the ablation copies (regexmatcher-v2-copy, -ab-*)
+compile none, so a build with them alone needs no RegexMatcher record.
 
     python3 bench/test_gates.py      (exit 0 when every check passes)
 """
@@ -50,7 +53,8 @@ def rbench_inputs(d: Path, targets: dict) -> Path:
                                                       "build_config": {}, "third_party": {"fetched": FETCHED}}}})
     write(d / "b.v2-include.json", {"builds": {"rbench": {"targets": {
         t: {"prefix_hashes": {"regexmatcher/include/": {"hash": PREFIX_HASH, "files": 10}}}
-        for t in targets if t in ("arm_regexmatcher_v2", "arm_regexmatcher_v2_ct", "adversarial")}}}})
+        for t in targets if t in ("arm_regexmatcher_v2", "arm_regexmatcher_v2_ct", "arm_regexmatcher_v2_capi",
+                                  "arm_regexmatcher_v2_goloop", "adversarial")}}}})
     return d / "b.inputs.json"
 
 
@@ -189,6 +193,29 @@ def tool_cases(tmp: Path) -> None:
     expect("tool: without v2's arms, covered with RegexMatcher records it passes", run(CHECK, inputs, recs))
 
 
+def review_cases(tmp: Path) -> None:
+    def case(name: str, targets: dict, rm: bool) -> tuple[Path, Path]:
+        d = tmp / ("review-" + name)
+        d.mkdir()
+        recs = d / "records"
+        recs.mkdir()
+        for s in ("asan", "tsan", "msan"):
+            record(recs, f"rbench-x-L-{s}.json", s, targets)
+            if rm:
+                rm_record(recs, f"regexmatcher-y-L-{s}.json", s)
+        return rbench_inputs(d, targets), recs
+
+    copies = {"rbench": "r1", "arm_regexmatcher_v2_copy": "c1", "arm_regexmatcher_v2_ab_bytes": "b1"}
+    inputs, recs = case("copies", copies, rm=False)
+    expect("review: the ablation copies alone need no RegexMatcher record", run(CHECK, inputs, recs))
+    for arm in ("arm_regexmatcher_v2_capi", "arm_regexmatcher_v2_goloop"):
+        alone = {"rbench": "r1", arm: "x1"}
+        inputs, recs = case(arm + "-no-rm", alone, rm=False)
+        expect(f"review: {arm} alone needs RegexMatcher records for v2's headers", not run(CHECK, inputs, recs))
+        inputs, recs = case(arm, alone, rm=True)
+        expect(f"review: {arm} alone, with RegexMatcher records, passes", run(CHECK, inputs, recs))
+
+
 def h6_cases(tmp: Path) -> None:
     targets = {"mserver": "m1", "h6_targets": "t1"}
 
@@ -235,6 +262,7 @@ def main() -> int:
         tmp = Path(t)
         rbench_cases(tmp)
         tool_cases(tmp)
+        review_cases(tmp)
         h6_cases(tmp)
     print(f"{failures} failed" if failures else "all checks passed")
     return 1 if failures else 0

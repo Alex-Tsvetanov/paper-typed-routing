@@ -12,8 +12,9 @@ bench/gate_lib.py's):
    that target, with the same compiler, the same configuration and the same pins (the sha256 of the
    pins.cmake the build used, --pins, and every archive both fetched with the same URL and hash;
    bench/gate_lib.py). A gap is allowed only where coverage.json declares it.
-2. RegexMatcher v2 (design/round2/regexmatcher-v2.md, section 8.4): when the build has v2's arms
-   or the adversarial tool, which compiles v2 too, the hash of their inputs under
+2. RegexMatcher v2 (design/round2/regexmatcher-v2.md, section 8.4): when the build has a target that
+   compiles v2's pinned headers (V2_TARGETS: v2's arms, the boundary arms regexmatcher-v2-capi and
+   regexmatcher-v2-goloop, the adversarial tool), the hash of their inputs under
    regexmatcher/include/ (build.sh's BUILD.v2-include.json, the default next to --inputs) equals
    that of the test targets of a green RegexMatcher record on L for each sanitizer, with the same
    compiler (bench/sanitize_regexmatcher.sh).
@@ -30,6 +31,13 @@ import sys
 from pathlib import Path
 
 from gate_lib import PREFIX, GateError, config_of, fetched_of, file_sha256, load, regexmatcher_coverage, target_coverage
+
+# The targets that compile RegexMatcher v2's pinned headers (build.sh's v2-include.json): v2's arms, the
+# boundary arms that call v2 across a C or Go boundary, and the adversarial tool. The round-1 header
+# (regexmatcher-v2-r1) and the ablation copies (regexmatcher-v2-copy, -ab-*) are renamed copies in this
+# repository, hashed with their arms; they compile none of v2's headers.
+V2_TARGETS = frozenset({"arm_regexmatcher_v2", "arm_regexmatcher_v2_ct", "arm_regexmatcher_v2_ct_heap",
+                        "arm_regexmatcher_v2_capi", "arm_regexmatcher_v2_goloop", "adversarial"})
 
 
 def main() -> int:
@@ -54,8 +62,7 @@ def main() -> int:
                                                   pins=pins, fetched=fetched_of(info))
         v2 = {}
         include = args.v2_include or Path(str(args.inputs).removesuffix(".inputs.json") + ".v2-include.json")
-        if any((t.startswith("arm_regexmatcher_v2") and t != "arm_regexmatcher_v2_r1") or t == "adversarial"
-               for t in hashes):
+        if any(t in V2_TARGETS for t in hashes):
             if not include.exists():
                 raise GateError(f"the build has v2's arms and no {include.name}")
             targets = load(include)["builds"]["rbench"]["targets"]

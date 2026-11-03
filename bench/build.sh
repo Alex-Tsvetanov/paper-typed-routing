@@ -5,7 +5,9 @@
 # rbench, every arm_* target and, with the regexmatcher-v2 arm, the adversarial tool; RegexMatcher
 # v2's files included under the label regexmatcher/).
 # When the build has v2's arms, BUILD_DIR.v2-include.json holds, for each target that compiles
-# v2 (arm_regexmatcher_v2, arm_regexmatcher_v2_ct, arm_regexmatcher_v2_ct_heap, adversarial), the hash of its inputs under
+# v2's pinned headers (arm_regexmatcher_v2, arm_regexmatcher_v2_ct, arm_regexmatcher_v2_ct_heap, the boundary arms
+# arm_regexmatcher_v2_capi and arm_regexmatcher_v2_goloop, adversarial; not the ablation copies, which are
+# renamed copies in this repository, hashed with the arm), the hash of its inputs under
 # regexmatcher/include/ (--label-hash), which the records gate matches with RegexMatcher's own
 # sanitizer records (design/round2/regexmatcher-v2.md). BUILD_DIR.symbols.tsv holds the address
 # modulo 64 of each timed function (symbols.py), and BUILD_DIR.adversarial-symbols.tsv the same for
@@ -42,7 +44,8 @@ v2=()
 v2_targets=()
 for a in $arms; do
     case $a in
-        regexmatcher-v2 | regexmatcher-v2-ct | regexmatcher-v2-ct-heap) v2_targets+=(--target "arm_${a//-/_}") ;;
+        regexmatcher-v2 | regexmatcher-v2-ct | regexmatcher-v2-ct-heap | regexmatcher-v2-capi | regexmatcher-v2-goloop)
+            v2_targets+=(--target "arm_${a//-/_}") ;;
     esac
 done
 # The adversarial tool (cmake/tool-adversarial.cmake), built with the regexmatcher-v2 arm: a target
