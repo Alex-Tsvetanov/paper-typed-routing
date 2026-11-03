@@ -1,7 +1,8 @@
 # Plan: round 3's floor rule, frozen, on a fresh whole-server run (Grok r1 M1a)
 
-Status: plan, not frozen. It is frozen by a commit that sets this line to "frozen at <commit>", after step 1 of
-`README.md` and before the first record of the run. Later changes go into a revision log at the end, with reasons.
+Status: frozen at d4332f79b876df9c4ef032603ccd2f2237665326 (the code, plans and request sets the run uses; the pair is
+(127, 227)), on 2026-11-03, after step 1 of `README.md` and before the first record of the run. Later changes go into a
+revision log at the end, with reasons.
 
 ## Why
 

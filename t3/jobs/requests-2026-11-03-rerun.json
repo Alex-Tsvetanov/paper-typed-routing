@@ -1,5 +1,5 @@
 {
- "about": "P2's floor rerun (design/review-runs/floor-rerun.md, Grok r1 M1a; Alex, Q20261103-p2-2: \"I approve the new runs.\"), step 2 of design/review-runs/README.md: round 3's floor rule, fixed before any record, on a fresh run of round 3's campaign with the new seed pair (127, 227). Six jobs, three per system, drafted in the lab queue's job format for the coordinator to copy into queues; not a queue itself, and nothing here has been submitted. Branch round3 of p2-typed-routing/typed-routing (public: Alex-Tsvetanov/paper-typed-routing). Commit: 437013cca412af00a91e82fffa0f420c760ffe19, the commit of the plans t3/plans/rr2-*.json, t3/jobs/sets.py and the pair's manifest rows; the freeze commit of floor-rerun.md, which changes only design/, may be named in its place. Order on each system: the sets job, then the A/A run and campaign (t3/jobs/rr.py with rr2-aa-X.json then rr2-X.json), then the k-server run (t3/jobs/aa.py with rr2-aak-X.json); Linux first, then Windows, one campaign at a time. The plans are round 3's (rr-aa-X, rr-X, rr-aak-X) with only the pair changed, a test compares them key by key: mixed-disjoint, m = 1,000 and 100,000, R = 7 rounds of 1.5 s windows after p2gen's 0.1 s lead-in, each server started once per size with a 1 s warm-up, the same order seed, guards and reruns of host-spoiled rounds. They time the Release builds of p2r3-bringup-l and p2r3-bringup-w at 3ff814e50, the builds every round-3 record timed and the round-3 sanitizer records cover; no build, no download. BLOCKER, found while drafting: at this commit t3/jobs/rr.py and aa.py refuse (exit 2) before the first window, because t3/jobs/probe.py's guard finds compiled sources that differ between 3ff814e50 and HEAD: commit 0d6b22f (2026-11-03, H7's MSVC laptop job) changed bench/ct_msvc.py (a --msvc-version argument), and bench/ is in probe.py's COMPILED list. bench/ct_msvc.py is a Python driver of the MSVC compile-time job and is compiled into none of the timed binaries, and the jobs' sha256 checks of every binary are unaffected, but the guard compares whole paths. The rr and aa jobs below cannot run until Alex or the coordinator decides how (for example, the guard leaves out that one Python file, or ct_msvc.py goes back to its 3ff814e50 text); this request changes neither. The sets jobs do not use that guard and can run now. Request sets: t3/jobs/sets.py makes the pair's two cells with the bring-up's e2e_requests into LAB_OUT, checks them against the rows of t3/requests-manifest.tsv (made on the desktop with the 3ff814e50 build of e2e_requests, twice, with identical digests; the same binary reproduces round 3's committed (111, 211) row at m = 1,000; the job ran end to end on the desktop into a scratch data_root), then adds them beside round 3's 160 cells in the plans' data_root and their rows to its manifest.tsv, which p2run's verify_sets reads; it overwrites nothing and stops before any change if a cell or row there differs. That check on each system is the cross-platform identity check of floor-rerun.md; if it fails on a system, the plan's fallback pair is (112, 212), whose plans are not drafted here. After the sets job, round 3's bring-up could not be run again unchanged with --complete (its sets folder holds 162 cells); it is not meant to be. On Windows the rr and aa jobs start at least 15 minutes after boot and only once the quiet check passes (the coordinator's rule of 2026-10-28); the sets job is untimed and may run in that wait. The analysis is committed before the runs: t3/rr_results.py --plan-set rr2, t3/rr_records.py --plan-set rr2 and t3/rr_macros.py --run rerun, writing results/rerun with macros prefixed Rerun. The summaries hold verdicts, shares, start-ups, memory and spacing, no rate.",
+ "about": "P2's floor rerun (design/review-runs/floor-rerun.md, Grok r1 M1a; Alex, Q20261103-p2-2: \"I approve the new runs.\"), step 2 of design/review-runs/README.md: round 3's floor rule, fixed before any record, on a fresh run of round 3's campaign with the new seed pair (127, 227). Six jobs, three per system, drafted in the lab queue's job format for the coordinator to copy into queues; not a queue itself, and nothing here has been submitted. Branch round3 of p2-typed-routing/typed-routing (public: Alex-Tsvetanov/paper-typed-routing). Commit: d4332f79b876df9c4ef032603ccd2f2237665326, the commit floor-rerun.md is frozen at (the plans t3/plans/rr2-*.json, t3/jobs/sets.py, the pair's manifest rows from 437013c, and the probe fix); later commits change only design/ and this file. Order on each system: the sets job, then the A/A run and campaign (t3/jobs/rr.py with rr2-aa-X.json then rr2-X.json), then the k-server run (t3/jobs/aa.py with rr2-aak-X.json); Linux first, then Windows, one campaign at a time. The plans are round 3's (rr-aa-X, rr-X, rr-aak-X) with only the pair changed, a test compares them key by key: mixed-disjoint, m = 1,000 and 100,000, R = 7 rounds of 1.5 s windows after p2gen's 0.1 s lead-in, each server started once per size with a 1 s warm-up, the same order seed, guards and reruns of host-spoiled rounds. They time the Release builds of p2r3-bringup-l and p2r3-bringup-w at 3ff814e50, the builds every round-3 record timed and the round-3 sanitizer records cover; no build, no download. The probe's guard: 0d6b22f changed bench/ct_msvc.py (H7's MSVC script, compiled into no binary) after 3ff814e50, so at 437013c rr.py and aa.py would refuse; d4332f7 leaves that one file out of the compiled-source comparison (floor-rerun.md, What changes; tests), every other compiled path and every binary's sha256 checked as before. Request sets: t3/jobs/sets.py makes the pair's two cells with the bring-up's e2e_requests into LAB_OUT, checks them against the rows of t3/requests-manifest.tsv (made on the desktop with the 3ff814e50 build of e2e_requests, twice, with identical digests; the same binary reproduces round 3's committed (111, 211) row at m = 1,000; the job ran end to end on the desktop into a scratch data_root), then adds them beside round 3's 160 cells in the plans' data_root and their rows to its manifest.tsv, which p2run's verify_sets reads; it overwrites nothing and stops before any change if a cell or row there differs. That check on each system is the cross-platform identity check of floor-rerun.md; if it fails on a system, the plan's fallback pair is (112, 212), whose plans are not drafted here. After the sets job, round 3's bring-up could not be run again unchanged with --complete (its sets folder holds 162 cells); it is not meant to be. On Windows the rr and aa jobs start at least 15 minutes after boot and only once the quiet check passes (the coordinator's rule of 2026-10-28); the sets job is untimed and may run in that wait. The analysis is committed before the runs: t3/rr_results.py --plan-set rr2, t3/rr_records.py --plan-set rr2 and t3/rr_macros.py --run rerun, writing results/rerun with macros prefixed Rerun. The summaries hold verdicts, shares, start-ups, memory and spacing, no rate.",
  "jobs": [
   {
    "id": "p2rerun-sets-l",
@@ -9,7 +9,7 @@
     "name": "typed-routing",
     "path": "p2-typed-routing/typed-routing"
    },
-   "commit": "437013cca412af00a91e82fffa0f420c760ffe19",
+   "commit": "d4332f79b876df9c4ef032603ccd2f2237665326",
    "build": "",
    "run": "\"$LAB_PYTHON\" \"$LAB_SRC/t3/jobs/sets.py\" \"$LAB_SRC/t3/plans/rr2-L.json\" \"/home/alex/lab/p2r3/build-3ff814e50/e2e_requests\" \"$LAB_OUT/sets\"",
    "outputs": [
@@ -36,7 +36,7 @@
     "name": "typed-routing",
     "path": "p2-typed-routing/typed-routing"
    },
-   "commit": "437013cca412af00a91e82fffa0f420c760ffe19",
+   "commit": "d4332f79b876df9c4ef032603ccd2f2237665326",
    "build": "",
    "run": "\"$LAB_PYTHON\" \"$LAB_SRC/t3/jobs/rr.py\" \"$LAB_SRC/t3/plans/rr2-aa-L.json\" \"$LAB_SRC/t3/plans/rr2-L.json\" \"$LAB_OUT/rr\"",
    "outputs": [
@@ -52,7 +52,7 @@
    "poll_s": 120,
    "expected_s": 788,
    "timeout_s": 2364,
-   "note": "After p2rerun-sets-l (exit 0). BLOCKED at this commit by probe.py's compiled-sources guard (see about): rr.py refuses with exit 2 before the first window. The A/A run (84 windows, 6 servers per size) then the campaign (308 windows, 22 servers per size), round 3's p2r3-rr-l with the pair (127, 227); server on CPU 14, p2gen on 2 to 13, the runner on 0 and 1; reads the bring-up's build-3ff814e50, progs-3ff814e50 and sets, writes only in LAB_OUT. expected_s 788 s, round 3's job of the same plans but the pair (the journal, design/review-runs/README.md); reruns of host-spoiled rounds come on top. timeout_s three times that. Boost off, the lab's default.",
+   "note": "After p2rerun-sets-l (exit 0). The A/A run (84 windows, 6 servers per size) then the campaign (308 windows, 22 servers per size), round 3's p2r3-rr-l with the pair (127, 227); server on CPU 14, p2gen on 2 to 13, the runner on 0 and 1; reads the bring-up's build-3ff814e50, progs-3ff814e50 and sets, writes only in LAB_OUT. expected_s 788 s, round 3's job of the same plans but the pair (the journal, design/review-runs/README.md); reruns of host-spoiled rounds come on top. timeout_s three times that. Boost off, the lab's default.",
    "run_label": "P2 floor rerun on Arch: t3/jobs/rr.py, the A/A run (t3/plans/rr2-aa-L.json) then the campaign (rr2-L.json), round 3's plans with the pair (127, 227)",
    "plain": "Run every routing library of P2 on Arch again on fresh inputs, first P2's own library against itself to measure the noise, then all contestants, about 13 minutes"
   },
@@ -64,7 +64,7 @@
     "name": "typed-routing",
     "path": "p2-typed-routing/typed-routing"
    },
-   "commit": "437013cca412af00a91e82fffa0f420c760ffe19",
+   "commit": "d4332f79b876df9c4ef032603ccd2f2237665326",
    "build": "",
    "run": "\"$LAB_PYTHON\" \"$LAB_SRC/t3/jobs/aa.py\" \"$LAB_OUT/aa\" \"$LAB_SRC/t3/plans/rr2-aak-L.json\"",
    "outputs": [
@@ -78,7 +78,7 @@
    "poll_s": 120,
    "expected_s": 564,
    "timeout_s": 1692,
-   "note": "After p2rerun-rr-l. BLOCKED at this commit by probe.py's compiled-sources guard (see about): aa.py refuses with exit 2 before the first window. The k-server A/A run (v2 seven times per program: 294 windows, 21 servers per size), round 3's p2r3-aa-l with the pair (127, 227); descriptive, outside the floor. Server on CPU 14, p2gen on 2 to 13, the runner on 0 and 1; reads the bring-up's build-3ff814e50, progs-3ff814e50 and sets, writes only in LAB_OUT. expected_s 564 s, round 3's job of the same plan but the pair (the journal, design/review-runs/README.md); timeout_s three times that. Boost off, the lab's default.",
+   "note": "After p2rerun-rr-l. The k-server A/A run (v2 seven times per program: 294 windows, 21 servers per size), round 3's p2r3-aa-l with the pair (127, 227); descriptive, outside the floor. Server on CPU 14, p2gen on 2 to 13, the runner on 0 and 1; reads the bring-up's build-3ff814e50, progs-3ff814e50 and sets, writes only in LAB_OUT. expected_s 564 s, round 3's job of the same plan but the pair (the journal, design/review-runs/README.md); timeout_s three times that. Boost off, the lab's default.",
    "run_label": "P2 floor rerun k-server A/A run on Arch: t3/jobs/aa.py with t3/plans/rr2-aak-L.json (v2 seven times per program, the pair (127, 227))",
    "plain": "Measure P2's own library against seven copies of itself on Arch on fresh inputs, to see how much separate processes differ, about 9 minutes"
   },
@@ -90,7 +90,7 @@
     "name": "typed-routing",
     "path": "p2-typed-routing/typed-routing"
    },
-   "commit": "437013cca412af00a91e82fffa0f420c760ffe19",
+   "commit": "d4332f79b876df9c4ef032603ccd2f2237665326",
    "build": "",
    "run": "\"%LAB_PYTHON%\" \"%LAB_SRC%\\t3\\jobs\\sets.py\" \"%LAB_SRC%\\t3\\plans\\rr2-W.json\" \"C:\\Users\\alext\\lab\\p2r3\\build-3ff814e50\\e2e_requests.exe\" \"%LAB_OUT%\\sets\"",
    "outputs": [
@@ -117,7 +117,7 @@
     "name": "typed-routing",
     "path": "p2-typed-routing/typed-routing"
    },
-   "commit": "437013cca412af00a91e82fffa0f420c760ffe19",
+   "commit": "d4332f79b876df9c4ef032603ccd2f2237665326",
    "build": "",
    "run": "\"%LAB_PYTHON%\" \"%LAB_SRC%\\t3\\jobs\\rr.py\" \"%LAB_SRC%\\t3\\plans\\rr2-aa-W.json\" \"%LAB_SRC%\\t3\\plans\\rr2-W.json\" \"%LAB_OUT%\\rr\"",
    "outputs": [
@@ -133,7 +133,7 @@
    "poll_s": 120,
    "expected_s": 922,
    "timeout_s": 2766,
-   "note": "Start at least 15 minutes after boot and only once the quiet check passes (the coordinator's rule of 2026-10-28). After p2rerun-sets-w (exit 0). BLOCKED at this commit by probe.py's compiled-sources guard (see about): rr.py refuses with exit 2 before the first window. The A/A run (84 windows, 6 servers per size) then the campaign (294 windows, 21 servers per size), round 3's p2r3-rr-w2 with the pair (127, 227); server on CPU 14, p2gen on 2 to 13, the runner on 0 and 1; reads the bring-up's build-3ff814e50, progs-3ff814e50 and sets, writes only in LAB_OUT. expected_s 922 s, round 3's job of the same plans but the pair (the journal, design/review-runs/README.md); reruns of host-spoiled rounds come on top. timeout_s three times that. Boost off, the lab's default.",
+   "note": "Start at least 15 minutes after boot and only once the quiet check passes (the coordinator's rule of 2026-10-28). After p2rerun-sets-w (exit 0). The A/A run (84 windows, 6 servers per size) then the campaign (294 windows, 21 servers per size), round 3's p2r3-rr-w2 with the pair (127, 227); server on CPU 14, p2gen on 2 to 13, the runner on 0 and 1; reads the bring-up's build-3ff814e50, progs-3ff814e50 and sets, writes only in LAB_OUT. expected_s 922 s, round 3's job of the same plans but the pair (the journal, design/review-runs/README.md); reruns of host-spoiled rounds come on top. timeout_s three times that. Boost off, the lab's default.",
    "run_label": "P2 floor rerun on Windows: t3/jobs/rr.py, the A/A run (t3/plans/rr2-aa-W.json) then the campaign (rr2-W.json), round 3's plans with the pair (127, 227)",
    "plain": "Run every routing library of P2 on Windows again on fresh inputs, first P2's own library against itself to measure the noise, then all contestants, about 15 minutes"
   },
@@ -145,7 +145,7 @@
     "name": "typed-routing",
     "path": "p2-typed-routing/typed-routing"
    },
-   "commit": "437013cca412af00a91e82fffa0f420c760ffe19",
+   "commit": "d4332f79b876df9c4ef032603ccd2f2237665326",
    "build": "",
    "run": "\"%LAB_PYTHON%\" \"%LAB_SRC%\\t3\\jobs\\aa.py\" \"%LAB_OUT%\\aa\" \"%LAB_SRC%\\t3\\plans\\rr2-aak-W.json\"",
    "outputs": [
@@ -159,7 +159,7 @@
    "poll_s": 120,
    "expected_s": 624,
    "timeout_s": 1872,
-   "note": "After p2rerun-rr-w in the same boot; in another boot, start at least 15 minutes after boot and only once the quiet check passes. After p2rerun-rr-w. BLOCKED at this commit by probe.py's compiled-sources guard (see about): aa.py refuses with exit 2 before the first window. The k-server A/A run (v2 seven times per program: 294 windows, 21 servers per size), round 3's p2r3-aa-w with the pair (127, 227); descriptive, outside the floor. Server on CPU 14, p2gen on 2 to 13, the runner on 0 and 1; reads the bring-up's build-3ff814e50, progs-3ff814e50 and sets, writes only in LAB_OUT. expected_s 624 s, round 3's job of the same plan but the pair (the journal, design/review-runs/README.md); timeout_s three times that. Boost off, the lab's default.",
+   "note": "After p2rerun-rr-w in the same boot; in another boot, start at least 15 minutes after boot and only once the quiet check passes. After p2rerun-rr-w. The k-server A/A run (v2 seven times per program: 294 windows, 21 servers per size), round 3's p2r3-aa-w with the pair (127, 227); descriptive, outside the floor. Server on CPU 14, p2gen on 2 to 13, the runner on 0 and 1; reads the bring-up's build-3ff814e50, progs-3ff814e50 and sets, writes only in LAB_OUT. expected_s 624 s, round 3's job of the same plan but the pair (the journal, design/review-runs/README.md); timeout_s three times that. Boost off, the lab's default.",
    "run_label": "P2 floor rerun k-server A/A run on Windows: t3/jobs/aa.py with t3/plans/rr2-aak-W.json (v2 seven times per program, the pair (127, 227))",
    "plain": "Measure P2's own library against seven copies of itself on Windows on fresh inputs, to see how much separate processes differ, about 10 minutes"
   }
