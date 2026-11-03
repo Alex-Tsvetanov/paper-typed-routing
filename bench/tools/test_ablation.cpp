@@ -9,7 +9,11 @@
 // 2. Every variant answers every query as the pinned code does (status, route, the methods a 405
 //    allows, and every captured value as the same bytes of the same path), under the query's own
 //    method and under each of the seven methods, so that 404 and 405 are both reached.
-// Prints "test_ablation: ok (N lookups compared, 0 failing)" or each failure; exit 1 on a failure.
+// 3. The test is not vacuous: it fails unless it compared a lookup and its pinned answers reached a 404, a
+//    405 and an answer with captures. It prints how many it reached of each, then "test_ablation: ok (T
+//    tables, N lookups compared, 0 failing)", or each failure; exit 1 on a failure. T and N are fixed by the
+//    loops below (112 tables; 112 x 5 variants x 512 queries x 8 methods = 2293760 lookups), and
+//    sanitizer_record.py requires exactly those.
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -32,6 +36,10 @@ namespace {
 
 int failures = 0;
 std::uint64_t compared = 0;
+// What the pinned answers of the compared lookups were: no route, a 405, and a route with captured values.
+std::uint64_t not_found = 0;
+std::uint64_t not_allowed = 0;
+std::uint64_t with_captures = 0;
 
 void expect(bool ok, const std::string& what) {
     if (!ok) {
@@ -114,6 +122,13 @@ std::size_t nodes_with_edges(const V& v) {
 template <class M>
 void same_answer(const matcher::route::Match& want, const M& got, const std::string& where) {
     ++compared;
+    if (want.status == matcher::route::Status::NotFound) {
+        ++not_found;
+    } else if (want.status == matcher::route::Status::MethodNotAllowed) {
+        ++not_allowed;
+    } else if (want.count > 0) {
+        ++with_captures;
+    }
     bool ok = static_cast<int>(want.status) == static_cast<int>(got.status) && want.route == got.route &&
               want.count == got.count && want.allowed == got.allowed;
     for (std::size_t i = 0; ok && i < want.count; ++i) {
@@ -227,6 +242,13 @@ int main() {
     expect(tables == 7 * 4 * 2 * 2, "not every planned table was built: " + std::to_string(tables));
     expect(pinned_hashed > 0, "no pinned table has a hashed node");
     expect(pinned_literal > 0, "no pinned table has an exact-match table");
+    expect(compared > 0, "no lookup was compared");
+    expect(not_found > 0, "no compared lookup reached a 404");
+    expect(not_allowed > 0, "no compared lookup reached a 405");
+    expect(with_captures > 0, "no compared lookup reached an answer with captures");
+    std::printf("test_ablation: the pinned answers reached %llu 404, %llu 405 and %llu answers with captures\n",
+                static_cast<unsigned long long>(not_found), static_cast<unsigned long long>(not_allowed),
+                static_cast<unsigned long long>(with_captures));
     std::printf("test_ablation: %s (%zu tables, %llu lookups compared, %d failing)\n", failures ? "FAILED" : "ok", tables,
                 static_cast<unsigned long long>(compared), failures);
     return failures ? 1 : 0;

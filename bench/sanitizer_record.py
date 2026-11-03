@@ -18,8 +18,9 @@ disagrees where semantics.json declares the arm's semantics, in the declared kin
 declared; the grid script
 exited 0; the adversarial tool, if the build has it, passed its unit test and its self-test over all 66
 queries of its 22 tables, and each of its 44 cells ended with status ok and its checks passed; the
-ablation copies' answers test, if the build has those arms, passed; and the standard error of all runs holds
-no sanitizer report. Reports are copied into the record.
+ablation copies' answers test, if the build has those arms, passed over all 112 tables and 2,293,760 lookups
+and reached a 404, a 405 and an answer with captures; and the standard error of all runs holds no sanitizer
+report. Reports are copied into the record.
 """
 
 from __future__ import annotations
@@ -84,6 +85,13 @@ def tool_presets(out: Path, has_tool: bool, compiler: str) -> list[dict]:
              "compiler": compiler}]
 
 
+# The ablation answers test (bench/tools/test_ablation.cpp) builds 7 shapes x 4 sizes x 2 seeds x 2 method
+# counts = 112 tables and compares 112 x 5 variants x 512 queries x 8 methods = 2,293,760 lookups. A record
+# whose test saw other numbers, fewer or more, is red.
+ABL_TABLES = 112
+ABL_LOOKUPS = 2293760
+
+
 def review_presets(out: Path, has_review: bool, compiler: str) -> list[dict]:
     """The review arms' answers test (sanitize_rbench.sh's out/ablation-test.txt and ablation-exit.txt): none
     for a build without the ablation arms; red when its output is missing or reports a failure."""
@@ -95,7 +103,8 @@ def review_presets(out: Path, has_review: bool, compiler: str) -> list[dict]:
     text = text_of("ablation-test.txt")
     exit_text = text_of("ablation-exit.txt")
     ok = "test_exit=0" in exit_text.split() and re.search(
-        r"^test_ablation: ok \(\d+ tables, \d+ lookups compared, 0 failing\)$", text, re.MULTILINE) is not None
+        rf"^test_ablation: ok \({ABL_TABLES} tables, {ABL_LOOKUPS} lookups compared, 0 failing\)$", text,
+        re.MULTILINE) is not None
     return [{"preset": "review/ablation-answers", "status": "green" if ok else "red",
              "detail": (text.strip().splitlines() or ["no output"])[-1], "compiler": compiler}]
 
