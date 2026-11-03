@@ -78,6 +78,14 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(t1, ["/lab/t1gen", *p2[2:]])
         self.assertIn("--warmup", t1)
 
+    def test_a_duration_reaches_t1gen_as_p2run_passes_it(self) -> None:
+        # p2run's _run_generator passes duration_s since the round-robin schedule; the override must take it.
+        r = self.runner(["/lab/t1gen"])
+        r._t1 = True
+        cmd = r._generator_cmd(1234, Path("cell"), Path("res.json"), 2.5)
+        self.assertEqual(cmd[0], "/lab/t1gen")
+        self.assertEqual(cmd[cmd.index("--duration") + 1], "2.5")
+
     def run_window(self, line) -> dict:
         if os.cpu_count() < 2:
             self.skipTest("needs two CPUs")

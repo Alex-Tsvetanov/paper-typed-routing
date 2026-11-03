@@ -60,15 +60,17 @@ class GenCheckRunner(p2run.Runner):
     """p2run's runner, with the windows of entry T1_ENTRY driven by t1gen."""
     t1gen: list[str] = []
 
-    def run_window(self, w):
-        row = super().run_window(w)  # a window that failed before its generator ran still names it
+    # The overrides take every argument of p2run's methods and pass it on, so a change of p2run's signatures
+    # (the round-robin schedule added slot, idle, duration_s and the warm-up's keywords) cannot break them.
+    def run_window(self, w, *args, **kwargs):
+        row = super().run_window(w, *args, **kwargs)  # a window that failed before its generator ran still names it
         row.setdefault("generator_tool", "t1gen" if w.entry == T1_ENTRY else "p2gen")
         return row
 
-    def _run_generator(self, w, row, port, cell):
-        self._t1 = w.entry == T1_ENTRY
+    def _run_generator(self, w, row, port, cell, **kwargs):
+        self._t1 = w is not None and w.entry == T1_ENTRY  # no window: a round-robin warm-up, run by p2gen
         row["generator_tool"] = "t1gen" if self._t1 else "p2gen"
-        parsed, code, reading = super()._run_generator(w, row, port, cell)
+        parsed, code, reading = super()._run_generator(w, row, port, cell, **kwargs)
         if self._t1 and parsed is not None:
             row["t1gen"] = parsed
             try:
@@ -80,8 +82,8 @@ class GenCheckRunner(p2run.Runner):
                 parsed = None
         return parsed, code, reading
 
-    def _generator_cmd(self, port, cell, result):
-        cmd = super()._generator_cmd(port, cell, result)
+    def _generator_cmd(self, port, cell, result, *args, **kwargs):
+        cmd = super()._generator_cmd(port, cell, result, *args, **kwargs)
         return [*self.t1gen, *cmd[len(self.plan.p2gen):]] if getattr(self, "_t1", False) else cmd
 
 
