@@ -93,7 +93,8 @@ def boundary_lines() -> list[dict]:
                 out.append(line("null", shape, m, p, 3.0 * f, null_arm=True, loop_null="", **harness))
                 out.append(line("null-no405", shape, m, p, 3.0 * f, null_arm=True, loop_null="", **harness))
                 out.append(line("capi-null", shape, m, p, 4.0 * f, null_arm=True, loop_null="", **harness))
-                out.append(line("rust-null", shape, m, p, 5.0 * f, null_arm=True, loop_null="", **harness))
+                rust_null = 30.0 if (shape, m) == ("static", 100) else 5.0  # matchit's net is then not positive
+                out.append(line("rust-null", shape, m, p, rust_null * f, null_arm=True, loop_null="", **harness))
                 out.append(line("regexmatcher-v2", shape, m, p, 13.0 * f, loop_null="null", **harness))
                 out.append(line("regexmatcher-v2-capi", shape, m, p, 22.0 * f, loop_null="null-no405", **harness))
                 out.append(line("regexmatcher-v2-goloop", shape, m, p, 60.0 * f, null_ns=2.0 * f, **go))
@@ -187,8 +188,19 @@ def check_boundary(tmp: Path) -> None:
     gl = {c["against"]: c for c in cell["goloop"]}
     expect(close(gl["gin"]["ratio"], 2.0) and close(gl["chi"]["ratio"], 0.4), "boundary: goloop / each Go arm")
     st = next(r for r in s["cells"] if (r["shape"], r["m"]) == ("static", 10))
-    expect(st["net_not_positive"] == ["path-tree"] and st["net"]["fastest"] == "matchit",
-           "boundary: an arm with a net time not positive is listed and left out")
+    expect(st["net_not_positive"] == ["path-tree"] and list(st["net_left_out"]) == ["path-tree"],
+           "boundary: an arm with a net time not positive is listed, per cell, as left out")
+    expect(st["net"]["status"] == "not compared" and st["net"]["pairs"] == 0 and "ratio" not in st["net"]
+           and "path-tree" in st["net"]["why"] and "lowest raw median" in st["net"]["why"],
+           "boundary: the arm left out has the lowest raw median (4 against 24): the net ratio is not computed")
+    sh = next(r for r in s["cells"] if (r["shape"], r["m"]) == ("static", 100))
+    expect(list(sh["net_left_out"]) == ["matchit"] and sh["net_not_positive"] == ["matchit"]
+           and sh["net"]["status"] == "compared" and sh["net"]["fastest"] == "path-tree",
+           "boundary: an arm left out that is not the lowest on raw times (25 against 24): the ratio is computed "
+           "against the fastest net of the others (path-tree, 15)")
+    expect(close(sh["net"]["ratio"], (13 - 3) / (45 - 30), 1e-6), "boundary: that ratio is 10 / 15")
+    nl = next(r for r in s["cells"] if (r["shape"], r["m"]) == ("wild", 10))
+    expect(nl["net_left_out"] == {}, "boundary: a cell where every arm is in the net comparison lists none")
     mo = next(r for r in s["cells"] if (r["shape"], r["m"]) == ("mixed-overlap", 100))
     gl = {c["against"]: c for c in mo["goloop"]}
     expect("gin" in mo["absent"] and gl["gin"]["status"] == "not compared" and "gin" in gl["gin"]["why"],
@@ -196,6 +208,10 @@ def check_boundary(tmp: Path) -> None:
     text = boundary.macros(s)
     v = macro_values(text)
     expect(text.count("\\newcommand") == len(v), "boundary: every macro is defined once")
+    expect(s["net_left_out_cells"] == 2 and v.get("BndNetLeftOutCells") == "2",
+           "boundary: one macro counts the cells where an arm was left out of the net comparison (static 10 and 100)")
+    expect(v.get("BndNetStaticTenRatio") is None and v.get("BndNetStaticHundredRatio") is not None,
+           "boundary: no net macro where the ratio is not computed")
     expect(v.get("BndNetParamLastTenRatio") == "0.5000" and v.get("BndNetParamLastTenFastest") == "\\texttt{matchit}",
            "boundary: net macros")
     expect(v.get("BndCapiVsMatchitParamLastTenRatio") == "0.8800" and v.get("BndGoloopVsGinParamLastTenRatio") == "2.0000",
@@ -226,7 +242,7 @@ def check_pairs(tmp: Path) -> None:
     expect(c["status"] == "not compared" and c["pairs"] == 0 and "ratio" not in c,
            "pairs: nine pairs each, two in common, are not compared")
     failing = s["cells"][0]["failing"]
-    expect("9 processes" in failing.get("regexmatcher-v2-copy", "") and "9 processes" in failing.get("regexmatcher-v2", ""),
+    expect(all("9 processes" in failing.get(a, "") for a in ("regexmatcher-v2-copy", "regexmatcher-v2")),
            "pairs: both arms are failing in that cell, with the reason")
     c = by_cell[100][("regexmatcher-v2-copy", "regexmatcher-v2")]
     expect(c["status"] == "compared" and c["pairs"] == 16 and close(c["ratio"], 1.0),
@@ -259,6 +275,16 @@ def check_pairs(tmp: Path) -> None:
            "pairs: boundary: a Rust arm on nine pairs is failing and not compared")
     expect(sym["actix-router"]["status"] == "compared" and sym["actix-router"]["pairs"] == 16,
            "pairs: boundary: the others are compared over sixteen")
+    # a null that is on nine pairs only is failing, and the C++ competitors that go through it are left out of
+    # the net comparison, the lowest raw median among them (uwebsockets) with them: no net ratio
+    nl = [r for r in boundary_lines() if not (r["arm"] == "null-no405" and r["shape"] == "wild" and r["m"] == 10
+                                              and (r["table_seed"], r["ring_seed"]) in design_pairs()[9:])]
+    b = boundary.summarize(load(write_run(tmp / "pairs-null", nl)), resamples=200, keys=[("wild", 10)])
+    cell = b["cells"][0]
+    why = cell["net_left_out"]
+    expect(sorted(why) == ["glaze", "uwebsockets"] and all("null" in w for w in why.values())
+           and cell["net"]["status"] == "not compared" and "uwebsockets" in cell["net"]["why"],
+           "net: C++ competitors whose null is not on all sixteen pairs are left out, no net ratio")
 
 
 def main() -> int:

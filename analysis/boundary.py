@@ -21,7 +21,9 @@ in every resample, as in H1. The statistics, fixed in the plan:
    httprouter, nethttp, chi) and regexmatcher-v2-goloop minus their own null pass in Go (null_ns, measured
    in the same process). Per cell, v2's net time over the fastest competitor's net time (the nine
    competitors above), with the raw times beside. A ratio needs a positive net time: an arm whose net
-   time is not positive in some pair is listed and left out of that cell's comparison.
+   time is not positive in some pair (or whose null is not usable in every pair) is listed, per cell, in
+   net_left_out and left out of that cell's net comparison; if that arm has the lowest raw median of the
+   competitors in the cell, the cell's net ratio is not computed (status "not compared", with the reason).
 3. v2 in a Go loop: per cell, regexmatcher-v2-goloop's time per lookup over each Go arm's, labelled as
    including the Go-to-C call (no Go arm makes one per lookup).
 
@@ -36,7 +38,8 @@ adjustment is made.
 Macros (letters only, prefixed Bnd; Cell for example StaticTen): \\BndCapiVs<Rust arm or Fastest><Cell>
 Ratio, Low, High; \\BndNet<Cell>Ratio, Low, High and \\BndNet<Cell>Fastest (the arm), with \\BndRaw<Cell>
 Ratio, Low, High beside (v2 against the same competitors on raw times); \\BndGoloopVs<Go arm><Cell>Ratio,
-Low, High; per arm \\Bnd<Arm><Cell>Ns and, for the arms with a null, ...NetNs.
+Low, High; per arm \\Bnd<Arm><Cell>Ns and, for the arms with a null, ...NetNs; \\BndNetLeftOutCells, the
+number of cells where any arm was left out of the net comparison.
 """
 
 from __future__ import annotations
@@ -51,7 +54,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from cells import H1_SHAPES, load, pair  # noqa: E402
-from macros_util import Macros, cell_word, nanoseconds, ratio, tt  # noqa: E402
+from macros_util import Macros, cell_word, count, nanoseconds, ratio, tt  # noqa: E402
 from review_common import ARM_WORD, RESAMPLES, SEED, median_of, not_compared, ratio_ci, sort_arms, values  # noqa: E402
 
 SIZES = (10, 100)
@@ -135,14 +138,31 @@ def summarize(cells: dict, resamples: int = RESAMPLES, seed: int = SEED, keys: l
         # 2. Net of each arm's own null: v2 against the fastest competitor.
         positive = {a: n for a, n in nets.items() if all(v > 0 for v in n.values())}
         row["net_not_positive"] = sorted(a for a in nets if a not in positive)
+        # Every arm of the comparison that takes part in the cell and is left out of it, with why.
+        left_out = {a: ("its net time is not positive in some pair" if a in nets else
+                        "its null is not usable in every pair") for a in (V2,) + COMPETITORS
+                    if a in ok and a not in positive}
+        row["net_left_out"] = left_out
         comp = {a: positive[a] for a in COMPETITORS if a in positive}
-        if V2 in positive and comp:
+        # An arm left out that has the lowest raw median of the competitors would have been the fastest one,
+        # or cannot be ranked: the ratio against the fastest of the others would not be the plan's.
+        medians = {a: row["arms"][a]["ns"] for a in COMPETITORS if a in ok}
+        ranked = {a: v for a, v in medians.items() if v is not None}
+        lowest = min(ranked, key=ranked.get) if ranked else None
+        unranked_out = sorted(a for a in medians if medians[a] is None and a in left_out)
+        if V2 not in positive:
+            row["net"] = not_compared("v2's net time is missing or not positive")
+        elif not comp:
+            row["net"] = not_compared("no competitor's net time")
+        elif lowest in left_out or unranked_out:
+            who = lowest if lowest in left_out else unranked_out[0]
+            row["net"] = not_compared(f"{who} is left out of the net comparison ({left_out[who]}) and "
+                                      + ("has the lowest raw median of the competitors" if who == lowest
+                                         else "has no raw median to rank it by"))
+        else:
             row["net"] = ratio_ci(positive[V2], comp, rng, resamples)
             # Beside it, the same comparison on the raw times (the same competitors).
             row["net"]["raw"] = ratio_ci(raw[V2], {a: raw[a] for a in comp}, rng, resamples)
-        else:
-            row["net"] = not_compared("v2's net time is missing or not positive" if V2 not in positive
-                                      else "no competitor's net time")
         # 3. v2 in a Go loop against each Go arm, raw times (including the Go-to-C call).
         for target in GO:
             c = {"against": target}
@@ -153,7 +173,8 @@ def summarize(cells: dict, resamples: int = RESAMPLES, seed: int = SEED, keys: l
                     f"{a}: {arms.absent.get(a) or arms.failing.get(a)}" for a in (GOLOOP, target) if a not in raw)))
             row["goloop"].append(c)
         rows.append(row)
-    return {"cells": rows, "resamples": resamples, "seed": seed}
+    return {"cells": rows, "net_left_out_cells": sum(1 for r in rows if r["net_left_out"]),
+            "resamples": resamples, "seed": seed}
 
 
 def macros(s: dict) -> str:
@@ -183,6 +204,7 @@ def macros(s: dict) -> str:
                 mc.add(f"Bnd{ARM_WORD[a]}{cw}Ns", nanoseconds(v["ns"]))
             if v.get("net_ns") is not None:
                 mc.add(f"Bnd{ARM_WORD[a]}{cw}NetNs", nanoseconds(v["net_ns"]))
+    mc.add("BndNetLeftOutCells", count(s["net_left_out_cells"]))
     return HEAD + mc.text()
 
 
@@ -199,8 +221,8 @@ def report(s: dict) -> None:
         print(f"{head}  v2 net / fastest net  {line(r['net'])}")
         for c in r["goloop"]:
             print(f"{head}  goloop / {c['against']:<10} {line(c)} (with the Go-to-C call)")
-        if r["net_not_positive"]:
-            print(f"{head}  net time not positive: {', '.join(r['net_not_positive'])}")
+        for a, why in r["net_left_out"].items():
+            print(f"{head}  left out of the net comparison: {a} ({why})")
         for u in r["unusable"]:
             print(f"{head}  not usable: {u}")
 

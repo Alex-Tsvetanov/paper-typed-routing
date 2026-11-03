@@ -52,7 +52,8 @@ and `null` at these cells are the ablation grid's processes.
   the Rust arms minus `rust-null`, and the Go arms and `regexmatcher-v2-goloop` minus their own null pass in Go. Per
   cell, the ratio of v2's net time to the fastest competitor's net time, with its interval as above. Raw times are
   reported beside. A ratio needs a positive net time: an arm whose net time is not positive in some pair is listed and
-  left out of that cell's net comparison.
+  left out of that cell's net comparison; if that arm has the lowest raw median of the competitors in the cell, the
+  cell's net ratio is not computed.
 - **v2 in a Go loop:** per cell, the ratio of `regexmatcher-v2-goloop`'s time to each Go arm's, labelled as including
   the Go-to-C call.
 - An arm takes part in a cell only if every one of its processes there is usable (`analysis/cells.py`); otherwise it
