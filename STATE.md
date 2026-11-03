@@ -17,8 +17,7 @@ Plus the H7 MSVC compile costs on the laptop's Windows. Round 2 is the prior stu
   builds `D:\Dev\worktrees\p2r3-build\`, container trees in the docker volume `p2r3-home`.
 
 ## Rules
-
-No timing on the desktop; no laptop access; nothing pushed; drafts only; no em or en dashes.
+No timing on the desktop; no laptop access (the coordinator's); round3 pushed under Alex's standing yes; no dashes.
 
 ## Documents
 
