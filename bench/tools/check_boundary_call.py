@@ -5,7 +5,8 @@ optimisation that could have inlined it.
 
     check_boundary_call.py RBENCH BUILD_DIR
 
-For each arm (regexmatcher-v2-capi and its C function rb_v2capi_at; capi-null and rb_capi_null_at):
+For each arm the build has, that is, names in the RB_ARMS entry of BUILD_DIR/CMakeCache.txt
+(regexmatcher-v2-capi and its C function rb_v2capi_at; capi-null and rb_capi_null_at):
 1. the C function is defined in RBENCH (nm: a text symbol with a size);
 2. the timed epochs, nanobench's Bench::run over ArmRunner<the arm's adapter>::measure's first lambda
    without parameters (core/runner.hpp: one_pass, whose loop is harness_pass), or harness_pass itself if the
@@ -14,7 +15,9 @@ For each arm (regexmatcher-v2-capi and its C function rb_v2capi_at; capi-null an
    them out of line), at most four calls deep;
 3. no compile command of BUILD_DIR/compile_commands.json has -flto, and BUILD_DIR/CMakeCache.txt does not
    turn on CMAKE_INTERPROCEDURAL_OPTIMIZATION.
-Prints one line per check and exits 1 if any fails. An arm the binary does not have is skipped (and named).
+Prints one line per check and exits 1 if any fails. An arm the build does not have is skipped (and named); an
+arm it has whose C function is not in RBENCH fails. The check also fails if no arm was checked, if the build
+has no compile command, or if an input cannot be read: nothing checked is not a pass.
 """
 
 from __future__ import annotations
@@ -68,6 +71,12 @@ def defined(binary: Path) -> dict[str, int]:
     return sizes
 
 
+def built_arms(cache: str) -> list[str] | None:
+    """The arms the build was configured with (CMakeCache.txt's RB_ARMS), or None if it names none."""
+    m = re.search(r"^RB_ARMS:[A-Z]+=(.*)$", cache, re.M)
+    return [a for a in m.group(1).strip().split(";") if a] if m else None
+
+
 def reaches(graph: dict[str, set[str]], start: str, target: str, depth: int = 4) -> list[str] | None:
     """A chain of direct calls from start to target, at most `depth` calls long."""
     frontier = [[start]]
@@ -103,18 +112,30 @@ def main(argv: list[str]) -> int:
         failures += 0 if ok else 1
         print(f"{'ok' if ok else 'FAIL'}: {what}")
 
-    commands = json.loads((build / "compile_commands.json").read_text(encoding="utf-8"))
+    try:
+        commands = json.loads((build / "compile_commands.json").read_text(encoding="utf-8"))
+        cache = (build / "CMakeCache.txt").read_text(encoding="utf-8", errors="replace")
+        sizes = defined(binary)
+        graph = call_graph(binary)
+    except (OSError, ValueError, subprocess.CalledProcessError) as e:
+        print(f"FAIL: cannot read the build or the binary: {e}")
+        return 1
+    check(len(commands) > 0, f"the build has compile commands ({len(commands)})")
     lto = [c["file"] for c in commands if "-flto" in c.get("command", " ".join(c.get("arguments", [])))]
     check(not lto, f"no compile command has -flto ({len(commands)} commands; {', '.join(lto[:3])})")
-    cache = (build / "CMakeCache.txt").read_text(encoding="utf-8", errors="replace")
     ipo = re.search(r"^CMAKE_INTERPROCEDURAL_OPTIMIZATION[^=]*=(ON|TRUE|1|YES)\s*$", cache, re.M | re.I)
     check(ipo is None, "CMAKE_INTERPROCEDURAL_OPTIMIZATION is not on")
 
-    sizes = defined(binary)
-    graph = call_graph(binary)
+    arms = built_arms(cache)
+    check(arms is not None, "CMakeCache.txt names the build's arms (RB_ARMS)")
+    checked = 0
     for arm, cls, fn in ARMS:
+        if arm not in (arms or []):
+            check(fn not in sizes, f"{arm} is not among the build's arms, so {binary.name} must not define {fn}")
+            continue
+        checked += 1
+        check(fn in sizes, f"{arm}: {fn} is defined in {binary.name}")
         if fn not in sizes:
-            print(f"skip: {arm} is not in {binary.name} (no {fn})")
             continue
         check(sizes[fn] > 0, f"{arm}: {fn} is a function of {sizes[fn]} bytes")
         # The timed epochs: nanobench's Bench::run over measure's first lambda without parameters, whose
@@ -126,6 +147,7 @@ def main(argv: list[str]) -> int:
         check(chain is not None, f"{arm}: the timed loop calls {fn}"
               + (f" ({' -> '.join(short(n) for n in chain)})" if chain else
                  f" (loop functions found: {len(loops)})"))
+    check(checked > 0, f"at least one boundary arm was checked ({checked})")
     print(f"check_boundary_call: {'ok' if failures == 0 else f'{failures} failing'}")
     return 1 if failures else 0
 
