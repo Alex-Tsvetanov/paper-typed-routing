@@ -1,4 +1,5 @@
 // The adversarial tool's tables, queries, expected answers and checks (tools/adversarial.hpp).
+#include <set>
 #include <string>
 #include <vector>
 
@@ -148,6 +149,29 @@ Answer expected(const Table& t, Query q) {
     return a;
 }
 
+std::uint32_t expected_walks(const Table& t, Query q) {
+    if (expected(t, q).status == 0) {
+        return 1;
+    }
+    return static_cast<std::uint32_t>(std::set<unsigned>(t.methods.begin(), t.methods.end()).size());
+}
+
+const char* first_difference(const Image& a, const Image& b) {
+    if (a.nodes != b.nodes) {
+        return "nodes";
+    }
+    if (a.edges != b.edges) {
+        return "edges";
+    }
+    if (a.literals != b.literals) {
+        return "literals";
+    }
+    if (a.arena != b.arena) {
+        return "arena";
+    }
+    return a == b ? nullptr : "roots or method masks";
+}
+
 std::string answer_text(const Answer& a) {
     if (a.status == 0) {
         return std::to_string(a.route);
@@ -155,12 +179,17 @@ std::string answer_text(const Answer& a) {
     return a.status == 1 ? "405" : "404";
 }
 
-Check check(const Answer& want, const Answer& pinned, const Answer& counted, const Counts& c) {
+Check check(const Answer& want, const Answer& pinned, const Answer& copy, const Counts& c, std::uint32_t walks) {
     Check k;
     k.expected_answer = pinned == want;
-    k.same_answer = counted == pinned;
+    k.same_answer = copy == pinned;
     k.bound_entries = c.each_walk_within && c.entries <= c.walked_nodes;
     k.bound_resumptions = c.max_resumptions <= kMaxResumptions;
+    // The bounds above are "at most": zero satisfies them, so a count that saw nothing must fail here.
+    k.counted = c.entries >= 1;
+    k.pops_resume = c.resumptions == c.popped && c.popped <= c.pushed;
+    k.entered_once = c.max_entries <= 1;
+    k.walks_as_expected = walks >= 1 && c.walks == walks;
     return k;
 }
 
@@ -171,9 +200,15 @@ int self_test(std::FILE* out) {
         const Table t = make_table(s);
         const Pinned pinned(t);
         Counting counting(t);
-        if (!pinned.ok() || !counting.ok() || pinned.nodes() != counting.nodes()) {
-            std::fprintf(out, "%s: FAIL: the tables do not build alike (pinned %zu nodes, copy %zu)\n",
-                         table_id(s).c_str(), pinned.nodes(), counting.nodes());
+        if (!pinned.ok() || !counting.ok()) {
+            std::fprintf(out, "%s: FAIL: a table does not build (pinned %s, copy %s)\n", table_id(s).c_str(),
+                         pinned.ok() ? "ok" : "failed", counting.ok() ? "ok" : "failed");
+            ++failures;
+            continue;
+        }
+        if (const char* part = first_difference(pinned.image(), counting.image())) {
+            std::fprintf(out, "%s: FAIL: the tables do not build alike, byte for byte (%s differ; pinned %zu nodes, "
+                              "copy %zu)\n", table_id(s).c_str(), part, pinned.nodes(), counting.nodes());
             ++failures;
             continue;
         }
@@ -182,17 +217,18 @@ int self_test(std::FILE* out) {
             Counts c;
             const Answer a = pinned.find(r);
             const Answer b = counting.find(r, c);
-            const Check k = check(expected(t, q), a, b, c);
+            const std::uint32_t walks = expected_walks(t, q);
+            const Check k = check(expected(t, q), a, b, c, walks);
             ++queries;
             failures += !k.ok();
             std::fprintf(out,
-                         "%s %s: answer %s (expected %s, copy %s); entries %llu of %llu nodes walked in %u walks; "
-                         "max resumptions %u of %u; backtracks %llu; deepest stack %u: %s\n",
+                         "%s %s: answer %s (expected %s, copy %s); entries %llu of %llu nodes walked in %u walks "
+                         "(expected %u); max resumptions %u of %u; backtracks %llu; deepest stack %u: %s\n",
                          table_id(s).c_str(), query_name(q).c_str(), answer_text(a).c_str(),
                          k.expected_answer ? "yes" : "NO", k.same_answer ? "same" : "DIFFERS",
                          static_cast<unsigned long long>(c.entries), static_cast<unsigned long long>(c.walked_nodes),
-                         c.walks, c.max_resumptions, kMaxResumptions, static_cast<unsigned long long>(c.popped),
-                         c.deepest, k.ok() ? "ok" : "FAIL");
+                         c.walks, walks, c.max_resumptions, kMaxResumptions,
+                         static_cast<unsigned long long>(c.popped), c.deepest, k.ok() ? "ok" : "FAIL");
         }
     }
     std::fprintf(out, "self-test: %d queries on %zu tables, %d failing\n", queries, table_specs().size(), failures);

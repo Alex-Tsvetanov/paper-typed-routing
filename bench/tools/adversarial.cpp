@@ -6,8 +6,9 @@
 //   adversarial self-test
 //
 // list prints the 44 cells (id, family, depth, catch-all, query), one per line. cell prints one
-// JSON object: the cell, the counts of its query from the counting copy (tools/route_count.hpp),
-// the checks of tools/adversarial.hpp, and the measurement of rbench's core (core/runner.hpp,
+// JSON object: the cell, quick (whether --quick was given) and epochs (the epochs run), the counts of
+// its query from the counting copy (tools/route_count.hpp), the checks of tools/adversarial.hpp (each a
+// boolean, and checks_ok for all of them), and the measurement of rbench's core (core/runner.hpp,
 // ArmRunner::measure, unchanged) of v2 at the pinned commit, unmodified, through the regexmatcher-v2
 // arm's adapter (arms/rm_arm.hpp, arms/rm_v2.hpp) over a ring of N copies of the query (default
 // rbench's 4096). The adapter takes the table from the cell (CellSource), not from rbench's route
@@ -176,21 +177,27 @@ int cmd_cell(const Args& a) {
     } catch (const std::exception& e) {
         rb::Json j;
         j.str("arm", AdversarialArm::info().name).str("status", "error").str("reason", e.what());
+        j.num("ring_size", ring.spec.size);
         measured = j.done();
     }
 
-    // After the measurement: the pinned code's answer, the counting copy's answer and counts.
+    // After the measurement: the pinned code's answer, the counting copy's answer and counts. A table
+    // that does not build in either code counts nothing, and the checks fail on it.
     const adv::Pinned pinned(t);
     adv::Counting counting(t);
     adv::Counts c;
     const adv::Answer pa = pinned.find(req);
     const adv::Answer ca = counting.find(req, c);
-    const adv::Check k = adv::check(want, pa, ca, c);
+    const std::uint32_t walks_expected = adv::expected_walks(t, cell->query);
+    const adv::Check k = adv::check(want, pa, ca, c, walks_expected);
 
     rb::Json j;
     j.str("tool", "adversarial").str("code_commit", ADV_CODE_COMMIT).str("regexmatcher_commit", RB_REGEXMATCHER_COMMIT);
     j.str("compiler", __VERSION__).str("build_type", RB_BUILD_TYPE).str("sanitizer", RB_SANITIZER);
     j.str("march", RB_ISA_MARCH).str("target_cpu", RB_ISA_TARGET_CPU);
+    // The options of the measurement, for the analysis to refuse a run that is not the frozen one
+    // (the ring size is the measurement's own, ring_size, and is added to an error line below).
+    j.boolean("quick", a.count("quick") != 0).num("epochs", o.epochs);
     j.str("cell", cell->id).str("family", adv::family_name(cell->table.family)).num("depth", cell->table.depth);
     j.boolean("catch_all", cell->table.catch_all).str("query", adv::query_name(cell->query));
     j.str("method", std::string(rb::method_name(static_cast<rb::Method>(req.method)))).str("path", req.path);
@@ -200,12 +207,14 @@ int cmd_cell(const Args& a) {
     j.num("routes", t.patterns.size()).num("table_nodes", counting.nodes());
     j.num("trie_nodes_get", counting.trie_nodes(adv::kGet)).num("trie_nodes_put", counting.trie_nodes(adv::kPut));
     j.str("answer", adv::answer_text(pa)).str("expected", adv::answer_text(want));
-    j.num("walks", c.walks).num("walked_nodes", c.walked_nodes).num("entries", c.entries);
-    j.num("resumptions", c.resumptions).num("pushed", c.pushed).num("popped", c.popped);
+    j.num("walks", c.walks).num("walks_expected", walks_expected).num("walked_nodes", c.walked_nodes);
+    j.num("entries", c.entries).num("resumptions", c.resumptions).num("pushed", c.pushed).num("popped", c.popped);
     j.num("deepest_stack", c.deepest).num("max_entries_per_node", c.max_entries);
     j.num("max_resumptions_per_node", c.max_resumptions);
     j.boolean("expected_answer", k.expected_answer).boolean("same_answer", k.same_answer);
     j.boolean("bound_entries", k.bound_entries).boolean("bound_resumptions", k.bound_resumptions);
+    j.boolean("counted", k.counted).boolean("pops_resume", k.pops_resume);
+    j.boolean("entered_once", k.entered_once).boolean("walks_as_expected", k.walks_as_expected);
     j.boolean("checks_ok", k.ok());
     const std::string head = j.done();
     std::printf("%s,%s\n", head.substr(0, head.size() - 1).c_str(), measured.substr(1).c_str());

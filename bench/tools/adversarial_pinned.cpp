@@ -36,7 +36,12 @@ bool Pinned::ok() const { return impl_->table.error == rb::rm::V2::kBuildOk; }
 
 std::size_t Pinned::nodes() const { return ok() ? impl_->table.view().nodes.size() : 0; }
 
+Image Pinned::image() const { return image_of(impl_->table.view()); }
+
 Answer Pinned::find(const Request& r) const {
+    if (!ok()) {
+        return {};
+    }
     const matcher::route::Match m = rb::rm::V2::find(impl_->table.view(), r.method, r.path);
     Answer a{static_cast<int>(m.status), m.route, m.allowed, {}};
     for (const matcher::route::Capture& c : m.values()) {

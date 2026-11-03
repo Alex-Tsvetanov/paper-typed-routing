@@ -36,8 +36,8 @@ std::uint64_t reachable(const R::TableView& v, std::uint32_t root) {
     return n;
 }
 
-// The counts of one lookup, kept per node as well (entries and resumptions), and walk by walk
-// against the nodes of the trie walked.
+// The counts of one lookup, kept per node and per walk (entries and resumptions of a node are
+// those of the walk in progress), and walk by walk against the nodes of the trie walked.
 class Tally final : public R::Counter {
 public:
     Tally(std::size_t nodes, const std::array<std::uint64_t, R::kMethodSlots>& trie,
@@ -45,8 +45,7 @@ public:
         : entered_(nodes), resumed_(nodes), trie_(trie), roots_(roots) {}
 
     void reset() {
-        std::fill(entered_.begin(), entered_.end(), 0u);
-        std::fill(resumed_.begin(), resumed_.end(), 0u);
+        clear_nodes();
         c_ = {};
         walk_nodes_ = 0;
         walk_entries_ = 0;
@@ -59,6 +58,7 @@ public:
 
     void walk(std::uint32_t root) noexcept override {
         close();
+        clear_nodes();
         walk_nodes_ = 0;
         for (std::size_t m = 0; m < roots_.size(); ++m) {
             walk_nodes_ = roots_[m] == root ? trie_[m] : walk_nodes_;
@@ -69,6 +69,7 @@ public:
     }
 
     void visit(std::uint32_t node, std::uint8_t stage) noexcept override {
+        touched_.push_back(node);
         if (stage == 0) {
             ++c_.entries;
             ++walk_entries_;
@@ -92,8 +93,19 @@ private:
         walk_entries_ = 0;
     }
 
+    // The per-node counts start again at zero with each walk, so that a node entered once in each of
+    // two walks is not read as entered twice.
+    void clear_nodes() {
+        for (const std::uint32_t n : touched_) {
+            entered_[n] = 0;
+            resumed_[n] = 0;
+        }
+        touched_.clear();
+    }
+
     std::vector<std::uint32_t> entered_;
     std::vector<std::uint32_t> resumed_;
+    std::vector<std::uint32_t> touched_;
     std::array<std::uint64_t, R::kMethodSlots> trie_;
     std::array<std::uint32_t, R::kMethodSlots> roots_;
     Counts c_;
@@ -132,11 +144,17 @@ bool Counting::ok() const { return impl_->table.error == R::BuildError::None; }
 
 std::size_t Counting::nodes() const { return ok() ? impl_->table.nodes.size() : 0; }
 
+Image Counting::image() const { return image_of(impl_->table.view()); }
+
 std::uint64_t Counting::trie_nodes(unsigned method) const {
     return method < R::kMethodSlots ? impl_->trie[method] : 0;
 }
 
 Answer Counting::find(const Request& r, Counts& c) {
+    c = {};
+    if (!ok() || !impl_->tally) {
+        return {};
+    }
     impl_->tally->reset();
     R::counter = impl_->tally.get();
     const R::Match m = R::find(impl_->table.view(), r.method, r.path);
