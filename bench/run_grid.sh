@@ -39,7 +39,9 @@
 # NO_DECOY=1 (mixed-overlap without decoys, exploratory), RING_LAYOUT=queries (the timed loops
 # read the queries instead of the compact copy, for the disclosure of that choice), PIN
 # (pin.sh; default the Papers repo's lab/bin/pin.sh), ALLOW_UNPINNED=1, VERIFY=0 (skip the
-# check on every query of the processes the agreement budget cut; see the end), VERIFY_JOBS.
+# check on every query of the processes the agreement budget cut; see the end), VERIFY_JOBS,
+# PLAN_ONLY=1 (write env.txt, toolchain.txt and plan.txt, then stop: nothing is run; for a job to
+# check its plan before any timing).
 set -euo pipefail
 
 bin=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
@@ -143,6 +145,10 @@ if seed:
 for a, s, m, k in cells:
     print(a, s, m, k, pairs[k][0], pairs[k][1])
 EOF
+if [ "${PLAN_ONLY:-0}" = 1 ]; then
+    echo "run_grid: PLAN_ONLY, $(wc -l <"$out/plan.txt") processes planned in $out/plan.txt; nothing run"
+    exit 0
+fi
 
 status=0
 : >"$out/stderr.log"
