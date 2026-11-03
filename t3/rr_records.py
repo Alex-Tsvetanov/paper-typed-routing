@@ -3,12 +3,15 @@
 
     python t3/rr_records.py --analysis design/round3/floor-W.json --analysis design/round3/floor-L.json \\
         --analysis design/round3/rr-W.json --jobs DIR [DIR ...] --out results/round3/records.json [--plans DIR]
+    python t3/rr_records.py --plan-set rr2 --analysis results/rerun/floor-W.json \\
+        --analysis results/rerun/floor-L.json --jobs DIR [DIR ...] --out results/rerun/records.json
 
 Each --analysis file is one of t3/rr_results.py's outputs wrapped with its inputs (floor-W.json, floor-L.json,
 rr-W.json): its "inputs" name each record by job and file, with the file's sha256. Each --jobs DIR is one job's
 unpacked archive, the folder named by the job (the archive's top folder); it holds those files and the lab's
 record.json. A missing file, a sha256 that differs, a record rr_results.py refuses or an analysis file without the
-parts read here ends the run (exit 2) and writes nothing. --plans is rr_results.py's committed plans folder.
+parts read here ends the run (exit 2) and writes nothing. --plans is rr_results.py's committed plans folder and
+--plan-set its set of plans: rr, round 3's (the default), or rr2, the floor rerun's (design/review-runs/floor-rerun.md).
 
 Per record (one per input; a record listed twice is refused) it writes:
 - windows: the planned windows, the window lines by verdict (reruns included) and the rounds that ran again;
@@ -127,7 +130,8 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def one_record(item: dict, analysis: dict, name: str, jobs: dict[str, Path], plans: Path) -> dict:
+def one_record(item: dict, analysis: dict, name: str, jobs: dict[str, Path], plans: Path,
+               plan_names: dict = R.NAMES) -> dict:
     job_dir = jobs.get(item["job"])
     if job_dir is None:
         raise RecordsError(f"{name}: no --jobs folder named {item['job']}")
@@ -135,7 +139,7 @@ def one_record(item: dict, analysis: dict, name: str, jobs: dict[str, Path], pla
     if not path.is_file() or sha256(path) != item["sha256"]:
         raise RecordsError(f"{name}: {item['job']}/{item['file']} is missing or its sha256 is not {item['sha256']}")
     try:
-        system, kind, rows = R.load_record(path, plans)
+        system, kind, rows = R.load_record(path, plans, plan_names)
         out = {"analysis": name, "job": item["job"], "file": item["file"], "sha256": item["sha256"], "system": system,
                "kind": kind, "windows": window_facts(rows), "job_record": job_facts(job_dir / "record.json"),
                "start": start_check(rows, campaign_medians(analysis, system))}
@@ -148,7 +152,8 @@ def one_record(item: dict, analysis: dict, name: str, jobs: dict[str, Path], pla
     return out
 
 
-def build(analysis_paths: list[Path], job_dirs: list[Path], plans: Path = R.PLANS) -> dict:
+def build(analysis_paths: list[Path], job_dirs: list[Path], plans: Path = R.PLANS, plan_set: str = "rr") -> dict:
+    plan_names = R.names(plan_set)
     jobs = {d.name: d for d in job_dirs}
     records, seen = [], set()
     for path in analysis_paths:
@@ -157,7 +162,7 @@ def build(analysis_paths: list[Path], job_dirs: list[Path], plans: Path = R.PLAN
             if (item["job"], item["file"]) in seen:
                 raise RecordsError(f"{item['job']}/{item['file']} is listed twice")
             seen.add((item["job"], item["file"]))
-            records.append(one_record(item, wrapped["analysis"], path.name, jobs, plans))
+            records.append(one_record(item, wrapped["analysis"], path.name, jobs, plans, plan_names))
     return {"rule": "t3/rr_records.py's docstring", "start_s": START_S, "records": records}
 
 
@@ -167,9 +172,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--jobs", type=Path, nargs="+", required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--plans", type=Path, default=R.PLANS)
+    ap.add_argument("--plan-set", choices=sorted(R.PLAN_SETS), default="rr",
+                    help="rr: round 3's plans (default); rr2: the floor rerun's")
     a = ap.parse_args(argv)
     try:
-        result = build(a.analysis, a.jobs, a.plans)
+        result = build(a.analysis, a.jobs, a.plans, a.plan_set)
     except (RecordsError, KeyError, OSError, ValueError) as e:
         print(f"rr_records: refused: {e}", file=sys.stderr)
         return 2

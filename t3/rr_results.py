@@ -2,14 +2,15 @@
 """Round 3's results in the new loop (decision 21 (a), Alex 2026-10-28): the median and standard deviation of
 each contestant. Fixed and committed with the plans, before the campaign runs; standard library only.
 
-    rr_results.py RECORD.jsonl [RECORD.jsonl ...] --out RESULT.json [--md RESULT.md]
+    rr_results.py RECORD.jsonl [RECORD.jsonl ...] --out RESULT.json [--md RESULT.md] [--plan-set rr|rr2]
 
 Inputs: t3/jobs/rr.py's records (aa.jsonl, the A/A run; rr.jsonl, the campaign) and t3/jobs/aa.py's (an A/A
 run, or the k-server A/A run), of one or both systems, at most one of each kind per system. A record is refused
 (exit 2) unless its session line is first and its end line last with exit 0, it was timed, it ran the committed
 plan of its system and kind (t3/plans/rr-aa-L.json, rr-aak-L.json, rr-L.json, rr-aa-W.json, rr-aak-W.json,
 rr-W.json, compared without notes), and it holds every planned window once and every rerun window its rerun
-lines announce.
+lines announce. --plan-set rr2 reads the floor rerun's plans in their place (rr2-aa-L.json and so on: round 3's
+plans with the pair (127, 227); design/review-runs/floor-rerun.md); the rule below is the same for both sets.
 
 Which windows count, per cell and contestant (a contestant is a program and an entry of its arm list):
   - A round that ran again counts as its rerun: the original round's windows are dropped for every
@@ -66,8 +67,18 @@ import sys
 from pathlib import Path
 
 PLANS = Path(__file__).resolve().parent / "plans"
-NAMES = {("linux", "aa"): "rr-aa-L.json", ("linux", "aak"): "rr-aak-L.json", ("linux", "rr"): "rr-L.json",
-         ("windows", "aa"): "rr-aa-W.json", ("windows", "aak"): "rr-aak-W.json", ("windows", "rr"): "rr-W.json"}
+PLAN_SETS = {"rr": "Round 3 in the new loop", "rr2": "Round 3's floor rule on a fresh run"}  # plan set: title
+
+
+def names(plan_set: str = "rr") -> dict:
+    """(system, kind) -> the committed plan's file name in a plan set: rr is round 3's, rr2 the floor rerun's."""
+    if plan_set not in PLAN_SETS:
+        raise ValueError(f"plan set {plan_set!r} is not one of {', '.join(PLAN_SETS)}")
+    return {(system, kind): f"{plan_set}{'' if kind == 'rr' else '-' + kind}-{letter}.json"
+            for system, letter in (("linux", "L"), ("windows", "W")) for kind in ("aa", "aak", "rr")}
+
+
+NAMES = names("rr")
 KINDS = {"rr": "campaign", "aa": "A/A run", "aak": "k-server A/A run"}
 NULL, V2 = "null", "v2"
 
@@ -95,8 +106,8 @@ def kind_of(plan: dict) -> str:
     return "rr"
 
 
-def load_record(path: Path, plans: Path = PLANS) -> tuple[str, str, list[dict]]:
-    """(system, kind, rows) of one complete timed record of a committed round-robin plan."""
+def load_record(path: Path, plans: Path = PLANS, plan_names: dict = NAMES) -> tuple[str, str, list[dict]]:
+    """(system, kind, rows) of one complete timed record of a committed round-robin plan of the set plan_names."""
     try:
         rows = [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
     except (OSError, ValueError) as e:
@@ -111,9 +122,9 @@ def load_record(path: Path, plans: Path = PLANS) -> tuple[str, str, list[dict]]:
     if session.get("mode") != "timed" or system not in ("linux", "windows"):
         raise RecordError(f"{path}: a timed run on linux or windows wanted, got {system!r} {session.get('mode')!r}")
     kind = kind_of(plan)
-    committed = json.loads((plans / NAMES[(system, kind)]).read_text(encoding="utf-8"))
+    committed = json.loads((plans / plan_names[(system, kind)]).read_text(encoding="utf-8"))
     if plan != public(committed):
-        raise RecordError(f"{path}: its plan is not the committed {NAMES[(system, kind)]}")
+        raise RecordError(f"{path}: its plan is not the committed {plan_names[(system, kind)]}")
     windows = [r for r in rows if r.get("type") == "window"]
     planned = sorted(w["seq"] for w in windows if not w.get("rerun"))
     reruns = sorted(w["seq"] for w in windows if w.get("rerun"))
@@ -285,8 +296,8 @@ def _f(v, digits: int) -> str:
     return "" if v is None else f"{v:,.{digits}f}"
 
 
-def markdown(result: dict) -> str:
-    out = ["# Round 3 in the new loop: median and standard deviation per contestant", ""]
+def markdown(result: dict, plan_set: str = "rr") -> str:
+    out = [f"# {PLAN_SETS[plan_set]}: median and standard deviation per contestant", ""]
     for system, kinds in sorted(result["systems"].items()):
         for kind in ("rr", "aa", "aak"):
             for cell, c in (kinds.get(kind) or {}).get("cells", {}).items():
@@ -348,11 +359,13 @@ def main(argv: list[str] | None = None, plans: Path = PLANS) -> int:
     ap.add_argument("records", nargs="+", type=Path)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--md", type=Path)
+    ap.add_argument("--plan-set", choices=sorted(PLAN_SETS), default="rr",
+                    help="rr: round 3's plans (default); rr2: the floor rerun's")
     a = ap.parse_args(argv)
     systems: dict = {}
     try:
         for path in a.records:
-            system, kind, rows = load_record(path, plans)
+            system, kind, rows = load_record(path, plans, names(a.plan_set))
             if kind in systems.get(system, {}):
                 raise RecordError(f"{path}: a second {kind} record of {system}")
             systems.setdefault(system, {})[kind] = analyse(rows, kind)
@@ -365,7 +378,7 @@ def main(argv: list[str] | None = None, plans: Path = PLANS) -> int:
     result = _clean({"rule": "t3/rr_results.py's docstring (decision 21 (a))", "systems": systems})
     a.out.write_text(json.dumps(result, indent=1) + "\n", encoding="utf-8", newline="\n")
     if a.md:
-        a.md.write_text(markdown(result), encoding="utf-8", newline="\n")
+        a.md.write_text(markdown(result, a.plan_set), encoding="utf-8", newline="\n")
     return 0
 
 

@@ -8,13 +8,18 @@ e2e_requests prints.
 
     make_requests.py --bin BUILD/e2e_requests --out DIR [--shapes static] [--sizes 10,100] [--pairs 16]
                      [--all-pairs 1]
+    make_requests.py --bin BUILD/e2e_requests --out DIR --pair-list 127:227[,128:228 ...] [--shapes ...]
+                     [--sizes ...] [--all-pairs 1]
     make_requests.py --verify DIR --manifest t3/requests-manifest.tsv [--complete]
 
-The second form compares a generated manifest with the committed one, so every program and run
+--pair-list names the seed pairs (table seed:ring seed) in place of the first --pairs of the sixteen;
+the floor rerun's pair (127, 227) is made this way (design/review-runs/floor-rerun.md). The second
+form compares a generated manifest with the committed one, so every program and run
 reads the same request sets: every generated cell must be a committed one, and with --complete
 every committed cell must have been generated too. The files themselves are not committed: at m = 100,000 a cell's
 files hold some 10 MB. The set of every route (all.txt) is made for every pair up to m = 10,000,
-and at m = 100,000 for the first --all-pairs pairs only, as it takes minutes per cell there.
+and at m = 100,000 for the first --all-pairs pairs of the list only, as it takes minutes per cell there
+(with the default 1, the first pair: (111, 211) of the sixteen, or the first of --pair-list).
 """
 import argparse
 import subprocess
@@ -24,6 +29,19 @@ from pathlib import Path
 SHAPES = ("mixed-disjoint", "static")
 SIZES = (10, 100, 1000, 10000, 100000)
 PAIRS = tuple((111 + k, 211 + k) for k in range(16))
+
+
+def parse_pairs(text: str) -> list[tuple[int, int]]:
+    """'127:227,128:228' as [(127, 227), (128, 228)]: positive seeds, no table seed twice."""
+    pairs = []
+    for item in text.split(","):
+        table, sep, ring = item.strip().partition(":")
+        if not sep or not table.isdigit() or not ring.isdigit() or int(table) <= 0 or int(ring) <= 0:
+            raise ValueError(f"a seed pair is TABLE:RING with positive whole seeds, not {item.strip()!r}")
+        pairs.append((int(table), int(ring)))
+    if len({t for t, _ in pairs}) != len(pairs):
+        raise ValueError("a table seed is named twice: cells are kept by table seed")
+    return pairs
 
 
 def cell_dir(out: Path, shape: str, m: int, table_seed: int) -> Path:
@@ -91,7 +109,8 @@ def main() -> int:
     ap.add_argument("--out", type=Path)
     ap.add_argument("--shapes", default=",".join(SHAPES))
     ap.add_argument("--sizes", default=",".join(map(str, SIZES)))
-    ap.add_argument("--pairs", type=int, default=len(PAIRS), help="the first N seed pairs")
+    ap.add_argument("--pairs", type=int, help=f"the first N of the {len(PAIRS)} seed pairs (default all)")
+    ap.add_argument("--pair-list", help="the seed pairs as TABLE:RING[,TABLE:RING ...], in place of --pairs")
     ap.add_argument("--all-pairs", type=int, default=1, help="at m = 100,000, the every-route set for the first N pairs")
     ap.add_argument("--verify", type=Path)
     ap.add_argument("--manifest", type=Path)
@@ -105,10 +124,17 @@ def main() -> int:
         ap.error("--bin and --out are required")
     sizes = [int(s) for s in a.sizes.split(",")]
     shapes = a.shapes.split(",")
-    if any(s not in SIZES for s in sizes) or any(s not in SHAPES for s in shapes) or not 1 <= a.pairs <= len(PAIRS):
+    if a.pair_list is not None and a.pairs is not None:
+        ap.error("--pairs or --pair-list, not both")
+    count = len(PAIRS) if a.pairs is None else a.pairs
+    if any(s not in SIZES for s in sizes) or any(s not in SHAPES for s in shapes) or not 1 <= count <= len(PAIRS):
         ap.error("shapes among mixed-disjoint,static; sizes among 10,100,1000,10000,100000; pairs within 1 to 16")
+    try:
+        pairs = PAIRS[:count] if a.pair_list is None else parse_pairs(a.pair_list)
+    except ValueError as e:
+        ap.error(str(e))
     a.out.mkdir(parents=True, exist_ok=True)
-    return generate(a.bin, a.out, shapes, sizes, PAIRS[: a.pairs], a.all_pairs)
+    return generate(a.bin, a.out, shapes, sizes, pairs, a.all_pairs)
 
 
 if __name__ == "__main__":

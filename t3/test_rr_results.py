@@ -273,8 +273,39 @@ class RefusalTests(Fixture):
                       self.refused(record({**self.aak, "rounds": 4}, system="windows")))
         self.assertIn("no session line", self.refused(record(self.rr)[1:]))
 
+    def test_an_rr2_record_is_read_with_the_rr2_plans_and_refused_with_round_3s(self) -> None:
+        rr2 = {**self.rr, "pairs": [[127, 227]]}
+        (self.plans / "rr2-L.json").write_text(json.dumps(rr2))
+        path = self.write("rr2.jsonl", record(rr2))
+        out, err = self.dir / "out2.json", io.StringIO()
+        with contextlib.redirect_stderr(err):
+            rc = R.main([str(path), "--out", str(out), "--md", str(self.dir / "out2.md"), "--plan-set", "rr2"],
+                        plans=self.plans)
+        self.assertEqual(rc, 0, err.getvalue())
+        self.assertEqual(list(json.loads(out.read_text())["systems"]["linux"]["rr"]["cells"]),
+                         ["mixed-disjoint/m1000/t127", "mixed-disjoint/m100000/t127"])
+        self.assertTrue((self.dir / "out2.md").read_text().startswith("# Round 3's floor rule on a fresh run:"))
+        self.assertIn("not the committed rr-L.json", self.refused(record(rr2)))
+        self.assertEqual(R.names("rr2")[("windows", "aak")], "rr2-aak-W.json")
+        with self.assertRaises(ValueError):
+            R.names("rr3")
+
+    def test_the_rerun_plans_are_round_3s_but_the_pair(self) -> None:
+        for (system, kind), name in R.NAMES.items():
+            old = json.loads((HERE / "plans" / name).read_text(encoding="utf-8"))
+            new = json.loads((HERE / "plans" / R.names("rr2")[(system, kind)]).read_text(encoding="utf-8"))
+            self.assertEqual(sorted(old), sorted(new), name)
+            for key in old:
+                if key == "pairs":
+                    self.assertEqual((old[key], new[key]), ([[111, 211]], [[127, 227]]), name)
+                elif key == "_comment":
+                    self.assertEqual(old[key].count("pair (111, 211)"), 1, name)
+                    self.assertEqual(new[key], old[key].replace("pair (111, 211)", "pair (127, 227)"), name)
+                else:
+                    self.assertEqual(old[key], new[key], (name, key))
+
     def test_the_committed_plans_are_round_robin_and_the_files_have_no_dashes(self) -> None:
-        for name in R.NAMES.values():
+        for name in [*R.NAMES.values(), *R.names("rr2").values()]:
             plan = json.loads((HERE / "plans" / name).read_text(encoding="utf-8"))
             p = p2run.parse_plan(plan)
             self.assertTrue(p.round_robin, name)
@@ -282,8 +313,8 @@ class RefusalTests(Fixture):
                              (7, 1.5, 0.1, (1000, 100000), ("mixed-disjoint",)), name)
             self.assertEqual(R.kind_of(plan), "aak" if "-aak-" in name else "aa" if "-aa-" in name else "rr")
         self.assertEqual(R.kind_of(plan_dict(("v2",) * 3, ("v2", "v2"))), "rr")  # every list longer than two, or none
-        for name in ("rr_results.py", "test_rr_results.py", "jobs/rr.py", "jobs/aa.py",
-                     *(f"plans/{n}" for n in R.NAMES.values())):
+        for name in ("rr_results.py", "test_rr_results.py", "jobs/rr.py", "jobs/aa.py", "rr_records.py", "rr_macros.py",
+                     *(f"plans/{n}" for n in [*R.NAMES.values(), *R.names("rr2").values()])):
             text = (HERE / name).read_text(encoding="utf-8")
             self.assertNotIn(chr(0x2013), text, name)
             self.assertNotIn(chr(0x2014), text, name)
