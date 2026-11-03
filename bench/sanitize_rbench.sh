@@ -21,7 +21,8 @@
 # ~/lab/p2/rbench-san), MSAN_LIBCXX (default $HOME/opt/libcxx-msan-gcc), RB_ARMS (a CMake list;
 # default every arm, less those coverage.json exempts from the sanitizer), TAG (appended to the
 # record's name), HOST_TAG (the record name's host, default L), EXTRA_CMAKE (more CMake arguments;
-# recorded), RECORDS_LOGS (default ~/lab/records-logs), REVIEW=1 (the review arms too), GO (the go binary
+# recorded), RECORDS_LOGS (default ~/lab/records-logs), REVIEW=1 (the review arms too; exactly 1: any other
+# value leaves them out, with a warning, and an explicit RB_ARMS is used as given, with a warning), GO (the go binary
 # of the Go arms, put first on PATH and given as -DRB_GO, recorded; for the review build the pinned Go of
 # bench/jobs/install-go.sh), ADV_CELL_TIMEOUT (seconds per quick adversarial process and for test_ablation,
 # default 600). The logs (the build log, what the build
@@ -55,8 +56,21 @@ case "$san" in
     *) echo "unknown sanitizer '$san'" >&2; exit 2 ;;
 esac
 # Every arm, less those coverage.json exempts from this sanitizer.
-if [ -z "${RB_ARMS:-}" ]; then
-    RB_ARMS=$(python3 "$here/arms_for.py" "$san" ${REVIEW:+--review})
+review_flag=
+if [ "${REVIEW:-}" = 1 ]; then
+    review_flag=--review
+else
+    case "${REVIEW:-}" in
+        "" | 0) ;;
+        *) echo "sanitize_rbench: warning: REVIEW='$REVIEW' is not 1, so the review arms are not included" >&2 ;;
+    esac
+fi
+if [ -n "${RB_ARMS:-}" ]; then
+    [ -z "$review_flag" ] ||
+        echo "sanitize_rbench: warning: RB_ARMS is given with REVIEW=1: REVIEW=1 adds no arm," \
+            "the build has exactly [$RB_ARMS]" >&2
+else
+    RB_ARMS=$(python3 "$here/arms_for.py" "$san" $review_flag)
 fi
 cmake_args+=("-DRB_ARMS=$RB_ARMS" "-DREGEXMATCHER_COMMIT=$rm_commit")
 # The Go toolchain: GO, first on PATH (run_grid.sh records `go version` from PATH) and given to CMake.

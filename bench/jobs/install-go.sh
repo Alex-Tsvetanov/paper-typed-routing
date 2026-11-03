@@ -29,7 +29,14 @@ PINNED="go version go1.27.1-X:nodwarf5 linux/amd64"
 
 prefix=${1:-$HOME/opt/p2/go1.27.1-nodwarf5}
 case "$prefix" in
-    /usr/* | /bin/* | /opt/go* | "") echo "install-go: refusing a system prefix '$prefix'" >&2; exit 2 ;;
+    /*) ;;
+    *) echo "install-go: PREFIX must be an absolute path, not '$prefix'" >&2; exit 2 ;;
+esac
+# Resolved (.. components and symlinks, so /home/x/../../usr/lib/go and /bin/go are /usr/...) before the check.
+prefix=$(realpath -m -- "$prefix") || { echo "install-go: cannot resolve the prefix" >&2; exit 2; }
+case "$prefix" in
+    / | /usr | /usr/* | /bin | /bin/* | /sbin | /sbin/* | /lib* | /opt/go*)
+        echo "install-go: refusing a system prefix '$prefix'" >&2; exit 2 ;;
 esac
 parent=$(dirname "$prefix")
 stamp=$prefix/.install-go-sha256

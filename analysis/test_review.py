@@ -219,6 +219,20 @@ def check_boundary(tmp: Path) -> None:
     expect(all(re.fullmatch(r"[A-Za-z]+", n) for n in v), "boundary: macro names are letters only")
 
 
+def check_code_size(tmp: Path) -> None:
+    expect(ablations.read_code_size(None) == {}, "code size: no file asked for reads nothing")
+    for what, text in (("missing", None), ("empty", "arm\tlines\n")):
+        f = tmp / f"code-size-{what}.tsv"
+        if text is not None:
+            f.write_text(text, encoding="utf-8")
+        try:
+            ablations.read_code_size(f)
+            raised = False
+        except SystemExit:
+            raised = True
+        expect(raised, f"code size: the {what} file is an error")
+
+
 def check_pairs(tmp: Path) -> None:
     pairs = design_pairs()
     # (static, 10): the copy on the first nine pairs, the pinned arm on the last nine, two in common;
@@ -292,6 +306,7 @@ def main() -> int:
         check_ablations(Path(t))
         check_boundary(Path(t))
         check_pairs(Path(t))
+        check_code_size(Path(t))
     print(f"{failures} failed" if failures else "all checks passed")
     return 1 if failures else 0
 
