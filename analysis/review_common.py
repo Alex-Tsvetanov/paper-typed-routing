@@ -4,6 +4,11 @@ statistic both plans fix: per cell, the median over the seed pairs of a per-pair
 interval over the pairs, computed as analysis/h1_stats.py computes H1's (analysis/stats.py: clustered by
 table seed, which in the design is one pair each; 10,000 resamples; the same resampling seed). Exploratory:
 no hypothesis, no test, no multiplicity adjustment. Pure Python and NumPy.
+
+The design's sixteen seed pairs (analysis/cells.py's design_pairs: table seeds 111 to 126, ring seeds 211 to
+226) are required, not assumed: an arm takes part in a cell only if its processes are exactly those sixteen
+pairs, and a ratio is computed only over all sixteen, from arms that each have all of them; otherwise the
+comparison is refused with its reason. The pairs two arms happen to share are never used instead.
 """
 
 from __future__ import annotations
@@ -16,7 +21,7 @@ from pathlib import Path
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from cells import classify, pair, usable  # noqa: E402
+from cells import classify, design_pairs, pair, usable  # noqa: E402
 from check_agree import load_semantics  # noqa: E402
 from h1_stats import RESAMPLING_SEED  # noqa: E402
 from stats import bca, bca_bound, fastest_ratio  # noqa: E402
@@ -54,15 +59,28 @@ def why_not(r: dict) -> str:
     return "not verified on every query"
 
 
-def sort_arms(cell: dict[str, list[dict]], shape: str, arms: list[str], semantics: dict | None = None) -> Arms:
+def not_compared(why: str) -> dict:
+    """A comparison that was not made: its status and reason, and no pair used."""
+    return {"status": "not compared", "why": why, "pairs": 0}
+
+
+def sort_arms(cell: dict[str, list[dict]], shape: str, arms: list[str], semantics: dict | None = None,
+              expected_pairs: list[tuple] | None = None) -> Arms:
     """The named arms of one cell, each classified as analysis/cells.py classifies a competitor: ok when
-    every process is usable; absent (refused, over budget, or answers that differ as bench/semantics.json
-    declares); failing otherwise. An arm that did not run is failing. Nothing is dropped in silence."""
+    every process is usable and the processes are exactly the design's seed pairs (expected_pairs, default
+    the sixteen of analysis/cells.py); absent (refused, over budget, or answers that differ as
+    bench/semantics.json declares); failing otherwise. An arm that did not run, or has not all of the
+    pairs, is failing. Nothing is dropped in silence."""
     semantics = semantics if semantics is not None else load_semantics()
+    expected = sorted(expected_pairs if expected_pairs is not None else design_pairs())
     out = Arms()
     for arm in arms:
         rows = cell.get(arm, [])
         kind, why = classify(arm, shape, rows, semantics)
+        have = sorted(pair(r) for r in rows)
+        if kind == "ok" and have != expected:
+            kind, why = "failure", (f"{arm}: seed pairs are not the design's ({len(rows)} processes, "
+                                    f"{len(set(have))} distinct pairs, {len(expected)} expected)")
         if kind == "ok":
             out.ok[arm] = rows
         elif kind == "absent":
@@ -84,16 +102,26 @@ def values(rows: list[dict], value) -> dict[tuple, float]:
 
 
 def ratio_ci(num: dict[tuple, float], dens: dict[str, dict[tuple, float]], rng: np.random.Generator,
-             resamples: int = RESAMPLES) -> dict:
-    """The median over the pairs common to all of the per-pair ratio num / den, where den is the arm of dens
-    with the lowest median over those pairs, chosen again in every resample (one arm: that arm), and the 95%
-    BCa interval over the pairs, clustered by table seed (analysis/stats.py, as analysis/h1_stats.py)."""
+             resamples: int = RESAMPLES, expected_pairs: list[tuple] | None = None) -> dict:
+    """The median over the design's pairs (expected_pairs, default the sixteen of analysis/cells.py) of the
+    per-pair ratio num / den, where den is the arm of dens with the lowest median over those pairs, chosen
+    again in every resample (one arm: that arm), and the 95% BCa interval over the pairs, clustered by table
+    seed (analysis/stats.py, as analysis/h1_stats.py). num and every den must have a value for each of the
+    pairs and for no other: if not, nothing is computed and the status says which arm lacks what (the pairs
+    the arms share are never used instead). "pairs" is the number of pairs the ratio is over."""
+    expected = sorted(expected_pairs if expected_pairs is not None else design_pairs())
     names = sorted(dens)
-    pairs = sorted(set(num).intersection(*(set(d) for d in dens.values()))) if names else []
-    out: dict = {"pairs": len(pairs)}
-    if not names or len(pairs) < 2:
-        out["status"] = "too few pairs" if names else "no arm to compare with"
+    out: dict = {"pairs": 0}
+    if not names:
+        out["status"] = "no arm to compare with"
         return out
+    wrong = [f"{who}: {len(d)} pairs, {len(set(d) & set(expected))} of the design's {len(expected)}"
+             for who, d in (("the numerator", num), *((n, dens[n]) for n in names)) if sorted(d) != expected]
+    if wrong or len(expected) < 2:
+        out["status"] = "not the design's pairs"
+        out["why"] = "; ".join(wrong) or f"the design has {len(expected)} pairs"
+        return out
+    pairs = expected
     x = np.array([num[p] for p in pairs])
     riv = np.array([[dens[n][p] for p in pairs] for n in names])
     if np.any(riv <= 0) or np.any(x <= 0):
@@ -102,7 +130,7 @@ def ratio_ci(num: dict[tuple, float], dens: dict[str, dict[tuple, float]], rng: 
     boot = bca(x, riv, fastest_ratio, [p[0] for p in pairs], resamples, rng)
     best = int(np.argmin(np.median(riv, axis=-1)))
     per_pair = x / riv[best]
-    out.update({"status": "compared", "ratio": boot.theta, "low": bca_bound(boot, ALPHA),
+    out.update({"status": "compared", "pairs": len(pairs), "ratio": boot.theta, "low": bca_bound(boot, ALPHA),
                 "high": bca_bound(boot, 1 - ALPHA), "fastest": names[best], "min_pair": float(np.min(per_pair)),
                 "max_pair": float(np.max(per_pair))})
     return out

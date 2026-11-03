@@ -16,7 +16,10 @@ median over the pairs, is exact.
    capi-null, rust-null, the Go arms' own null pass and the loop null of v2 and of the C++ competitors; an
    arm whose net time is not positive is listed and left out; gin absent where its answers differ as
    declared; v2 in a Go loop over each Go arm; the 14 cells are all reported.
-3. The macros are letters only, defined once, and carry the values above as macros_util rounds them.
+3. The design's sixteen seed pairs are required: two arms with nine pairs each, overlapping on two, are not
+   compared (neither through the analyses nor through ratio_ci), an arm with a pair twice and another missing
+   is failing, and sixteen full pairs are compared and the comparison says it is over sixteen.
+4. The macros are letters only, defined once, and carry the values above as macros_util rounds them.
 """
 
 from __future__ import annotations
@@ -31,6 +34,8 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import ablations  # noqa: E402
 import boundary  # noqa: E402
+import numpy as np  # noqa: E402
+import review_common  # noqa: E402
 from cells import H1_SHAPES, H1_SIZES, design_pairs, load  # noqa: E402
 
 failures = 0
@@ -198,10 +203,69 @@ def check_boundary(tmp: Path) -> None:
     expect(all(re.fullmatch(r"[A-Za-z]+", n) for n in v), "boundary: macro names are letters only")
 
 
+def check_pairs(tmp: Path) -> None:
+    pairs = design_pairs()
+    # (static, 10): the copy on the first nine pairs, the pinned arm on the last nine, two in common;
+    # (static, 100): both on all sixteen.
+    lines = []
+    for m, copy_at, pinned_at in ((10, range(0, 9), range(7, 16)), (100, range(16), range(16))):
+        for k in copy_at:
+            lines.append(line("regexmatcher-v2-copy", "static", m, pairs[k], 100.0 * noise(k)))
+        for k in pinned_at:
+            lines.append(line("regexmatcher-v2", "static", m, pairs[k], 100.0 * noise(k)))
+    # (static, 1000): the copy has pair 3 twice and pair 15 not at all
+    for k in [*range(15), 3]:
+        lines.append(line("regexmatcher-v2-copy", "static", 1000, pairs[k], 100.0 * noise(k)))
+    for k in range(16):
+        lines.append(line("regexmatcher-v2", "static", 1000, pairs[k], 100.0 * noise(k)))
+    run = write_run(tmp / "pairs", lines)
+    keys = [("static", 10), ("static", 100), ("static", 1000)]
+    s = ablations.summarize(load(run), {}, resamples=200, keys=keys)
+    by_cell = {r["m"]: {(c["arm"], c["reference"]): c for c in r["comparisons"]} for r in s["cells"]}
+    c = by_cell[10][("regexmatcher-v2-copy", "regexmatcher-v2")]
+    expect(c["status"] == "not compared" and c["pairs"] == 0 and "ratio" not in c,
+           "pairs: nine pairs each, two in common, are not compared")
+    failing = s["cells"][0]["failing"]
+    expect("9 processes" in failing.get("regexmatcher-v2-copy", "") and "9 processes" in failing.get("regexmatcher-v2", ""),
+           "pairs: both arms are failing in that cell, with the reason")
+    c = by_cell[100][("regexmatcher-v2-copy", "regexmatcher-v2")]
+    expect(c["status"] == "compared" and c["pairs"] == 16 and close(c["ratio"], 1.0),
+           "pairs: sixteen full pairs are compared, over 16 pairs")
+    c = by_cell[1000][("regexmatcher-v2-copy", "regexmatcher-v2")]
+    expect(c["status"] == "not compared" and "distinct pairs" in s["cells"][2]["failing"]["regexmatcher-v2-copy"],
+           "pairs: a pair twice and a pair missing is failing, not compared")
+    # ratio_ci itself refuses what is not the design's sixteen, whatever the callers did
+    rng = np.random.default_rng(1)
+
+    def on(idx, scale=1.0):
+        return {pairs[k]: 100.0 * noise(k) * scale for k in idx}
+
+    r = review_common.ratio_ci(on(range(0, 9)), {"den": on(range(7, 16))}, rng, 200)
+    expect(r["status"] != "compared" and r["pairs"] == 0 and "ratio" not in r,
+           "pairs: ratio_ci refuses nine and nine pairs with two in common")
+    r = review_common.ratio_ci(on(range(16)), {"den": on(range(15))}, rng, 200)
+    expect(r["status"] != "compared" and "den" in r["why"], "pairs: ratio_ci refuses an arm one pair short")
+    r = review_common.ratio_ci({**on(range(15)), (999, 998): 1.0}, {"den": on(range(16))}, rng, 200)
+    expect(r["status"] != "compared", "pairs: ratio_ci refuses a pair that is not the design's")
+    r = review_common.ratio_ci(on(range(16), 1.5), {"den": on(range(16))}, rng, 200)
+    expect(r["status"] == "compared" and r["pairs"] == 16 and close(r["ratio"], 1.5), "pairs: ratio_ci over sixteen")
+    # the boundary analysis: a competitor on nine pairs is failing, and its comparison is not made
+    bl = [r for r in boundary_lines() if not (r["arm"] == "matchit" and r["shape"] == "param-last" and r["m"] == 10
+                                              and (r["table_seed"], r["ring_seed"]) in design_pairs()[9:])]
+    b = boundary.summarize(load(write_run(tmp / "pairs-bnd", bl)), resamples=200, keys=[("param-last", 10)])
+    cell = b["cells"][0]
+    sym = {c["against"]: c for c in cell["symmetric"]}
+    expect("matchit" in cell["failing"] and sym["matchit"]["status"] == "not compared" and sym["matchit"]["pairs"] == 0,
+           "pairs: boundary: a Rust arm on nine pairs is failing and not compared")
+    expect(sym["actix-router"]["status"] == "compared" and sym["actix-router"]["pairs"] == 16,
+           "pairs: boundary: the others are compared over sixteen")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory() as t:
         check_ablations(Path(t))
         check_boundary(Path(t))
+        check_pairs(Path(t))
     print(f"{failures} failed" if failures else "all checks passed")
     return 1 if failures else 0
 

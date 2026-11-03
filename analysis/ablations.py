@@ -19,9 +19,12 @@ lookup net of the null arm of the same pair (the median over the processes), the
 code size (code-size.tsv: the lines of bench/objdump_check.sh's normalized disassembly of the arm's lookup,
 at the flags the arms are compiled with).
 
-An arm takes part in a cell only if every one of its processes is usable (analysis/cells.py); otherwise the
-arm is listed as absent or failing with the reason, and every process that is not usable is listed. Nothing
-is dropped in silence, no comparison is tested, and no multiplicity adjustment is made.
+An arm takes part in a cell only if every one of its processes is usable (analysis/cells.py) and its
+processes are exactly the design's sixteen seed pairs; otherwise the arm is listed as absent or failing with
+the reason, and every process that is not usable is listed. A ratio is computed over all sixteen pairs only
+(the pairs two arms share are never used instead), and every comparison carries the number of pairs it is
+over ("pairs"; 0 where it was not made). Nothing is dropped in silence, no comparison is tested, and no
+multiplicity adjustment is made.
 
 Macros (letters only, prefixed Abl): per variant and reference, \\Abl<Variant>Vs<Ref><Cell>Ratio, ...Low
 and ...High (Variant: Copy (against the pinned arm only), Linear, Hashed, Noexact, Bytes; Ref: Copy, Vtwo;
@@ -44,7 +47,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from cells import H1_SHAPES, H1_SIZES, load  # noqa: E402
 from h2_stats import net, nulls_of  # noqa: E402
 from macros_util import Macros, cell_word, count, instructions, nanoseconds, per_lookup, ratio  # noqa: E402
-from review_common import ARM_WORD, RESAMPLES, SEED, median_of, ratio_ci, sort_arms, values  # noqa: E402
+from review_common import ARM_WORD, RESAMPLES, SEED, median_of, not_compared, ratio_ci, sort_arms, values  # noqa: E402
 
 PINNED = "regexmatcher-v2"
 COPY = "regexmatcher-v2-copy"
@@ -92,8 +95,8 @@ def summarize(cells: dict, code: dict[str, int], resamples: int = RESAMPLES, see
                 c.update(ratio_ci(values(arms.ok[num], "ns_median"), {ref: values(arms.ok[ref], "ns_median")},
                                   rng, resamples))
             else:
-                c.update({"status": "not compared", "why": "; ".join(
-                    f"{a}: {arms.absent.get(a) or arms.failing.get(a)}" for a in (num, ref) if a not in arms.ok)})
+                c.update(not_compared("; ".join(
+                    f"{a}: {arms.absent.get(a) or arms.failing.get(a)}" for a in (num, ref) if a not in arms.ok)))
             row["comparisons"].append(c)
         rows.append(row)
     totals = {}

@@ -25,10 +25,13 @@ in every resample, as in H1. The statistics, fixed in the plan:
 3. v2 in a Go loop: per cell, regexmatcher-v2-goloop's time per lookup over each Go arm's, labelled as
    including the Go-to-C call (no Go arm makes one per lookup).
 
-An arm takes part in a cell only if every one of its processes is usable (analysis/cells.py); otherwise the
-arm is listed as absent (for example gin on mixed-overlap, whose answers differ as bench/semantics.json
-declares) or failing, with the reason, and every process that is not usable is listed. Nothing is dropped
-in silence, no comparison is tested, and no multiplicity adjustment is made.
+An arm takes part in a cell only if every one of its processes is usable (analysis/cells.py) and its
+processes are exactly the design's sixteen seed pairs; otherwise the arm is listed as absent (for example gin
+on mixed-overlap, whose answers differ as bench/semantics.json declares) or failing, with the reason, and
+every process that is not usable is listed. A ratio is computed over all sixteen pairs only (the pairs two
+arms share are never used instead), and every comparison carries the number of pairs it is over ("pairs"; 0
+where it was not made). Nothing is dropped in silence, no comparison is tested, and no multiplicity
+adjustment is made.
 
 Macros (letters only, prefixed Bnd; Cell for example StaticTen): \\BndCapiVs<Rust arm or Fastest><Cell>
 Ratio, Low, High; \\BndNet<Cell>Ratio, Low, High and \\BndNet<Cell>Fastest (the arm), with \\BndRaw<Cell>
@@ -49,7 +52,7 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from cells import H1_SHAPES, load, pair  # noqa: E402
 from macros_util import Macros, cell_word, nanoseconds, ratio, tt  # noqa: E402
-from review_common import ARM_WORD, RESAMPLES, SEED, median_of, ratio_ci, sort_arms, values  # noqa: E402
+from review_common import ARM_WORD, RESAMPLES, SEED, median_of, not_compared, ratio_ci, sort_arms, values  # noqa: E402
 
 SIZES = (10, 100)
 V2 = "regexmatcher-v2"
@@ -124,10 +127,10 @@ def summarize(cells: dict, resamples: int = RESAMPLES, seed: int = SEED, keys: l
             if CAPI in raw and dens:
                 c.update(ratio_ci(raw[CAPI], dens, rng, resamples))
             else:
-                c.update({"status": "not compared", "why": "; ".join(
+                c.update(not_compared("; ".join(
                     f"{a}: {arms.absent.get(a) or arms.failing.get(a)}" for a in ((CAPI,) + (RUST if target == "fastest"
                                                                                            else (target,)))
-                    if a not in raw)})
+                    if a not in raw)))
             row["symmetric"].append(c)
         # 2. Net of each arm's own null: v2 against the fastest competitor.
         positive = {a: n for a, n in nets.items() if all(v > 0 for v in n.values())}
@@ -138,16 +141,16 @@ def summarize(cells: dict, resamples: int = RESAMPLES, seed: int = SEED, keys: l
             # Beside it, the same comparison on the raw times (the same competitors).
             row["net"]["raw"] = ratio_ci(raw[V2], {a: raw[a] for a in comp}, rng, resamples)
         else:
-            row["net"] = {"status": "not compared", "why": "v2's net time is missing or not positive"
-                          if V2 not in positive else "no competitor's net time"}
+            row["net"] = not_compared("v2's net time is missing or not positive" if V2 not in positive
+                                      else "no competitor's net time")
         # 3. v2 in a Go loop against each Go arm, raw times (including the Go-to-C call).
         for target in GO:
             c = {"against": target}
             if GOLOOP in raw and target in raw:
                 c.update(ratio_ci(raw[GOLOOP], {target: raw[target]}, rng, resamples))
             else:
-                c.update({"status": "not compared", "why": "; ".join(
-                    f"{a}: {arms.absent.get(a) or arms.failing.get(a)}" for a in (GOLOOP, target) if a not in raw)})
+                c.update(not_compared("; ".join(
+                    f"{a}: {arms.absent.get(a) or arms.failing.get(a)}" for a in (GOLOOP, target) if a not in raw)))
             row["goloop"].append(c)
         rows.append(row)
     return {"cells": rows, "resamples": resamples, "seed": seed}
