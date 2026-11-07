@@ -649,7 +649,7 @@ def tables(s: dict, mc_names: set[str]) -> dict[str, str]:
     rows = []
     for c in s["ablation"]["small"]["cells"] + s["ablation"]["large"]["cells"]:
         cw = cell_word(c["shape"], c["m"])
-        cvv = span(f"QuickAblCopyVsVtwo{cw}") if "copy_vs_v2" in c else "--"
+        cvv = span(f"QuickAblCopyVsVtwo{cw}") if "copy_vs_v2" in c else "not run"
         rows.append(f"{shape_m(c)} & {cvv} & " + " & ".join(span(f"QuickAbl{WORD[v]}{cw}") for v in VARIANTS) + " \\\\")
     out["ablation.tex"] = need("\n".join(rows))
     rows = []
@@ -665,21 +665,21 @@ def tables(s: dict, mc_names: set[str]) -> dict[str, str]:
     rows = []
     for a_ in (V2, COPY) + VARIANTS:
         w = WORD[a_]
-        same = "--" if a_ == V2 else ("yes" if s["code"][a_]["identical_to_reference"] else "no")
+        same = "reference" if a_ == V2 else ("yes" if s["code"][a_]["identical_to_reference"] else "no")
         rows.append(f"{PAPER_NAME[a_]} & \\QuickCode{w}Functions & \\QuickCode{w}Lines & {same} \\\\")
     out["code-size.tex"] = need("\n".join(rows))
     rows, rows_go = [], []
     for r in s["boundary"]["ten"]["cells"] + s["boundary"]["hundred"]["cells"]:
         cw = cell_word(r["shape"], r["m"])
         capi = (f"{span(f'QuickBnd{cw}CapiVsFastest')} (\\QuickBnd{cw}CapiVsFastestArm)"
-                if "fastest" in r["capi"] else "--")
+                if "fastest" in r["capi"] else "not compared")
         if r["net"].get("status") == "compared":
             net = f"{span(f'QuickBnd{cw}Net')} & {span(f'QuickBnd{cw}RawVsNetArm')} & \\QuickBnd{cw}NetArm"
         else:
-            net = "not compared & -- & --"
+            net = "not compared & not compared & none"
         rows.append(f"{shape_m(r)} & {capi} & {net} \\\\")
         rows_go.append(f"{shape_m(r)} & " + " & ".join(
-            span(f"QuickBnd{cw}GoloopVs{WORD[t]}") if t in r["goloop"] else "--" for t in GO) + " \\\\")
+            span(f"QuickBnd{cw}GoloopVs{WORD[t]}") if t in r["goloop"] else "absent" for t in GO) + " \\\\")
     out["boundary.tex"] = need("\n".join(rows))
     out["boundary-goloop.tex"] = need("\n".join(rows_go))
     out["aa.tex"] = need("Linux & \\QuickAaCells & \\QuickAblSmallRoundsRun & \\QuickAaPairs & "
