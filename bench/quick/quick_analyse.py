@@ -65,8 +65,8 @@ from adversarial import CHECKS, COUNTS, RESUMPTION_BOUND, why_unusable  # noqa: 
 from adversarial import cell_word as adv_word  # noqa: E402
 from boundary import CAPI, CPP, GOLOOP, RUST, V2, net_times  # noqa: E402
 from cells import usable  # noqa: E402
-from macros_util import (Macros, cell_word, count, fixed, instructions, nanoseconds, pair, per_lookup,  # noqa: E402
-                         ratio, tt)
+from macros_util import (SIZE_WORD, Macros, cell_word, count, fixed, instructions, listing, nanoseconds,  # noqa: E402
+                         pair, per_lookup, ratio, tt)
 from review_common import ARM_WORD, sort_arms  # noqa: E402
 
 COMMIT = "0eea7f681c6a4ede67fc61774bfb2fc2328debc1"
@@ -465,6 +465,15 @@ def meta_macros(mc: Macros, s: dict) -> None:
     mc.add("QuickAdvRing", count(m["adv_ring"]))
     mc.add("QuickBudgetS", count(m["budget_s"]))
     mc.add("QuickCampaigns", count(len(s["jobs"])))
+    sizes = sorted({c["m"] for part in s["ablation"].values() for c in part["cells"]} |
+                   {r["m"] for part in s["boundary"].values() for r in part["cells"]})
+    for m_ in sizes:
+        mc.add("QuickSize" + SIZE_WORD[m_], count(m_))
+    mc.add("QuickShapes", count(len(Q.SHAPES)))
+    mc.add("QuickAblVariants", count(len(VARIANTS)))
+    mc.add("QuickBndCompetitors", count(len(COMPETITORS)))
+    mc.add("QuickBndRustArms", count(len(RUST)))
+    mc.add("QuickBndGoArms", count(len(GO)))
     mc.add("QuickProcesses", count(sum(j["processes"] for j in s["jobs"].values())))
     mc.add("QuickProcessesNotZeroExit", count(sum(len(j["rc_not_zero"]) for j in s["jobs"].values())))
     mc.add("QuickLongestCampaignS", fixed(max(j["wall_s"] for j in s["jobs"].values()), 0))
@@ -481,6 +490,11 @@ def meta_macros(mc: Macros, s: dict) -> None:
 
 def adv_macros(mc: Macros, a: dict) -> None:
     mc.add("QuickAdvCells", count(len(a["cells"])))
+    mc.add("QuickAdvTables", count(len({(c["family"], c["depth"], c["catch_all"]) for c in a["cells"]})))
+    for fam, word in (("two-kinds", "TwoKinds"), ("four-kinds", "FourKinds")):
+        depths = sorted({c["depth"] for c in a["cells"] if c["family"] == fam})
+        mc.add(f"QuickAdv{word}MaxDepth", count(max(depths)))
+        mc.add(f"QuickAdv{word}Depths", listing([count(d) for d in depths]))
     mc.add("QuickAdvBoundDecision", a["decision"])
     mc.add("QuickAdvProcessesUsable", count(a["processes_usable"]))
     mc.add("QuickAdvResumptionBound", count(RESUMPTION_BOUND))
