@@ -33,10 +33,13 @@ class Series(unittest.TestCase):
 class Macro(unittest.TestCase):
     def test_summary_over_cells_counts_sides_of_one(self):
         mc = Macros()
-        cells = [{"n": 3, "median": m} for m in (0.9, 1.0, 1.2, 1.5)] + [None, {"n": 0}]
+        cells = [{"n": 3, "median": m, "min": m - 0.05, "max": m + 0.05} for m in (0.9, 1.0, 1.2, 1.5)]
+        cells += [None, {"n": 0}]
         qa.summary_over_cells(mc, "QuickX", cells)
         got = {n: v for n, v, _ in mc.items}
         self.assertEqual(got["QuickXCells"], "4")
+        self.assertEqual(got["QuickXCellsMaxAtLeastOne"], "3")
+        self.assertEqual(got["QuickXCellsMinAtMostOne"], "2")
         self.assertEqual(got["QuickXCellsAboveOne"], "2")
         self.assertEqual(got["QuickXCellsBelowOne"], "1")
         self.assertEqual(got["QuickXCellMedianMin"], "0.9000")
