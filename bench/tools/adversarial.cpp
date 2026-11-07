@@ -2,7 +2,7 @@
 // of its walk checked by counting (design/review-runs/adversarial.md).
 //
 //   adversarial list
-//   adversarial cell --cell ID [--ring N] [--epochs E] [--rep K] [--quick]
+//   adversarial cell --cell ID [--ring N] [--epochs E] [--rep K] [--build-reps B] [--quick]
 //   adversarial self-test
 //
 // list prints the 44 cells (id, family, depth, catch-all, query), one per line. cell prints one
@@ -18,6 +18,9 @@
 // test compares the first 8 captured values (rbench's Captures). The counts and the checks are made
 // after the measurement, so the timed process builds and looks up as the arm does and nothing else.
 // self-test runs every query of every table through both codes and exits 1 if any check fails.
+// --build-reps B (quick-plan.md) sets how often the measurement builds the table to time its build (default
+// rbench's 5); it changes neither the timed lookups nor the counts, only the build_s field and the time the
+// process takes before its lookups. When given, the line also carries build_reps.
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
@@ -81,7 +84,7 @@ using AdversarialArm = rb::rm::Arm<rb::rm::V2, CellSource, Info>;
 
 [[noreturn]] void usage(const char* why) {
     std::fprintf(stderr, "adversarial: %s\nusage: adversarial list | cell --cell ID [--ring N] [--epochs E] [--rep K] "
-                         "[--quick] | self-test\n", why);
+                         "[--build-reps B] [--quick] | self-test\n", why);
     std::exit(2);
 }
 
@@ -137,6 +140,12 @@ int cmd_cell(const Args& a) {
 
     rb::MeasureOptions o;
     o.epochs = std::stoi(get(a, "epochs", "21"));
+    if (a.count("build-reps") != 0) {
+        o.build_reps = std::stoi(get(a, "build-reps", "5"));
+        if (o.build_reps < 1) {
+            usage("--build-reps must be at least 1");
+        }
+    }
     if (a.count("quick") != 0) {
         o.build_reps = 1;
         o.epochs = 2;
@@ -198,6 +207,9 @@ int cmd_cell(const Args& a) {
     // The options of the measurement, for the analysis to refuse a run that is not the frozen one
     // (the ring size is the measurement's own, ring_size, and is added to an error line below).
     j.boolean("quick", a.count("quick") != 0).num("epochs", o.epochs);
+    if (a.count("build-reps") != 0) {
+        j.num("build_reps", o.build_reps);
+    }
     j.str("cell", cell->id).str("family", adv::family_name(cell->table.family)).num("depth", cell->table.depth);
     j.boolean("catch_all", cell->table.catch_all).str("query", adv::query_name(cell->query));
     j.str("method", std::string(rb::method_name(static_cast<rb::Method>(req.method)))).str("path", req.path);

@@ -25,7 +25,8 @@ from pathlib import Path
 BENCH = Path(__file__).resolve().parent.parent
 ABLATION = BENCH / "arms" / "ablation"
 VARIANTS = (("regexmatcher-v2-ab-linear", "ab_linear"), ("regexmatcher-v2-ab-hashed", "ab_hashed"),
-            ("regexmatcher-v2-ab-noexact", "ab_noexact"), ("regexmatcher-v2-ab-bytes", "ab_bytes"))
+            ("regexmatcher-v2-ab-noexact", "ab_noexact"), ("regexmatcher-v2-ab-bytes", "ab_bytes"),
+            ("regexmatcher-v2-ab-heapstack", "ab_heapstack"), ("regexmatcher-v2-ab-strings", "ab_strings"))
 SUMMARY = re.compile(r"functions (\d+) and (\d+), lines (\d+) and (\d+), sha256 ([0-9a-f]+) and ([0-9a-f]+)")
 
 

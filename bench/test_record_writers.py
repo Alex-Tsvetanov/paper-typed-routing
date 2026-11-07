@@ -172,15 +172,15 @@ def review_presets(tmp: Path) -> None:
     def green(d: Path, has: bool = True) -> list[bool]:
         return [p["status"] == "green" for p in m.review_presets(d, has, "Clang 22.1.8")]
 
-    passing = "test_ablation: ok (112 tables, 2293760 lookups compared, 0 failing)"
+    passing = "test_ablation: ok (112 tables, 3211264 lookups compared, 0 failing)"
     expect("sanitizer_record.py: no ablation arms, no review preset", green(out(passing), has=False) == [])
     expect("sanitizer_record.py: a passing answers test is green", green(out(passing)) == [True])
     expect("sanitizer_record.py: a missing answers test is red", green(out(None)) == [False])
     expect("sanitizer_record.py: an answers test with a failure is red",
-           green(out("test_ablation: FAILED (112 tables, 2293760 lookups compared, 3 failing)", rc=1)) == [False])
+           green(out("test_ablation: FAILED (112 tables, 3211264 lookups compared, 3 failing)", rc=1)) == [False])
     expect("sanitizer_record.py: an answers test that exited 124 is red", green(out(passing, rc=124)) == [False])
-    for what, text in (("fewer tables", "test_ablation: ok (111 tables, 2293760 lookups compared, 0 failing)"),
-                       ("more tables", "test_ablation: ok (113 tables, 2293760 lookups compared, 0 failing)"),
+    for what, text in (("fewer tables", "test_ablation: ok (111 tables, 3211264 lookups compared, 0 failing)"),
+                       ("more tables", "test_ablation: ok (113 tables, 3211264 lookups compared, 0 failing)"),
                        ("one lookup fewer", "test_ablation: ok (112 tables, 2293759 lookups compared, 0 failing)"),
                        ("one lookup more", "test_ablation: ok (112 tables, 2293761 lookups compared, 0 failing)"),
                        ("no lookups", "test_ablation: ok (112 tables, 0 lookups compared, 0 failing)"),

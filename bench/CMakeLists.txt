@@ -35,7 +35,7 @@ set(RB_ARMS "${RB_ALL_ARMS}" CACHE STRING "Arms to build")
 # the default arms, for the review build and its sanitizer records).
 set(RB_REVIEW_ARMS regexmatcher-v2-copy regexmatcher-v2-ab-linear regexmatcher-v2-ab-hashed
     regexmatcher-v2-ab-noexact regexmatcher-v2-ab-bytes regexmatcher-v2-capi capi-null rust-null
-    regexmatcher-v2-goloop)
+    regexmatcher-v2-goloop regexmatcher-v2-ab-heapstack regexmatcher-v2-ab-strings)
 set(RB_OPT_IN_ARMS regexmatcher-v2-ct-heap ${RB_REVIEW_ARMS})
 
 # Sanitizers, applied here to every target, so the fetched arms are instrumented too

@@ -86,10 +86,10 @@ def tool_presets(out: Path, has_tool: bool, compiler: str) -> list[dict]:
 
 
 # The ablation answers test (bench/tools/test_ablation.cpp) builds 7 shapes x 4 sizes x 2 seeds x 2 method
-# counts = 112 tables and compares 112 x 5 variants x 512 queries x 8 methods = 2,293,760 lookups. A record
+# counts = 112 tables and compares 112 x 7 variants x 512 queries x 8 methods = 3,211,264 lookups. A record
 # whose test saw other numbers, fewer or more, is red.
 ABL_TABLES = 112
-ABL_LOOKUPS = 2293760
+ABL_LOOKUPS = 3211264
 
 
 def review_presets(out: Path, has_review: bool, compiler: str) -> list[dict]:

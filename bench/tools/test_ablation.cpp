@@ -2,17 +2,20 @@
 // with the review arms, cmake/tests-review.cmake). On rbench's own tables (core/table.hpp: the seven shapes
 // of the grid, 10 to 10,000 routes, table seeds 1 and 2, one and three methods) and rings with misses:
 // 1. What each change does to the table, read from the built table itself:
-//    copy and ab-bytes   the same table as the pinned headers, array by array and field by field;
+//    copy, ab-bytes, ab-heapstack and ab-strings
+//                        the same table as the pinned headers, array by array and field by field;
 //    ab-linear           no node is hashed, and every node keeps its edges;
 //    ab-hashed           every node with an edge is hashed;
 //    ab-noexact          the exact-match table is empty, and no method is answered by it.
 // 2. Every variant answers every query as the pinned code does (status, route, the methods a 405
 //    allows, and every captured value as the same bytes of the same path), under the query's own
-//    method and under each of the seven methods, so that 404 and 405 are both reached.
+//    method and under each of the seven methods, so that 404 and 405 are both reached. ab-strings owns
+//    copies of the captured bytes, so its captured values are compared byte for byte, and each must
+//    not point into the path (it is a copy).
 // 3. The test is not vacuous: it fails unless it compared a lookup and its pinned answers reached a 404, a
 //    405 and an answer with captures. It prints how many it reached of each, then "test_ablation: ok (T
 //    tables, N lookups compared, 0 failing)", or each failure; exit 1 on a failure. T and N are fixed by the
-//    loops below (112 tables; 112 x 5 variants x 512 queries x 8 methods = 2293760 lookups), and
+//    loops below (112 tables; 112 x 7 variants x 512 queries x 8 methods = 3211264 lookups), and
 //    sanitizer_record.py requires exactly those.
 #include <cstdint>
 #include <cstdio>
@@ -26,8 +29,10 @@
 
 #include "arms/ablation/route_ab_bytes.hpp"
 #include "arms/ablation/route_ab_hashed.hpp"
+#include "arms/ablation/route_ab_heapstack.hpp"
 #include "arms/ablation/route_ab_linear.hpp"
 #include "arms/ablation/route_ab_noexact.hpp"
+#include "arms/ablation/route_ab_strings.hpp"
 #include "arms/ablation/route_copy.hpp"
 #include "core/route.hpp"
 #include "core/table.hpp"
@@ -120,7 +125,7 @@ std::size_t nodes_with_edges(const V& v) {
 
 // The answers of one variant against the pinned code's, on one lookup.
 template <class M>
-void same_answer(const matcher::route::Match& want, const M& got, const std::string& where) {
+void same_answer(const matcher::route::Match& want, const M& got, std::string_view path, const std::string& where) {
     ++compared;
     if (want.status == matcher::route::Status::NotFound) {
         ++not_found;
@@ -132,7 +137,15 @@ void same_answer(const matcher::route::Match& want, const M& got, const std::str
     bool ok = static_cast<int>(want.status) == static_cast<int>(got.status) && want.route == got.route &&
               want.count == got.count && want.allowed == got.allowed;
     for (std::size_t i = 0; ok && i < want.count; ++i) {
-        ok = want.params[i].ptr == got.params[i].ptr && want.params[i].len == got.params[i].len;
+        if constexpr (requires { got.params[i].ptr; }) {
+            ok = want.params[i].ptr == got.params[i].ptr && want.params[i].len == got.params[i].len;
+        } else {
+            // An owned copy (ab-strings): the same bytes, held outside the path.
+            const char* d = got.params[i].data();
+            ok = got.params[i].size() == want.params[i].len &&
+                 std::memcmp(d, want.params[i].ptr, want.params[i].len) == 0 &&
+                 (want.params[i].len == 0 || d < path.data() || d >= path.data() + path.size());
+        }
     }
     expect(ok, where + ": the answer differs from the pinned code's");
 }
@@ -155,6 +168,8 @@ RB_TEST_VARIANT(matcher::route_ab_linear)
 RB_TEST_VARIANT(matcher::route_ab_hashed)
 RB_TEST_VARIANT(matcher::route_ab_noexact)
 RB_TEST_VARIANT(matcher::route_ab_bytes)
+RB_TEST_VARIANT(matcher::route_ab_heapstack)
+RB_TEST_VARIANT(matcher::route_ab_strings)
 #undef RB_TEST_VARIANT
 
 enum class Expect { SameTable, NoHashed, AllHashed, NoExact };
@@ -192,7 +207,7 @@ void check(const char* name, Expect what, const rb::Table& t, const rb::Ring& r,
         const rb::Query& q = r.queries[i];
         for (unsigned m = 0; m <= rb::kMethods; ++m) {
             const unsigned method = m == rb::kMethods ? static_cast<unsigned>(q.method) : m;
-            same_answer(matcher::route::find(p, method, q.path), V::find(v, method, q.path),
+            same_answer(matcher::route::find(p, method, q.path), V::find(v, method, q.path), q.path,
                         where + " query " + std::to_string(i) + " method " + std::to_string(method));
         }
     }
@@ -234,6 +249,8 @@ int main() {
                     check<matcher::route_ab_linear::TableView>("ab-linear", Expect::NoHashed, t, r, pinned, tid);
                     check<matcher::route_ab_hashed::TableView>("ab-hashed", Expect::AllHashed, t, r, pinned, tid);
                     check<matcher::route_ab_noexact::TableView>("ab-noexact", Expect::NoExact, t, r, pinned, tid);
+                    check<matcher::route_ab_heapstack::TableView>("ab-heapstack", Expect::SameTable, t, r, pinned, tid);
+                    check<matcher::route_ab_strings::TableView>("ab-strings", Expect::SameTable, t, r, pinned, tid);
                 }
             }
         }
