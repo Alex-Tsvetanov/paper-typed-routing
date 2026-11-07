@@ -1,0 +1,198 @@
+P2 quick campaigns at 0eea7f6 (units' code 7a1fef4; files between them: ['quick-plan.md']), Clang 22.1.8, znver3, Go 1.27.3, Rust 1.99.0, CPU 2, 21 epochs, ring 4096 (adversarial 256).
+
+quick-L-adv: rounds 3 of 3, cut None, 340.525 s, 99 processes, 0 not usable, exit not 0: []
+quick-L-abl-s: rounds 4 of 4, cut None, 273.447 s, 448 processes, 0 not usable, exit not 0: []
+quick-L-abl-l: rounds 3 of 3, cut None, 71.516 s, 105 processes, 0 not usable, exit not 0: []
+quick-L-bnd-10: rounds 5 of 5, cut None, 343.017 s, 525 processes, 15 not usable, exit not 0: []
+quick-L-bnd-100: rounds 5 of 5, cut None, 371.885 s, 525 processes, 15 not usable, exit not 0: []
+
+(a) adversarial: the written bound holds; largest backtracks per query 131070 (two-k16-miss, four-k8-miss); ns per entry 11.4964 [9.0551, 18.2200] (n 33)
+  two-k1-miss                entries   6 walked  10 pushed   2 popped   2 deepest  1 ns 86.1003 [85.9626, 86.1120] (n 3)
+  two-k1-last-hit            entries   4 walked   5 pushed   1 popped   1 deepest  1 ns 46.4179 [46.3477, 46.4927] (n 3)
+  two-k2-miss                entries  14 walked  22 pushed   6 popped   6 deepest  2 ns 138.9598 [138.6830, 139.1364] (n 3)
+  two-k2-last-hit            entries   8 walked  11 pushed   3 popped   3 deepest  2 ns 72.4408 [72.4398, 72.5721] (n 3)
+  two-k4-miss                entries  62 walked  94 pushed  30 popped  30 deepest  4 ns 565.4033 [565.3855, 634.3557] (n 3)
+  two-k4-last-hit            entries  32 walked  47 pushed  15 popped  15 deepest  4 ns 293.2886 [292.9810, 293.5803] (n 3)
+  two-k8-miss                entries 1022 walked 1534 pushed 510 popped 510 deepest  8 ns 9665.1699 [9231.4570, 9883.5293] (n 3)
+  two-k8-last-hit            entries 512 walked 767 pushed 255 popped 255 deepest  8 ns 4654.8039 [4650.7805, 4654.8938] (n 3)
+  two-k12-miss               entries 16382 walked 24574 pushed 8190 popped 8190 deepest 12 ns 157738.0940 [157150.8670, 158306.9140] (n 3)
+  two-k12-last-hit           entries 8192 walked 12287 pushed 4095 popped 4095 deepest 12 ns 75812.9961 [75542.1445, 76008.7930] (n 3)
+  two-k16-miss               entries 262142 walked 393214 pushed 131070 popped 131070 deepest 16 ns 2553815.5900 [2547677.8800, 2557257.6800] (n 3)
+  two-k16-last-hit           entries 131072 walked 196607 pushed 65535 popped 65535 deepest 16 ns 1217318.4300 [1214333.0400, 1285724.3800] (n 3)
+  four-k1-miss               entries  10 walked  18 pushed   6 popped   6 deepest  1 ns 158.1292 [157.9136, 158.1450] (n 3)
+  four-k1-last-hit           entries   6 walked   9 pushed   3 popped   3 deepest  1 ns 82.4830 [82.3894, 83.1356] (n 3)
+  four-k2-miss               entries  42 walked  74 pushed  30 popped  30 deepest  2 ns 482.8484 [482.7745, 483.1411] (n 3)
+  four-k2-last-hit           entries  22 walked  37 pushed  15 popped  15 deepest  2 ns 245.3221 [245.0852, 245.3594] (n 3)
+  four-k4-miss               entries 682 walked 1194 pushed 510 popped 510 deepest  4 ns 7898.6537 [7893.8412, 7927.6068] (n 3)
+  four-k4-last-hit           entries 342 walked 597 pushed 255 popped 255 deepest  4 ns 3975.2422 [3974.7116, 3992.5547] (n 3)
+  four-k6-miss               entries 10922 walked 19114 pushed 8190 popped 8190 deepest  6 ns 127419.3360 [127073.5390, 127995.6560] (n 3)
+  four-k6-last-hit           entries 5462 walked 9557 pushed 4095 popped 4095 deepest  6 ns 64436.5430 [63613.8398, 64718.0625] (n 3)
+  four-k8-miss               entries 174762 walked 305834 pushed 131070 popped 131070 deepest  8 ns 2058935.6400 [2058744.6600, 2069342.0200] (n 3)
+  four-k8-last-hit           entries 87382 walked 152917 pushed 65535 popped 65535 deepest  8 ns 1026346.0400 [1021501.5700, 1027764.9900] (n 3)
+  two-k1-catch-all-miss      entries   3 walked   6 pushed   2 popped   2 deepest  1 ns 54.6599 [54.5814, 54.7818] (n 3)
+  two-k2-catch-all-miss      entries   7 walked  12 pushed   4 popped   4 deepest  2 ns 78.2175 [78.1601, 79.0609] (n 3)
+  two-k4-catch-all-miss      entries  31 walked  48 pushed  16 popped  16 deepest  4 ns 294.0370 [293.8026, 294.1001] (n 3)
+  two-k8-catch-all-miss      entries 511 walked 768 pushed 256 popped 256 deepest  8 ns 4829.1906 [4826.0801, 4832.9072] (n 3)
+  two-k12-catch-all-miss     entries 8191 walked 12288 pushed 4096 popped 4096 deepest 12 ns 78649.6953 [78400.1406, 81029.4883] (n 3)
+  two-k16-catch-all-miss     entries 131071 walked 196608 pushed 65536 popped 65536 deepest 16 ns 1268798.5100 [1265764.7400, 1270490.6800] (n 3)
+  four-k1-catch-all-miss     entries   5 walked  10 pushed   4 popped   4 deepest  1 ns 90.5789 [90.3646, 90.7828] (n 3)
+  four-k2-catch-all-miss     entries  21 walked  38 pushed  16 popped  16 deepest  2 ns 250.8764 [250.1196, 252.1442] (n 3)
+  four-k4-catch-all-miss     entries 341 walked 598 pushed 256 popped 256 deepest  4 ns 3938.6465 [3936.8125, 3939.3016] (n 3)
+  four-k6-catch-all-miss     entries 5461 walked 9558 pushed 4096 popped 4096 deepest  6 ns 63595.1680 [63350.5078, 64217.1797] (n 3)
+  four-k8-catch-all-miss     entries 87381 walked 152918 pushed 65536 popped 65536 deepest  8 ns 1033162.5500 [1018864.3600, 1036559.0800] (n 3)
+  two-kinds 1: miss / last hit 1.8547 [1.8522, 1.8549] (n 3)
+  two-kinds 2: miss / last hit 1.9172 [1.9144, 1.9183] (n 3)
+  two-kinds 4: miss / last hit 1.9298 [1.9277, 2.1608] (n 3)
+  two-kinds 8: miss / last hit 2.0782 [1.9832, 2.1233] (n 3)
+  two-kinds 12: miss / last hit 2.0806 [2.0803, 2.0827] (n 3)
+  two-kinds 16: miss / last hit 2.0929 [1.9890, 2.1031] (n 3)
+  four-kinds 1: miss / last hit 1.9171 [1.8995, 1.9195] (n 3)
+  four-kinds 2: miss / last hit 1.9691 [1.9679, 1.9701] (n 3)
+  four-kinds 4: miss / last hit 1.9860 [1.9783, 1.9942] (n 3)
+  four-kinds 6: miss / last hit 1.9721 [1.9688, 2.0121] (n 3)
+  four-kinds 8: miss / last hit 2.0156 [2.0031, 2.0162] (n 3)
+
+(b) ablations: variant / copy per cell (median [min, max] over rounds)
+  static 10: copy/v2 0.9949 [0.9663, 0.9982] (n 4)
+    regexmatcher-v2-ab-noexact     2.1081 [2.0215, 2.2023] (n 4) instr 434.7 allocs 0
+    regexmatcher-v2-ab-bytes       0.9856 [0.9816, 1.0112] (n 4) instr 213.0 allocs 0
+    regexmatcher-v2-ab-heapstack   1.0041 [0.9971, 1.0084] (n 4) instr 213.0 allocs 0
+    regexmatcher-v2-ab-strings     3.3064 [3.2205, 3.7718] (n 4) instr 670.0 allocs 0
+  param-last 10: copy/v2 0.9942 [0.9855, 1.0047] (n 4)
+    regexmatcher-v2-ab-noexact     1.0199 [1.0067, 1.0298] (n 4) instr 471.7 allocs 0
+    regexmatcher-v2-ab-bytes       1.1574 [1.1242, 1.1801] (n 4) instr 539.0 allocs 0
+    regexmatcher-v2-ab-heapstack   1.2279 [1.2134, 1.2548] (n 4) instr 575.7 allocs 1
+    regexmatcher-v2-ab-strings     2.3055 [2.2804, 2.4230] (n 4) instr 1023.5 allocs 0
+  param-first 10: copy/v2 0.9944 [0.9923, 0.9983] (n 4)
+    regexmatcher-v2-ab-noexact     1.0054 [0.9972, 1.0170] (n 4) instr 470.7 allocs 0
+    regexmatcher-v2-ab-bytes       1.1555 [1.1316, 1.1902] (n 4) instr 539.5 allocs 0
+    regexmatcher-v2-ab-heapstack   1.2383 [1.2285, 1.2438] (n 4) instr 574.7 allocs 1
+    regexmatcher-v2-ab-strings     2.3016 [2.2735, 2.5959] (n 4) instr 1022.8 allocs 0
+  rest 10: copy/v2 0.9953 [0.9928, 1.0000] (n 4)
+    regexmatcher-v2-ab-noexact     1.0039 [0.9982, 1.0269] (n 4) instr 580.3 allocs 0
+    regexmatcher-v2-ab-bytes       1.1203 [1.1085, 1.1914] (n 4) instr 645.4 allocs 0
+    regexmatcher-v2-ab-heapstack   1.1766 [1.1733, 1.1879] (n 4) instr 685.3 allocs 1
+    regexmatcher-v2-ab-strings     2.2966 [2.2796, 2.3610] (n 4) instr 1232.6 allocs 0
+  wild 10: copy/v2 0.9928 [0.9731, 1.0256] (n 4)
+    regexmatcher-v2-ab-noexact     1.0070 [0.9764, 1.0254] (n 4) instr 458.2 allocs 0
+    regexmatcher-v2-ab-bytes       1.1620 [1.1240, 1.2049] (n 4) instr 527.3 allocs 0
+    regexmatcher-v2-ab-heapstack   1.2482 [1.1929, 1.3263] (n 4) instr 563.2 allocs 1
+    regexmatcher-v2-ab-strings     2.3410 [2.2625, 2.4421] (n 4) instr 1031.4 allocs 0.403442
+  mixed-disjoint 10: copy/v2 0.9900 [0.9846, 1.1412] (n 4)
+    regexmatcher-v2-ab-noexact     1.0156 [0.8894, 1.0269] (n 4) instr 516.5 allocs 0
+    regexmatcher-v2-ab-bytes       1.1486 [1.0231, 1.1899] (n 4) instr 619.6 allocs 0
+    regexmatcher-v2-ab-heapstack   1.2329 [1.0742, 1.2663] (n 4) instr 620.4 allocs 1
+    regexmatcher-v2-ab-strings     2.1210 [1.8900, 2.1670] (n 4) instr 1055.2 allocs 0
+  mixed-overlap 10: copy/v2 0.9937 [0.9864, 1.0010] (n 4)
+    regexmatcher-v2-ab-noexact     1.0263 [1.0152, 1.0371] (n 4) instr 537.6 allocs 0
+    regexmatcher-v2-ab-bytes       1.1238 [1.1132, 1.1544] (n 4) instr 626.6 allocs 0
+    regexmatcher-v2-ab-heapstack   1.1975 [1.1827, 1.2200] (n 4) instr 641.5 allocs 1
+    regexmatcher-v2-ab-strings     2.1004 [2.0853, 2.1144] (n 4) instr 1086.5 allocs 0
+  static 100: copy/v2 1.0053 [0.9871, 1.0329] (n 4)
+    regexmatcher-v2-ab-noexact     2.6038 [2.5023, 2.7160] (n 4) instr 439.7 allocs 0
+    regexmatcher-v2-ab-bytes       0.9908 [0.9637, 1.0038] (n 4) instr 214.6 allocs 0
+    regexmatcher-v2-ab-heapstack   0.9847 [0.9630, 1.0180] (n 4) instr 214.6 allocs 0
+    regexmatcher-v2-ab-strings     3.3091 [3.2245, 3.3846] (n 4) instr 671.6 allocs 0
+  param-last 100: copy/v2 0.9952 [0.9522, 0.9981] (n 4)
+    regexmatcher-v2-ab-noexact     1.0089 [0.9938, 1.0210] (n 4) instr 478.1 allocs 0
+    regexmatcher-v2-ab-bytes       1.1416 [1.1258, 1.1571] (n 4) instr 548.9 allocs 0
+    regexmatcher-v2-ab-heapstack   1.1962 [1.1940, 1.2005] (n 4) instr 582.1 allocs 1
+    regexmatcher-v2-ab-strings     2.1038 [2.0746, 2.1228] (n 4) instr 1028.2 allocs 0
+  param-first 100: copy/v2 0.9983 [0.9925, 1.0001] (n 4)
+    regexmatcher-v2-ab-noexact     1.0003 [0.9972, 1.0026] (n 4) instr 476.0 allocs 0
+    regexmatcher-v2-ab-bytes       1.1345 [1.1183, 1.1564] (n 4) instr 546.7 allocs 0
+    regexmatcher-v2-ab-heapstack   1.2168 [1.2038, 1.2370] (n 4) instr 580.0 allocs 1
+    regexmatcher-v2-ab-strings     2.0890 [2.0748, 2.1287] (n 4) instr 1026.2 allocs 0
+  rest 100: copy/v2 1.0058 [0.9948, 1.0093] (n 4)
+    regexmatcher-v2-ab-noexact     1.0089 [1.0000, 1.0220] (n 4) instr 586.8 allocs 0
+    regexmatcher-v2-ab-bytes       1.1093 [1.1066, 1.1155] (n 4) instr 656.6 allocs 0
+    regexmatcher-v2-ab-heapstack   1.1569 [1.1519, 1.1654] (n 4) instr 691.8 allocs 1
+    regexmatcher-v2-ab-strings     2.1150 [2.1060, 2.1298] (n 4) instr 1237.4 allocs 0
+  wild 100: copy/v2 1.0011 [0.9896, 1.0045] (n 4)
+    regexmatcher-v2-ab-noexact     0.9989 [0.9969, 1.0032] (n 4) instr 464.4 allocs 0
+    regexmatcher-v2-ab-bytes       1.1391 [1.1148, 1.1501] (n 4) instr 537.2 allocs 0
+    regexmatcher-v2-ab-heapstack   1.2006 [1.1860, 1.2143] (n 4) instr 569.4 allocs 1
+    regexmatcher-v2-ab-strings     2.1188 [2.0849, 2.1754] (n 4) instr 1034.9 allocs 0.403442
+  mixed-disjoint 100: copy/v2 0.9958 [0.9904, 1.0116] (n 4)
+    regexmatcher-v2-ab-noexact     1.0062 [0.9865, 1.0099] (n 4) instr 534.6 allocs 0
+    regexmatcher-v2-ab-bytes       1.1206 [1.1091, 1.1446] (n 4) instr 633.7 allocs 0
+    regexmatcher-v2-ab-heapstack   1.2113 [1.1839, 1.2187] (n 4) instr 638.6 allocs 1
+    regexmatcher-v2-ab-strings     1.9788 [1.9742, 2.0194] (n 4) instr 1084.8 allocs 0
+  mixed-overlap 100: copy/v2 1.0128 [0.9921, 1.0650] (n 4)
+    regexmatcher-v2-ab-noexact     0.9909 [0.9394, 1.0120] (n 4) instr 571.4 allocs 0
+    regexmatcher-v2-ab-bytes       1.0972 [1.0775, 1.1332] (n 4) instr 661.7 allocs 0
+    regexmatcher-v2-ab-heapstack   1.1763 [1.1229, 1.1951] (n 4) instr 675.4 allocs 1
+    regexmatcher-v2-ab-strings     1.9543 [1.8714, 2.1689] (n 4) instr 1135.1 allocs 0
+  static 10000:
+    regexmatcher-v2-ab-noexact     3.0515 [3.0096, 3.2815] (n 3) instr 476.6 allocs 0
+    regexmatcher-v2-ab-bytes       0.9815 [0.9760, 1.0084] (n 3) instr 242.8 allocs 0
+    regexmatcher-v2-ab-heapstack   1.0143 [0.9973, 1.0255] (n 3) instr 242.8 allocs 0
+    regexmatcher-v2-ab-strings     3.1268 [3.1052, 3.1662] (n 3) instr 699.8 allocs 0
+  param-last 10000:
+    regexmatcher-v2-ab-noexact     1.0180 [1.0046, 1.0337] (n 3) instr 515.4 allocs 0
+    regexmatcher-v2-ab-bytes       1.1467 [1.1448, 1.1620] (n 3) instr 585.0 allocs 0
+    regexmatcher-v2-ab-heapstack   1.1194 [1.0971, 1.1391] (n 3) instr 619.4 allocs 1
+    regexmatcher-v2-ab-strings     1.8861 [1.8598, 1.8975] (n 3) instr 1068.2 allocs 0
+  param-first 10000:
+    regexmatcher-v2-ab-noexact     0.9945 [0.9823, 1.0224] (n 3) instr 513.0 allocs 0
+    regexmatcher-v2-ab-bytes       1.1529 [1.1378, 1.1532] (n 3) instr 582.6 allocs 0
+    regexmatcher-v2-ab-heapstack   1.1276 [1.1275, 1.1477] (n 3) instr 617.0 allocs 1
+    regexmatcher-v2-ab-strings     1.9621 [1.9575, 1.9718] (n 3) instr 1065.8 allocs 0
+  rest 10000:
+    regexmatcher-v2-ab-noexact     1.0007 [0.9884, 1.0122] (n 3) instr 624.6 allocs 0
+    regexmatcher-v2-ab-bytes       1.1158 [1.1114, 1.1344] (n 3) instr 693.1 allocs 0
+    regexmatcher-v2-ab-heapstack   1.1152 [1.1098, 1.1157] (n 3) instr 729.6 allocs 1
+    regexmatcher-v2-ab-strings     1.8317 [1.8284, 1.8393] (n 3) instr 1278.0 allocs 0
+  wild 10000:
+    regexmatcher-v2-ab-noexact     1.0096 [1.0060, 1.0193] (n 3) instr 501.3 allocs 0
+    regexmatcher-v2-ab-bytes       1.1444 [1.1374, 1.1477] (n 3) instr 573.1 allocs 0
+    regexmatcher-v2-ab-heapstack   1.1274 [1.1224, 1.2707] (n 3) instr 606.3 allocs 1
+    regexmatcher-v2-ab-strings     1.8906 [1.8840, 1.9006] (n 3) instr 1075.6 allocs 0.402588
+  mixed-disjoint 10000:
+    regexmatcher-v2-ab-noexact     0.9944 [0.9881, 0.9988] (n 3) instr 579.5 allocs 0
+    regexmatcher-v2-ab-bytes       1.1473 [1.1390, 1.1633] (n 3) instr 678.3 allocs 0
+    regexmatcher-v2-ab-heapstack   1.1242 [1.1147, 1.1400] (n 3) instr 683.5 allocs 1
+    regexmatcher-v2-ab-strings     1.8511 [1.8391, 1.8568] (n 3) instr 1129.7 allocs 0
+  mixed-overlap 10000:
+    regexmatcher-v2-ab-noexact     0.9939 [0.9928, 0.9986] (n 3) instr 619.0 allocs 0
+    regexmatcher-v2-ab-bytes       1.1395 [1.1239, 1.1400] (n 3) instr 712.9 allocs 0
+    regexmatcher-v2-ab-heapstack   1.1021 [1.0938, 1.1043] (n 3) instr 723.0 allocs 1
+    regexmatcher-v2-ab-strings     1.8012 [1.7927, 1.9050] (n 3) instr 1181.9 allocs 0
+  left out: []
+  code: regexmatcher-v2 4 functions 1107 lines; regexmatcher-v2-copy 4 functions 1107 lines; regexmatcher-v2-ab-linear 4 functions 1107 lines; regexmatcher-v2-ab-hashed 4 functions 1107 lines; regexmatcher-v2-ab-noexact 4 functions 1107 lines; regexmatcher-v2-ab-bytes 4 functions 1117 lines; regexmatcher-v2-ab-heapstack 5 functions 1121 lines; regexmatcher-v2-ab-strings 7 functions 1766 lines
+
+A/A (v2 twice, Linux): 0.9980 [0.9712, 1.0431] (n 56) over 14 cells
+
+(b) boundary
+  static 10: capi/fastest Rust (matchit) 0.5874 [0.5145, 0.6637] (n 5); net v2/matchit 0.4698 [0.3989, 0.4874] (n 5) raw 0.5323 [0.4589, 0.5896] (n 5)
+    goloop: gin 1.6659 [1.3799, 1.8185] (n 5); httprouter 1.5972 [1.3354, 1.7479] (n 5); chi 0.5742 [0.5161, 0.6241] (n 5)
+  param-last 10: capi/fastest Rust (matchit) 0.6724 [0.6268, 0.6951] (n 5); net v2/gin 0.8272 [0.7329, 0.8668] (n 5) raw 0.8679 [0.7924, 0.8908] (n 5)
+    goloop: gin 1.7395 [1.6008, 1.9235] (n 5); httprouter 1.0646 [1.0504, 1.1931] (n 5); chi 0.6765 [0.6560, 0.7159] (n 5)
+  param-first 10: capi/fastest Rust (matchit) 0.6464 [0.6387, 0.6835] (n 5); net v2/gin 0.6848 [0.6671, 0.7568] (n 5) raw 0.7410 [0.7181, 0.7884] (n 5)
+    goloop: gin 1.5326 [1.4487, 1.6493] (n 5); httprouter 0.9734 [0.9550, 1.0223] (n 5); chi 0.6117 [0.6008, 0.6462] (n 5)
+  rest 10: capi/fastest Rust (matchit) 0.5026 [0.4689, 0.5124] (n 5); net v2/uwebsockets 0.7327 [0.6790, 0.7977] (n 5) raw 0.7513 [0.7140, 0.8122] (n 5)
+    goloop: gin 1.4082 [1.3155, 1.4593] (n 5); httprouter 0.9160 [0.8559, 0.9456] (n 5); chi 0.6014 [0.5758, 0.6065] (n 5)
+  wild 10: capi/fastest Rust (matchit) 0.6758 [0.6532, 0.7228] (n 5); net v2/gin 0.8918 [0.6775, 1.0057] (n 5) raw 0.9284 [0.8868, 1.0266] (n 5)
+    goloop: gin 2.0234 [1.7873, 2.2022] (n 5); httprouter 1.2861 [1.1723, 1.3681] (n 5); chi 0.7757 [0.7288, 0.8108] (n 5)
+    absent: {'uwebsockets': 'incomparable: 4,096 of 4,096 answers differ'}
+  mixed-disjoint 10: capi/fastest Rust (matchit) 0.7770 [0.7421, 0.7963] (n 5); net v2/gin 0.9657 [0.8945, 0.9928] (n 5) raw 0.9943 [0.9173, 1.0123] (n 5)
+    goloop: gin 1.9550 [1.7832, 2.0549] (n 5); httprouter 1.2784 [1.1909, 1.3560] (n 5); chi 0.7610 [0.7186, 0.8086] (n 5)
+  mixed-overlap 10: capi/fastest Rust (path-tree) 0.6295 [0.5919, 0.6519] (n 5); net v2/uwebsockets 0.7670 [0.7330, 0.7767] (n 5) raw 0.7804 [0.7678, 0.7897] (n 5)
+    goloop: chi 0.6967 [0.6377, 0.7415] (n 5)
+    absent: {'gin': 'incomparable: 374 to 417 of 4,096 answers differ', 'httprouter': "refused: httprouter: wildcard route ':p0' conflicts with existing children in path '/luv/jagi/:p0'"}
+  static 100: capi/fastest Rust (matchit) 0.4096 [0.3776, 0.4332] (n 5); net v2/matchit 0.3036 [0.2830, 0.3484] (n 5) raw 0.3644 [0.3357, 0.3905] (n 5)
+    goloop: gin 1.0932 [1.0354, 1.1413] (n 5); httprouter 1.0855 [1.0212, 1.1212] (n 5); chi 0.4359 [0.4191, 0.4577] (n 5)
+  param-last 100: capi/fastest Rust (matchit) 0.5855 [0.5755, 0.6375] (n 5); net v2/gin 0.6948 [0.6587, 0.7594] (n 5) raw 0.7195 [0.7006, 0.7990] (n 5)
+    goloop: gin 1.4494 [1.3672, 1.4785] (n 5); httprouter 1.0260 [0.9703, 1.0687] (n 5); chi 0.6107 [0.5727, 0.6223] (n 5)
+  param-first 100: capi/fastest Rust (matchit) 0.5475 [0.5415, 0.6028] (n 5); net v2/gin 0.6123 [0.6038, 0.6846] (n 5) raw 0.6543 [0.6390, 0.7246] (n 5)
+    goloop: gin 1.2795 [1.1978, 1.3243] (n 5); httprouter 0.9450 [0.8737, 0.9701] (n 5); chi 0.5593 [0.5232, 0.5708] (n 5)
+  rest 100: capi/fastest Rust (matchit) 0.4520 [0.4401, 0.5019] (n 5); net v2/gin 0.6325 [0.6266, 0.6808] (n 5) raw 0.6647 [0.6470, 0.7130] (n 5)
+    goloop: gin 1.1842 [1.1749, 1.2505] (n 5); httprouter 0.8357 [0.8252, 0.8835] (n 5); chi 0.5424 [0.5267, 0.5688] (n 5)
+  wild 100: capi/fastest Rust (matchit) 0.6086 [0.5906, 0.6518] (n 5); net v2/gin 0.7479 [0.7215, 0.8330] (n 5) raw 0.7715 [0.7455, 0.8532] (n 5)
+    goloop: gin 1.4362 [1.4053, 1.5063] (n 5); httprouter 1.0474 [1.0151, 1.0852] (n 5); chi 0.6316 [0.6033, 0.6552] (n 5)
+    absent: {'uwebsockets': 'incomparable: 4,096 of 4,096 answers differ'}
+  mixed-disjoint 100: capi/fastest Rust (matchit) 0.6423 [0.6325, 0.6710] (n 5); net v2/gin 0.8188 [0.7878, 0.8519] (n 5) raw 0.8385 [0.8258, 0.8708] (n 5)
+    goloop: gin 1.5193 [1.4760, 1.5349] (n 5); httprouter 1.0800 [1.0562, 1.0917] (n 5); chi 0.6342 [0.6164, 0.6578] (n 5)
+  mixed-overlap 100: capi/fastest Rust (matchit) 0.5488 [0.5378, 0.5796] (n 5); net v2/uwebsockets 0.5981 [0.5396, 0.6277] (n 5) raw 0.6246 [0.5683, 0.6555] (n 5)
+    goloop: chi 0.5990 [0.5680, 0.6078] (n 5)
+    absent: {'gin': 'incomparable: 490 to 534 of 4,096 answers differ', 'httprouter': "refused: httprouter: wildcard route ':p0' conflicts with existing children in path '/vitiz/simejihehu/:p0'"}
