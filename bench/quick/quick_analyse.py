@@ -680,6 +680,7 @@ def figures(s: dict, out: Path) -> None:
             y = [c["ns"]["median"] for c in cs]
             err = [[c["ns"]["median"] - c["ns"]["min"] for c in cs], [c["ns"]["max"] - c["ns"]["median"] for c in cs]]
             ax.errorbar(x, y, yerr=err, marker=marker, ms=4, lw=1, capsize=2, label=label)
+        ax.set_yscale("log")
         ax.set_title(FAMILY_TEXT[fam] + " per node", fontsize=9)
         ax.set_xlabel("depth (segments)", fontsize=8)
         ax.tick_params(labelsize=8)
