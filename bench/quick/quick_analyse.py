@@ -544,6 +544,11 @@ def abl_macros(mc: Macros, s: dict) -> None:
             mc.add(w + "Allocs", small_value(v["allocs"]["median"]))
     for a in VARIANTS:
         summary_over_cells(mc, f"QuickAbl{WORD[a]}", [c["variants"][a] for c in allc])
+        # The static shape is answered by the exact-match table alone and never walks the trie.
+        mc_static = [c["variants"][a] for c in allc if c["shape"] == "static"]
+        mc_walk = [c["variants"][a] for c in allc if c["shape"] != "static"]
+        summary_over_cells(mc, f"QuickAbl{WORD[a]}Static", mc_static)
+        summary_over_cells(mc, f"QuickAbl{WORD[a]}NonStatic", mc_walk)
         mx = max(c["arms"][a]["allocs"]["max"] for c in allc)
         mc.add(f"QuickAbl{WORD[a]}AllocsMax", small_value(mx))
     summary_over_cells(mc, "QuickAblCopyVsVtwo", [c["copy_vs_v2"] for c in s["ablation"]["small"]["cells"]])
